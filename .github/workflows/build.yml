@@ -1,0 +1,60 @@
+name: u-boot build test
+run-name: ${{ github.actor }} pushed a change ( ${{ github.sha }} )
+on: [push]
+jobs:
+  build:
+    name: ${{ matrix.boards.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        boards:
+          [
+            {
+              "name": "sc598",
+              "config": "sc598-som-ezkit-spl_defconfig",
+              "cross_compile": "aarch64-linux-gnu",
+            },
+            {
+              "name": "sc594",
+              "config": "sc594-som-ezkit-spl_defconfig",
+              "cross_compile": "arm-linux-gnueabi",
+            },
+            {
+              "name": "sc589",
+              "config": "sc589-ezkit_defconfig",
+              "cross_compile": "arm-linux-gnueabi",
+            },
+            {
+              "name": "sc584",
+              "config": "sc584-ezkit_defconfig",
+              "cross_compile": "arm-linux-gnueabi",
+            },
+            {
+              "name": "sc573",
+              "config": "sc573-ezkit_defconfig",
+              "cross_compile": "arm-linux-gnueabi",
+            }
+          ]
+    steps:
+      - name: Setup toolchain
+        run: |
+          sudo apt-get update && sudo apt-get install gcc-${{ matrix.boards.cross_compile }}
+      - name: Checkout ldr
+        uses: actions/checkout@v4
+        with:
+          repository: analogdevicesinc/lnxdsp-arm-poky-linux-gnueabi-ldr
+          ref: refs/heads/release/yocto-2.1.0
+          path: ldr
+      - name: Build/install ldr
+        run: |
+          cd ldr/src/ldr/
+          ./configure
+          make -j$(nproc)
+          sudo make install
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Build ${{ matrix.boards.name }}
+        run: |
+          make ${{ matrix.boards.config }}
+          make CROSS_COMPILE=${{ matrix.boards.cross_compile }}- LDR=ldr -j$(nproc)
+
