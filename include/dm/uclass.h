@@ -490,6 +490,14 @@ int uclass_probe_all(enum uclass_id id);
 int uclass_id_count(enum uclass_id id);
 
 /**
+ * uclass_id_on_reset() - call on_reset for devices of a given uclass ID
+ *
+ * @id: uclass ID to look up
+ * Return: 0 if OK, other -ve on error
+ */
+int uclass_id_on_reset(enum uclass_id id);
+
+/**
  * uclass_id_foreach_dev() - iterate through devices of a given uclass ID
  *
  * This creates a for() loop which works through the available devices in

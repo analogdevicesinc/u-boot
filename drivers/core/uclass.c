@@ -854,6 +854,19 @@ int uclass_id_count(enum uclass_id id)
 	return count;
 }
 
+int uclass_id_on_reset(enum uclass_id id)
+{
+	struct udevice *dev;
+	struct uclass *uc;
+
+	uclass_id_foreach_dev(id, dev, uc) {
+		if (device_active(dev) && dev->driver->on_reset)
+			return dev->driver->on_reset(dev);
+	}
+
+	return 0;
+}
+
 UCLASS_DRIVER(nop) = {
 	.id		= UCLASS_NOP,
 	.name		= "nop",
