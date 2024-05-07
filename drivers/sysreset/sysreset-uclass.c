@@ -26,8 +26,18 @@ int sysreset_request(struct udevice *dev, enum sysreset_t type)
 {
 	struct sysreset_ops *ops = sysreset_get_ops(dev);
 
+	struct udevice *flash;
+	struct uclass *uc;
+
 	if (!ops->request)
 		return -ENOSYS;
+
+	/*
+	 * Remove SPI flash devices before reset so they can exit 4-byte
+	 * addressing mode.
+	 */
+	uclass_id_foreach_dev(UCLASS_SPI_FLASH, flash, uc)
+		device_remove(flash, DM_REMOVE_NORMAL);
 
 	return ops->request(dev, type);
 }
