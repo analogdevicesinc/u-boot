@@ -224,6 +224,15 @@ static int spi_flash_std_remove(struct udevice *dev)
 	struct spi_flash *flash = dev_get_uclass_priv(dev);
 	int ret;
 
+	if (flash->addr_width == 4 &&
+	    !(flash->info->flags & SPI_NOR_OCTAL_DTR_READ) &&
+	    (JEDEC_MFR(flash->info) != SNOR_MFR_SPANSION) &&
+	    !(flash->flags & SPI_NOR_4B_OPCODES)) {
+		ret = spi_nor_set_4byte(flash, flash->info, 0);
+		if (ret)
+			return ret;
+	}
+
 	if (CONFIG_IS_ENABLED(SPI_DIRMAP)) {
 		spi_mem_dirmap_destroy(flash->dirmap.wdesc);
 		spi_mem_dirmap_destroy(flash->dirmap.rdesc);
@@ -257,6 +266,7 @@ U_BOOT_DRIVER(jedec_spi_nor) = {
 	.of_match	= spi_flash_std_ids,
 	.probe		= spi_flash_std_probe,
 	.remove		= spi_flash_std_remove,
+	.on_reset	= spi_flash_std_remove,
 	.priv_auto	= sizeof(struct spi_nor),
 	.ops		= &spi_flash_std_ops,
 	.flags		= DM_FLAG_OS_PREPARE,
