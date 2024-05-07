@@ -29,6 +29,13 @@ int sysreset_request(struct udevice *dev, enum sysreset_t type)
 	if (!ops->request)
 		return -ENOSYS;
 
+	/*
+	 * Call the .on_reset op for SPI flash devices.
+	 * This is required for most devices in order to exit the
+	 * 4-byte adressing mode.
+	 */
+	uclass_id_on_reset(UCLASS_SPI_FLASH);
+
 	return ops->request(dev, type);
 }
 
