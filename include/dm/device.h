@@ -347,6 +347,7 @@ struct udevice_id {
  * @probe: Called to probe a device, i.e. activate it
  * @remove: Called to remove a device, i.e. de-activate it
  * @unbind: Called to unbind a device from its driver
+ * @on_reset: Called befora calling board reset
  * @of_to_plat: Called before probe to decode device tree data
  * @child_post_bind: Called after a new child has been bound
  * @child_pre_probe: Called before a child device is probed. The device has
@@ -382,6 +383,7 @@ struct driver {
 	int (*probe)(struct udevice *dev);
 	int (*remove)(struct udevice *dev);
 	int (*unbind)(struct udevice *dev);
+	int (*on_reset)(struct udevice *dev);
 	int (*of_to_plat)(struct udevice *dev);
 	int (*child_post_bind)(struct udevice *dev);
 	int (*child_pre_probe)(struct udevice *dev);
