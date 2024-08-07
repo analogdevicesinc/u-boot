@@ -32,6 +32,9 @@
 #define POST_CHANGE_DLY_OFF                      (19U)
 #define TUNE_CLK_STOP_EN_OFF                     (16U)
 
+/* CTRL reg pll enable */
+#define SDHCI_CLOCK_PLL_EN                       BIT(3)
+
 /* Max tuning iterations */
 #define SDHCI_MAX_TUNING_LOOP                    (130)
 
@@ -63,6 +66,8 @@
  * This is a soc-specific requirement (coming from Adrv906x GLS simulations).
  */
 #define SDHCI_ADI_HS400_TX_CLK_NEGEDGE
+
+#define SDHCI_IDLE_TIMEOUT                       (20) /* 20 ms */
 
 struct adi_sdhc_plat {
 #if CONFIG_IS_ENABLED(OF_PLATDATA)
@@ -417,6 +422,29 @@ static const struct sdhci_ops adi_sdhci_sd_ops = {
 	.config_dll	= adi_sdhci_config_dll
 };
 
+static int adi_sdhci_deinit(struct sdhci_host *host)
+{
+	uint16_t u16_reg_data;
+	unsigned int timeout = SDHCI_IDLE_TIMEOUT;
+
+	/* Wait for the host controller to become idle before stopping card clock.*/
+	while (sdhci_readl(host, SDHCI_PRESENT_STATE) &
+	       (SDHCI_CMD_INHIBIT | SDHCI_DATA_INHIBIT)) {
+		if (--timeout == 0) {
+			printf("Host controller is not idle\n");
+			return -EBUSY;
+		}
+		udelay(1000);
+	}
+
+	/* Stop card clock, and turn off internal clock and PLL */
+	u16_reg_data = sdhci_readw(host, SDHCI_CLOCK_CONTROL);
+	u16_reg_data &= ~(SDHCI_CLOCK_CARD_EN | SDHCI_CLOCK_INT_EN | SDHCI_CLOCK_PLL_EN);
+	sdhci_writew(host, u16_reg_data, SDHCI_CLOCK_CONTROL);
+
+	return 0;
+}
+
 static int adi_sdhci_probe(struct udevice *dev)
 {
 	struct mmc_uclass_priv *upriv = dev_get_uclass_priv(dev);
@@ -450,6 +478,10 @@ static int adi_sdhci_probe(struct udevice *dev)
 	host->max_clk = clock;
 	plat->cfg.f_max = max_frequency;
 
+	/* Deinit to ensure a proper initialization */
+	ret = adi_sdhci_deinit(host);
+	if (ret)
+		return ret;
 	/*
 	 * The sdhci-driver only supports 4bit and 8bit, as sdhci_setup_cfg
 	 * doesn't allow us to clear MMC_MODE_4BIT.  Consequently, we don't

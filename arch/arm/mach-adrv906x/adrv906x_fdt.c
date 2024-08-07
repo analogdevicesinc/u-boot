@@ -70,6 +70,20 @@ int get_sysclk_freq(void)
 	return sysclk_freq;
 }
 
+int get_hsdigclk_freq(void)
+{
+	int node;
+	uint32_t hsdigclk_freq;
+
+	node = fdt_path_offset(gd->fdt_blob, "/hsdigclk");
+	if (node < 0)
+		return -1;
+
+	hsdigclk_freq = fdtdec_get_uint(gd->fdt_blob, node, "clock-frequency", -1);
+
+	return hsdigclk_freq;
+}
+
 static int get_emmcclk_freq(void)
 {
 	int node;
@@ -482,8 +496,8 @@ static int plat_eth_fixup(void *blob)
 			snprintf(name, MAX_NODE_NAME_LENGTH, "/ethernet@%08X", (i == 0) ? EMAC_1G_BASE : SEC_EMAC_1G_BASE);
 		/* 10/25G eth */
 		else
-			snprintf(name, MAX_NODE_NAME_LENGTH, "/adi_eth_node@%08X/ethernet-ports/port@%d",
-				 (i < (MAX_NUM_MACS / 2)) ? 0x2B300000 : 0x2F300000,
+			snprintf(name, MAX_NODE_NAME_LENGTH, "/adrv906x_net@%08X/ethernet-ports/port@%d",
+				 (i < (MAX_NUM_MACS / 2)) ? EMAC_CMN_BASE : SEC_EMAC_CMN_BASE,
 				 ((i == 1) || (i == 4)) ? 0 : 1);
 
 		node_name = name;
@@ -561,6 +575,7 @@ static int plat_sysc_fixup(void *blob)
 	int ret;
 	int node;
 	char node_name[MAX_NODE_NAME_LENGTH];
+	uint32_t is_dual_tile;
 	uint32_t is_secondary_linux_enabled;
 
 	/* Enable SystemC-specific devices in kernel device tree */
@@ -575,6 +590,24 @@ static int plat_sysc_fixup(void *blob)
 	plat_set_prop_disabled(blob, "/fixed-regulator_1v8");
 	plat_set_prop_disabled(blob, "/fixed-regulator_3v3");
 	snprintf(node_name, MAX_NODE_NAME_LENGTH, "/ethernet@%08x", EMAC_1G_BASE);
+	plat_set_prop_disabled(blob, node_name);
+	snprintf(node_name, MAX_NODE_NAME_LENGTH, "/adrv906x_net@%08X", EMAC_CMN_BASE);
+	plat_set_prop_disabled(blob, node_name);
+	snprintf(node_name, MAX_NODE_NAME_LENGTH, "/mdio@%08X", EMAC_PCS_0_BASE);
+	plat_set_prop_disabled(blob, node_name);
+	plat_set_prop_disabled(blob, "/ptpclk");
+	ret = get_dual_tile(&is_dual_tile);
+	if ((ret == 0) && (is_dual_tile == 1)) {
+		snprintf(node_name, MAX_NODE_NAME_LENGTH, "/adrv906x_net@%08X", SEC_EMAC_CMN_BASE);
+		plat_set_prop_disabled(blob, node_name);
+		snprintf(node_name, MAX_NODE_NAME_LENGTH, "/mdio@%08X", SEC_EMAC_PCS_0_BASE);
+		plat_set_prop_disabled(blob, node_name);
+	}
+
+	/* Disable SPI0 and I2C1 */
+	snprintf(node_name, MAX_NODE_NAME_LENGTH, "/spi@%08X", SPI_0_BASE);
+	plat_set_prop_disabled(blob, node_name);
+	snprintf(node_name, MAX_NODE_NAME_LENGTH, "/twi@%08X", I2C_1_BASE);
 	plat_set_prop_disabled(blob, node_name);
 
 	/* Enable SystemC eMMC, SD, and ethernet */
@@ -601,6 +634,38 @@ static int plat_sysc_fixup(void *blob)
 			return ret;
 		}
 	}
+
+	return 0;
+}
+
+/* TODO: Consider removing if/when Protium/Palladium support is removed */
+static int plat_protium_palladium_fixup(void *blob)
+{
+	int ret;
+	char node_name[MAX_NODE_NAME_LENGTH];
+	uint32_t is_dual_tile;
+
+	/* Disable ethernet */
+	snprintf(node_name, MAX_NODE_NAME_LENGTH, "/ethernet@%08X", EMAC_1G_BASE);
+	plat_set_prop_disabled(blob, node_name);
+	snprintf(node_name, MAX_NODE_NAME_LENGTH, "/adrv906x_net@%08X", EMAC_CMN_BASE);
+	plat_set_prop_disabled(blob, node_name);
+	snprintf(node_name, MAX_NODE_NAME_LENGTH, "/mdio@%08X", EMAC_PCS_0_BASE);
+	plat_set_prop_disabled(blob, node_name);
+	plat_set_prop_disabled(blob, "/ptpclk");
+	ret = get_dual_tile(&is_dual_tile);
+	if ((ret == 0) && (is_dual_tile == 1)) {
+		snprintf(node_name, MAX_NODE_NAME_LENGTH, "/adrv906x_net@%08X", SEC_EMAC_CMN_BASE);
+		plat_set_prop_disabled(blob, node_name);
+		snprintf(node_name, MAX_NODE_NAME_LENGTH, "/mdio@%08X", SEC_EMAC_PCS_0_BASE);
+		plat_set_prop_disabled(blob, node_name);
+	}
+
+	/* Disable SPI0 and I2C1 */
+	snprintf(node_name, MAX_NODE_NAME_LENGTH, "/spi@%08X", SPI_0_BASE);
+	plat_set_prop_disabled(blob, node_name);
+	snprintf(node_name, MAX_NODE_NAME_LENGTH, "/twi@%08X", I2C_1_BASE);
+	plat_set_prop_disabled(blob, node_name);
 
 	return 0;
 }
@@ -641,6 +706,17 @@ int adrv906x_kernel_fdt_fixup(void *blob)
 	if (clk_freq < 0)
 		return clk_freq;
 	node = fdt_path_offset(blob, "/sysclk");
+	if (node < 0)
+		return node;
+	ret = fdt_setprop_u32(blob, node, "clock-frequency", (uint32_t)clk_freq);
+	if (ret < 0)
+		return ret;
+
+	/* Set the hsdigclk frequency */
+	clk_freq = get_hsdigclk_freq();
+	if (clk_freq < 0)
+		return clk_freq;
+	node = fdt_path_offset(blob, "/hsdigclk");
 	if (node < 0)
 		return node;
 	ret = fdt_setprop_u32(blob, node, "clock-frequency", (uint32_t)clk_freq);
@@ -712,6 +788,15 @@ int adrv906x_kernel_fdt_fixup(void *blob)
 		ret = plat_sysc_fixup(blob);
 		if (ret < 0) {
 			log_err("Unable to configure SystemC-specific devices\n");
+			return ret;
+		}
+	}
+
+	/* TODO: Consider removing if/when Protium/Palladium support is removed */
+	if ((is_protium() == true) || (is_palladium() == true)) {
+		ret = plat_protium_palladium_fixup(blob);
+		if (ret < 0) {
+			log_err("Unable to configure Protium/Palladium-specific devices\n");
 			return ret;
 		}
 	}
