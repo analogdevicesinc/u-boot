@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <dm/device.h>
 
+#include <adrv906x.h>
 #include <adrv906x_def.h>
 #include <adrv906x_fdt.h>
 #include <adrv_common.h>
@@ -117,6 +118,25 @@ int dram_init(void)
 	return 0;
 }
 
+unsigned long board_get_usable_ram_top(unsigned long total_size)
+{
+	unsigned long top;
+	unsigned long reserved_mem;
+
+	/* Omit any potentially reserved regions from the top of DRAM
+	 * so that U-Boot doesn't load the device tree or initrd there.
+	 */
+	if (is_sysc())
+		reserved_mem = MAX_RESERVED_MEM_SIZE_SYSC;
+	else
+		reserved_mem = MAX_RESERVED_MEM_SIZE;
+
+	top = gd->ram_base + gd->ram_size;
+	if (reserved_mem < gd->ram_size)
+		top -= reserved_mem;
+
+	return top;
+}
 
 /* ADRV906X TODO: Remove this if/when SystemC support is removed */
 int sysc_pl180_mmc_get_b_max(struct udevice *dev, void *dst, lbaint_t blkcnt)

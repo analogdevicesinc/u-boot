@@ -10,6 +10,7 @@
 #include <net.h>
 #include <stdio.h>
 
+#include <adrv906x.h>
 #include <adrv906x_def.h>
 #include <adrv906x_fdt.h>
 #include <adrv_common.h>
@@ -384,19 +385,30 @@ static int plat_memory_regions_fixup(void *blob)
 	if (ret < 0)
 		return ret;
 
-
-	/* 1. DDR base address configured at the bottom of DDR seen by Linux */
-	address = mem_map[0].phys;
-
-	/* 2. Get region size from device tree */
+	/* 1. Get region size from device tree */
 	snprintf(node_name, MAX_NODE_NAME_LENGTH, "ddr-reserved@0");
 	ret = plat_get_reserved_region_size(blob, node_name, &size);
 	if (ret < 0)
 		return ret;
+	if (is_sysc() && (size > MAX_RESERVED_MEM_SIZE_SYSC))
+		size = MAX_RESERVED_MEM_SIZE_SYSC;
 
+	/* 2. DDR base address configured at the top of DDR seen by Linux */
+	if (size >= gd->ram_size) {
+		log_err("ddr-reserved@0 region size is larger than DRAM size\n");
+		return -1;
+	}
+	address = gd->ram_base + gd->ram_size - size;
+	if (address < gd->ram_top) {
+		log_err("ddr-reserved@0 region size exceeds reserved region size\n");
+		return -1;
+	}
+
+	/* Populate the node and enable it */
 	ret = plat_populate_reserved_region(blob, node_name, address, size);
 	if (ret < 0)
 		return ret;
+	plat_set_prop_okay(blob, "/reserved-memory/ddr-reserved@0");
 
 	/* Optionally populate secondary regions
 	 * - Use case: dual-tile with no Linux running on secondary
