@@ -36,7 +36,7 @@
 #define SDHCI_CLOCK_PLL_EN                       BIT(3)
 
 /* Max tuning iterations */
-#define SDHCI_MAX_TUNING_LOOP                    (130)
+#define SDHCI_MAX_TUNING_LOOP                    (128)
 
 /* Workaround for non-standard definition in sdhci.h */
 #define SDHCI_CTRL_HS400_STD                     (0x0007)
@@ -48,13 +48,14 @@
 
 /* To this day, ADI design integrates the 1.8V IP versions (Host Controller
  * and PHY for eMMC and Host Controller for SD). All eMMC speed modes are
- * supported and all mode can operate at 1.8V. On the other side, only low speed
+ * supported and all modes can operate at 1.8V. On the other side, only low speed
  * modes are supported in SD card and those modes can only operate at 3.3V. That
  * is solved by adding an externel level shifter.
  * Driver does not manage well this SD scenario.
  * Note: This macro is just to identify the action taken on this issue
  */
 #define SDHCI_ADI_IP_1_8V
+
 /* PHY Delay Lines may cause a potential glitch on the RX clock (because PHY DL2
  * input (rx clock) is connected to PHY DL1 output (tx clock)). Delay lines
  * configuration comes from Synopsys, and.it is expected not to change for future
@@ -62,10 +63,20 @@
  * Note: This macro is just to identify the action taken on this issue
  */
 #define SDHCI_ADI_RX_CLOCK_GLITCH
+
 /* MMC HS400 in Adrv906x requires data to be sent out on negedge of cclk_tx.
  * This is a soc-specific requirement (coming from Adrv906x GLS simulations).
  */
 #define SDHCI_ADI_HS400_TX_CLK_NEGEDGE
+
+/* According to the 'DesignWare Cores MSHC' User Guide, if there is an external
+ * clock multiplexor, it could cause glitches on cclk_rx.
+ * Stop the card clock before setting the tuning bit (EXEC_TUNING) and restart
+ * it after it.
+ * Note: option untested
+ *
+ * #define SDHCI_ADI_TUNING_RX_CLOCK_GLITCH
+ */
 
 #define SDHCI_IDLE_TIMEOUT                       (20) /* 20 ms */
 
@@ -228,6 +239,7 @@ static void adi_sdhci_fix_rx_clock_glitch(struct sdhci_host *host, enum bus_mode
 	else
 		reg = (POST_CHANGE_DLY_LESS_4_CYCLES << POST_CHANGE_DLY_OFF) |
 		      (TUNE_CLK_STOP_EN << TUNE_CLK_STOP_EN_OFF);
+
 	sdhci_writel(host, reg, SDHCI_VENDOR1_AT_CTRL_R_OFF);
 }
 #endif
@@ -349,7 +361,9 @@ static int adi_sdhci_platform_execute_tuning(struct mmc *mmc, u8 opcode)
 	struct sdhci_host *host = dev_get_priv(mmc->dev);
 	struct mmc_cmd cmd;
 	u16 ctrl;
-	int i;
+	u32 blk_size;
+	int loop_cnt = 0;
+	int ret = 0;
 
 	/* Synopsys eMMC PHY delay lines code is not synthetizable for
 	 * protium/palladium, so tuning sequence procedure is not supported */
@@ -363,44 +377,76 @@ static int adi_sdhci_platform_execute_tuning(struct mmc *mmc, u8 opcode)
 	      (mmc->selected_mode == UHS_SDR50)))
 		return 0;
 
-	sdhci_writel(host, SDHCI_INT_ALL_MASK, SDHCI_INT_STATUS);
+	/*
+	 * Tuning sequence (DesignWare Cores mshc User Guide)
+	 */
 
-	/* Tuning sequence (DesignWare Cores mshc User Guide) */
+	/* Rx clk tuning procedure is only based on BUF_RD_READY status bit */
+	sdhci_writel(host, SDHCI_INT_DATA_AVAIL, SDHCI_INT_ENABLE);
+	sdhci_writel(host, SDHCI_INT_DATA_AVAIL, SDHCI_SIGNAL_ENABLE);
+
+#if SDHCI_ADI_TUNING_RX_CLOCK_GLITCH
+	ctrl = sdhci_readw(host, SDHCI_CLOCK_CONTROL);
+	ctrl &= ~SDHCI_CLOCK_CARD_EN;
+#endif
 
 	/* Set EXEC_TUNING to 1 */
 	ctrl = sdhci_readw(host, SDHCI_HOST_CONTROL2);
 	ctrl |= SDHCI_CTRL_EXEC_TUNING;
 	sdhci_writew(host, ctrl, SDHCI_HOST_CONTROL2);
 
-	i = 0;
+#if SDHCI_ADI_TUNING_RX_CLOCK_GLITCH
+	ctrl = sdhci_readw(host, SDHCI_CLOCK_CONTROL);
+	ctrl |= SDHCI_CLOCK_CARD_EN;
+#endif
+
+	/* CMD21 (MMC_CMD_SEND_TUNING_BLOCK_HS200) is similar to a read command,
+	 * so the appropriate values for BLOCKSIZE_R, BLOCK_COUNT_R and
+	 * XFERMOD_R must be set
+	 */
+	cmd.cmdidx = opcode;
+	cmd.resp_type = MMC_RSP_R1;
+	cmd.cmdarg = 0;
+
+	if (opcode == MMC_CMD_SEND_TUNING_BLOCK_HS200 && host->mmc->bus_width == 8)
+		blk_size = SDHCI_MAKE_BLKSZ(SDHCI_DEFAULT_BOUNDARY_ARG, 128);
+	else
+		blk_size = SDHCI_MAKE_BLKSZ(SDHCI_DEFAULT_BOUNDARY_ARG, 64);
+
+	sdhci_writew(host, blk_size, SDHCI_BLOCK_SIZE);
+	sdhci_writew(host, 1, SDHCI_BLOCK_COUNT);
+	sdhci_writew(host, SDHCI_TRNS_READ, SDHCI_TRANSFER_MODE);
 
 	do {
-		/* Max iterations */
-		if (++i == SDHCI_MAX_TUNING_LOOP) {
-			/* Restore fixed sampling clock */
-			ctrl = sdhci_readw(host, SDHCI_HOST_CONTROL2);
+		if (++loop_cnt > SDHCI_MAX_TUNING_LOOP) {
 			ctrl &= ~SDHCI_CTRL_EXEC_TUNING;
 			sdhci_writew(host, ctrl, SDHCI_HOST_CONTROL2);
-
-			return -ECOMM;
+			ret = -ECOMM;
+			break;
 		}
 
-		/* Issue tuning command */
-		cmd.cmdidx = opcode;
-		cmd.cmdarg = 0;
-		cmd.resp_type = MMC_RSP_R1;
 		mmc_send_cmd(mmc, &cmd, NULL);
-	}while (sdhci_readw(host, SDHCI_HOST_CONTROL2) & SDHCI_CTRL_EXEC_TUNING);
+		ctrl = sdhci_readw(host, SDHCI_HOST_CONTROL2);
+	} while (ctrl & SDHCI_CTRL_EXEC_TUNING);
 
 	/* Check if SAMPLE_CLK_SEL == 1 */
-	if (0 == (sdhci_readw(host, SDHCI_HOST_CONTROL2) & SDHCI_CTRL_TUNED_CLK)) {
-		/* Tuning failed */
+	if (0 == (ctrl & SDHCI_CTRL_TUNED_CLK))
+		ret = -ECOMM;
+
+	if (ret < 0) {
+		/* Tuning error recovery */
+		ctrl &= ~SDHCI_CTRL_TUNED_CLK;
+		sdhci_writew(host, ctrl, SDHCI_HOST_CONTROL2);
 		adi_sdhci_reset(host, SDHCI_RESET_CMD);
 		adi_sdhci_reset(host, SDHCI_RESET_DATA);
-		return -ECOMM;
 	}
 
-	return 0;
+	/* Re-enable interrupts after doing rx clk tuning procedure */
+	sdhci_writel(host, SDHCI_INT_DATA_MASK | SDHCI_INT_CMD_MASK,
+		     SDHCI_INT_ENABLE);
+	sdhci_writel(host, 0x0, SDHCI_SIGNAL_ENABLE);
+
+	return ret;
 }
 #endif
 
