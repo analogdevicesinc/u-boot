@@ -272,13 +272,13 @@ int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr)
 		strncat(sf_load_cmd, sf_read_params, len);
 		env_set("adrv_dev_loadcmd", sf_load_cmd);
 		put_mtd_device(mtd);
-	} else {
+	} else if (is_boot_device_active(BOOT_DEV_EMMC_0) || is_boot_device_active(BOOT_DEV_SD_0)) {
 		if (is_boot_device_active(BOOT_DEV_EMMC_0)) {
 			/* Get a handle to the current boot device */
 			ret = blk_get_device_by_str("mmc", "0", &desc);
 			env_set("adrv_bootdevice", "mmc0");
 			env_set("adrv_dev_loadcmd", "load mmc 0:${adrv_bootpart} ${adrv_bootaddr} kernel_fit.itb");
-		} else if (is_boot_device_active(BOOT_DEV_SD_0)) {
+		} else {
 			ret = blk_get_device_by_str("mmc", "1", &desc);
 			env_set("adrv_bootdevice", "mmc1");
 			env_set("adrv_dev_loadcmd", "load mmc 1:${adrv_bootpart} ${adrv_bootaddr} kernel_fit.itb");
@@ -300,6 +300,10 @@ int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr)
 		sf_probe_cmd = env_get("adrv_sf_probe_cmd");
 		if (!sf_probe_cmd)
 			log_warning("SF probe command not set, issues may arise if trying to write to SPI Flash.\n");
+	} else {
+		env_set("adrv_dev_loadcmd", "exit 1");
+		env_set("adrv_bootdevice", "host");
+		env_set("adrv_bootpartname", "N/A");
 	}
 
 	/* Get anti-rollback node */
@@ -366,7 +370,7 @@ int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr)
 		"while test ${count} -ne ${numemmcfiles}; " \
 		"do setexpr filename fmt mmc-%03d ${count} && setexpr checksumfile fmt mmc-%03d-checksum ${count} && " \
 		"tftp ${tftploadaddr} ${filename} && setenv emmcfilesize ${filesize} && setexpr emmcnumblocks ${emmcfilesize} / 0x200 && " \
-		"mmc write ${tftploadaddr} ${blkoffset} ${emmcnumblocks} && tftp ${crc1addr} ${checksumfile} && " \
+		"mmc write ${tftploadaddr} ${blkoffset} ${emmcnumblocks} && tftp ${crc1addr} ${checksumfile} && mw ${tftploadaddr} 0 ${emmcfilesize} && " \
 		"mmc read ${tftploadaddr} ${blkoffset} ${emmcnumblocks} && crc32 ${tftploadaddr} ${emmcfilesize} ${crc2addr} && cmp ${crc1addr} ${crc2addr} 0x1; " \
 		"if test $? -ne 0; then setexpr failures ${failures} + 0x1; else setexpr count ${count} + 0x1 && setexpr blkoffset ${blkoffset} + ${emmcnumblocks} && setenv failures 0; fi; " \
 		"if test ${failures} -gt 2; then echo PROGRAMMING FAILURE && exit 1; fi; "
@@ -378,7 +382,7 @@ int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr)
 		"while test ${count} -ne ${numnorflashfiles}; " \
 		"do setexpr filename fmt nor_flash-%03d ${count} && setexpr checksumfile fmt nor_flash-%03d-checksum ${count} && " \
 		"tftp ${tftploadaddr} ${filename} && setenv norflashfilesize ${filesize} && sf erase ${offset} +${norflashfilesize} && sf write ${tftploadaddr} ${offset} ${norflashfilesize} && " \
-		"tftp ${crc1addr} ${checksumfile} && " \
+		"tftp ${crc1addr} ${checksumfile} && mw ${tftploadaddr} 0 ${norflashfilesize} && " \
 		"sf read ${tftploadaddr} ${offset} ${norflashfilesize} && crc32 ${tftploadaddr} ${norflashfilesize} ${crc2addr} && cmp ${crc1addr} ${crc2addr} 0x1; " \
 		"if test $? -ne 0; then setexpr failures ${failures} + 0x1; else setexpr count ${count} + 0x1; setexpr offset ${offset} + ${norflashfilesize}; setenv failures 0; fi; " \
 		"if test ${failures} -gt 2; then echo PROGRAMMING FAILURE && exit 1; fi;" \
