@@ -286,7 +286,7 @@ static int dw_adjust_link(struct dwmac4_dev *priv, struct phy_device *phydev)
 	if (phydev->speed == 100)
 		conf |= GMAC_CONFIG_FES;
 	else
-		conf &= GMAC_CONFIG_FES;
+		conf &= ~GMAC_CONFIG_FES;
 
 	if (phydev->duplex)
 		conf |= GMAC_CONFIG_DM;
