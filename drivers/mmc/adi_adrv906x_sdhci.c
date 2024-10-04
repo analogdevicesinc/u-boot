@@ -500,6 +500,7 @@ static int adi_sdhci_probe(struct udevice *dev)
 	int max_frequency, ret;
 	bool init_phy;
 	bool is_emmc;
+	bool is_no_1_8v;
 	struct clk clk;
 	unsigned long clock;
 
@@ -510,12 +511,14 @@ static int adi_sdhci_probe(struct udevice *dev)
 	host->ioaddr = map_sysmem(dtplat->reg[0], dtplat->reg[1]);
 	max_frequency = dtplat->max_frequency;
 	is_emmc = dtplat->non_removable;
+	is_no_1_8v = dtplat->no_1_8_v;
 	init_phy = dtplat->init_phy;
 	ret = clk_get_by_driver_info(dev, dtplat->clocks, &clk);
 #else
 	max_frequency = dev_read_u32_default(dev, "max-frequency", 0);
 	init_phy = dev_read_bool(dev, "enable-phy-config");
 	is_emmc = dev_read_bool(dev, "non-removable");
+	is_no_1_8v = dev_read_bool(dev, "no-1-8-v");
 	ret = clk_get_by_index(dev, 0, &clk);
 #endif
 
@@ -547,6 +550,12 @@ static int adi_sdhci_probe(struct udevice *dev)
 
 	if (is_emmc) {
 		host->ops = &adi_sdhci_emmc_ops;
+		if (is_no_1_8v)
+			/* General framework enables HS200 even if "no-1-8-v"
+			 * property is present in device tree as long as both
+			 * the card and the host support it, This quirk allows
+			 * to disable HSx00 modes.*/
+			host->quirks |= SDHCI_QUIRK_NO_1_8_V;
 	} else {
 		/* As per Spec, Host System should set Voltage support to 3.3V
 		 * or 3.0V for SD card. But, ADI drives 1.8V and level shifter
