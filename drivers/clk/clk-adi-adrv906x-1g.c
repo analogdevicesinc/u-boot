@@ -45,29 +45,20 @@
  * - PHY Link Speed (10|100|1000) <- indirectly provided (2.5|25|125 MHz) via the set_clk_rate API
  * - Phy interface                <- provided via device tree (clock node input argument)
  *
- * Note: this light driver is not based on CCF (Common Clock Framework)
+ * Note: This light driver is not based on CCF (Common Clock Framework)
+ * Note: ADRV906x does not support the option for an external 50 MHz clock for
+ *       the RMII PHY. This clock must be provided by the MAC.
  */
 
-#define LINK_SPEED_10                           10
-#define LINK_SPEED_100                          100
-#define LINK_SPEED_1000                         1000
-
-#define CLK_SPEED_2_5MHZ                        2500000
-#define CLK_SPEED_25MHZ                         25000000
-#define CLK_SPEED_50MHZ                         50000000
-#define CLK_SPEED_125MHZ                        125000000
-#define CLK_SPEED_250MHZ                        250000000
-
 #define EMAC_1G_CG_ENABLE                       BIT(0)
-#define EMAC_1G_YODA_MASK                       GENMASK(19, 3)
-#define EMAC_1G_YODA_OSC_CLK_DIV_MASK           GENMASK(19, 13)
-#define EMAC_1G_YODA_CLK_DIV_MASK               GENMASK(12, 6)
-#define EMAC_1G_YODA_PHY_INTF_SEL_I_MASK        GENMASK(5, 3)
-#define EMAC_1G_YODA_OSC_CLK_DIV_OFF            13
-#define EMAC_1G_YODA_CLK_DIV_OFF                6
-#define EMAC_1G_YODA_PHY_INTF_SEL_I_OFF         3
-#define EMAC_1G_YODA_PHY_INTF_SEL_I_RMII        4
-#define EMAC_1G_YODA_PHY_INTF_SEL_I_RGMII       1
+#define EMAC_1G_OSC_CLK_DIV_MASK                GENMASK(19, 13)
+#define EMAC_1G_CLK_DIV_MASK                    GENMASK(12, 6)
+#define EMAC_1G_PHY_INTF_SEL_I_MASK             GENMASK(5, 3)
+#define EMAC_1G_OSC_CLK_DIV_OFF                 13
+#define EMAC_1G_CLK_DIV_OFF                     6
+#define EMAC_1G_PHY_INTF_SEL_I_OFF              3
+#define EMAC_1G_PHY_INTF_SEL_I_RMII             4
+#define EMAC_1G_PHY_INTF_SEL_I_RGMII            1
 
 #define ETH1G_DEVCLK_MASK                       GENMASK(13, 6)
 #define ETH1G_DEVCLK_DIV_FUND                   BIT(6)
@@ -77,16 +68,21 @@
 #define ETH1G_DEVCLK_DIV_RB                     BIT(11)
 #define ETH1G_DEVCLK_BUFFER_ENABLE              BIT(12)
 #define ETH1G_DEVCLK_BUFFER_TERM_ENABLE         BIT(13)
-#define ETH1G_DEVCLK_DEFAULT_VAL                ETH1G_DEVCLK_DIV_FUND |         \
-	ETH1G_DEVCLK_DIV_KILLCLK |      \
-	ETH1G_DEVCLK_DIV_MCS_RESET |    \
-	ETH1G_DEVCLK_DIV_RATIO |        \
-	ETH1G_DEVCLK_DIV_RB |           \
-	ETH1G_DEVCLK_BUFFER_ENABLE
+#define ETH1G_DEVCLK_DEFAULT_VAL                (ETH1G_DEVCLK_DIV_FUND |       \
+						 ETH1G_DEVCLK_DIV_KILLCLK |    \
+						 ETH1G_DEVCLK_DIV_MCS_RESET |  \
+						 ETH1G_DEVCLK_DIV_RATIO |      \
+						 ETH1G_DEVCLK_DIV_RB |         \
+						 ETH1G_DEVCLK_BUFFER_ENABLE)
 
 #define ETH1G_REFCLK_MASK                       BIT(17)
 #define ETH1G_REFCLK_REFPATH_PD                 0 /* BIT(17) */
 #define ETH1G_REFCLK_DEFAULT_VAL                ETH1G_REFCLK_REFPATH_PD
+
+#define HZ_TO_MHZ(freq)                         (freq * 1000 * 1000)
+#define CLK_25MHZ                               HZ_TO_MHZ(25)
+#define CLK_50MHZ                               HZ_TO_MHZ(50)
+#define CLK_125MHZ                              HZ_TO_MHZ(125)
 
 struct adrv906x_priv_data {
 	uint32_t base_clk_speed;
@@ -96,61 +92,56 @@ struct adrv906x_priv_data {
 
 struct adrv906x_priv_data sam_priv;
 
-static ulong set_clk_divider(struct adrv906x_priv_data *priv, ulong rate)
+static int adrv906x_dwmac_set_clk_dividers(struct adrv906x_priv_data *priv, ulong rate)
 {
 	uint32_t reg;
-	uint32_t iface_type;
 	uint32_t osc_div;
 	uint32_t rmii_div;
 
-
 	/* Sanity checks */
-	if ((priv->base_clk_speed != CLK_SPEED_50MHZ) &&
-	    (priv->base_clk_speed != CLK_SPEED_125MHZ) &&
-	    (priv->base_clk_speed != CLK_SPEED_250MHZ)) {
-		pr_err("input clock speed not supperted: %d Hz\n", priv->base_clk_speed);
-		return -EINVAL;
-	}
-
 	if ((priv->base_clk_speed % rate) != 0) {
-		pr_err("Unable to set this clock rate (%ld Hz)\n", rate);
+		pr_err("Unable to get this clock rate (%ld Hz)\n", rate);
 		return -EINVAL;
 	}
 
 	if ((priv->phy_interface == PHY_INTERFACE_MODE_RMII) &&
-	    ((priv->base_clk_speed % CLK_SPEED_50MHZ) != 0)) {
-		pr_err("Unable to set RMII PHY clock (%d Hz)\n", CLK_SPEED_50MHZ);
+	    ((priv->base_clk_speed % CLK_50MHZ) != 0)) {
+		pr_err("Unable to get RMII PHY clock (50 MHz)\n");
 		return -1;
 	}
 
-	/* Compute dividers' value */
-	switch (priv->phy_interface) {
-	/*
-	 * input_clk   _|-> OSC_CLK_DIV (50 Mhz) ------> Clk to external PHY
-	 * (ie 250MHz)  |-> RMII_CLK_DIV (2.5|25 MHz) -> Tx_clk and Rx_clk to GMAC IP
-	 *                  (based on PHY link 10|100)
-	 */
-	case PHY_INTERFACE_MODE_RMII:
-		iface_type = EMAC_1G_YODA_PHY_INTF_SEL_I_RMII;
-		osc_div = (priv->base_clk_speed / CLK_SPEED_50MHZ) - 1;
-		rmii_div = (priv->base_clk_speed / rate) - 1;
-		break;
 
-	/*
-	 * input_clk     -> OSC_CLK_DIV (2.5|25|125 MHz) -> Clk to PHY and Tx_clk to GMAC
-	 * (ie 250MHz)      (based on PHY link 10|100|1000)
-	 *
-	 * Note: Rx_clk to GMAC IP is provided by the external PHY
-	 * Note: RMII_CLK_DIV does not apply
-	 */
-	case PHY_INTERFACE_MODE_RGMII:
-		iface_type = EMAC_1G_YODA_PHY_INTF_SEL_I_RGMII;
-		osc_div = (priv->base_clk_speed / rate) - 1;
-		rmii_div = 0;
-		break;
-	default:
-		pr_err("phy mode not supported\n");
+	if ((priv->phy_interface == PHY_INTERFACE_MODE_RMII) &&
+	    (rate == CLK_125MHZ)) {
+		pr_err("RMII does not support 1000 Mbs");
 		return -1;
+	}
+
+	if ((priv->phy_interface != PHY_INTERFACE_MODE_RMII) &&
+	    (priv->phy_interface != PHY_INTERFACE_MODE_RGMII)) {
+		pr_err("MAC-PHY Interface (%d) not supported", priv->phy_interface);
+		return -1;
+	}
+
+	/* Compute clock dividers */
+	if (priv->phy_interface == PHY_INTERFACE_MODE_RMII) {
+		/* input_clk   _|-> OSC_CLK_DIV (50 MHz) ------> PHY core clock (REF_CLK)
+		 * (ie 250MHz)  |-> RMII_CLK_DIV (2.5|25 MHz) -> Tx_clk and Rx_clk to GMAC
+		 *                  (based on PHY link 10|100)
+		 */
+		osc_div = (priv->base_clk_speed / CLK_50MHZ) - 1;
+		rmii_div = ((priv->base_clk_speed) / (rate)) - 1;
+	} else if (priv->phy_interface == PHY_INTERFACE_MODE_RGMII) {
+		/*
+		 * input_clk     -> OSC_CLK_DIV (2.5|25|125 MHz) -> Tx_clk to PHY and Tx_clk to GMAC
+		 * (ie 250MHz)      (based on PHY link 10|100|1000)
+		 *
+		 * Note: Rx_clk to GMAC IP is provided by the external PHY
+		 * Note: RMII_CLK_DIV does not apply
+		 * Note: PHY core clock is provided by a crystal circuitry
+		 */
+		osc_div = ((priv->base_clk_speed) / rate) - 1;
+		rmii_div = 0;
 	}
 
 	/* Disable clock */
@@ -158,11 +149,17 @@ static ulong set_clk_divider(struct adrv906x_priv_data *priv, ulong rate)
 	reg |= EMAC_1G_CG_ENABLE;
 	writel(reg, priv->clk_div_base);
 
-	/* Set divider/s */
-	reg &= ~EMAC_1G_YODA_MASK;
-	reg |= (iface_type << EMAC_1G_YODA_PHY_INTF_SEL_I_OFF) |
-	       (osc_div << EMAC_1G_YODA_OSC_CLK_DIV_OFF) |
-	       (rmii_div << EMAC_1G_YODA_CLK_DIV_OFF);
+	/* Set clock divider */
+	if (priv->phy_interface == PHY_INTERFACE_MODE_RMII) {
+		reg &= ~EMAC_1G_PHY_INTF_SEL_I_MASK;
+		reg |= EMAC_1G_PHY_INTF_SEL_I_RMII << EMAC_1G_PHY_INTF_SEL_I_OFF;
+	} else if (priv->phy_interface == PHY_INTERFACE_MODE_RGMII) {
+		reg &= ~EMAC_1G_PHY_INTF_SEL_I_MASK;
+		reg |= EMAC_1G_PHY_INTF_SEL_I_RGMII << EMAC_1G_PHY_INTF_SEL_I_OFF;
+	}
+	reg &= ~(EMAC_1G_OSC_CLK_DIV_MASK | EMAC_1G_CLK_DIV_MASK);
+	reg |= (osc_div << EMAC_1G_OSC_CLK_DIV_OFF) |
+	       (rmii_div << EMAC_1G_CLK_DIV_OFF);
 	writel(reg, priv->clk_div_base);
 
 	/* Re-enable clock */
@@ -172,6 +169,15 @@ static ulong set_clk_divider(struct adrv906x_priv_data *priv, ulong rate)
 	return 0;
 }
 
+static int adi_clk_enable(struct clk *clk)
+{
+	/* Configure clock distribution (depends on the phy interface type).
+	 * Enable Link-speed-related clocks to arbitrary value
+	 * Enable PHY core clock to 50 MHz (only for RMII)
+	 */
+	return adrv906x_dwmac_set_clk_dividers(&sam_priv, CLK_25MHZ);
+}
+
 static int adi_clk_of_xlate(struct clk *clk, struct ofnode_phandle_args *args)
 {
 	if (args->args_count == 0) {
@@ -179,7 +185,7 @@ static int adi_clk_of_xlate(struct clk *clk, struct ofnode_phandle_args *args)
 		return -EINVAL;
 	}
 
-	sam_priv.phy_interface = args->args[0]; /* speed: 10|100|1000 */
+	sam_priv.phy_interface = args->args[0]; /* Phy interface */
 
 	clk->id = 1;                            /* arbitrary ID */
 
@@ -188,12 +194,13 @@ static int adi_clk_of_xlate(struct clk *clk, struct ofnode_phandle_args *args)
 
 static ulong adi_clk_set_rate(struct clk *clk, ulong rate)
 {
-	return set_clk_divider(&sam_priv, rate);
+	return (ulong)adrv906x_dwmac_set_clk_dividers(&sam_priv, rate);
 }
 
 const struct clk_ops adi_clk_ops = {
 	.of_xlate	= adi_clk_of_xlate,
 	.set_rate	= adi_clk_set_rate,
+	.enable		= adi_clk_enable,
 };
 
 static void adrv906x_clk_buffer_enable(void __iomem *clk_ctrl_base, bool term_en)
