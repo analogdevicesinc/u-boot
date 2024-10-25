@@ -6,6 +6,7 @@
 #include <asm/global_data.h>
 #include <asm/armv8/mmu.h>
 #include <fdtdec.h>
+#include <fdt_support.h>
 #include <log.h>
 #include <net.h>
 #include <stdio.h>
@@ -171,6 +172,25 @@ static int plat_set_prop_disabled(void *blob, char *node_name)
 	ret = fdt_setprop_string(blob, node, "status", "disabled");
 	if (ret < 0) {
 		log_err("Unable to set status prop for node %s\n", node_name);
+		return -1;
+	}
+
+	return 0;
+}
+
+static int plat_del_prop(void *blob, char *node_name, char *property)
+{
+	int node = -1;
+	int ret = -1;
+
+	node = fdt_path_offset(blob, node_name);
+	if (node < 0) {
+		log_err("Missing %s node in device tree\n", node_name);
+		return -1;
+	}
+	ret = fdt_delprop(blob, node, property);
+	if (ret < 0) {
+		log_err("Unable to remove property %s for node %s\n", property, node_name);
 		return -1;
 	}
 
@@ -678,6 +698,11 @@ static int plat_protium_palladium_fixup(void *blob)
 	plat_set_prop_disabled(blob, node_name);
 	snprintf(node_name, MAX_NODE_NAME_LENGTH, "/twi@%08X", I2C_1_BASE);
 	plat_set_prop_disabled(blob, node_name);
+
+	/* Disable HS400 mode */
+	snprintf(node_name, MAX_NODE_NAME_LENGTH, "/mmc@%08x", EMMC_0_BASE);
+	plat_del_prop(blob, node_name, "mmc-hs400-1_8v");
+	plat_del_prop(blob, node_name, "mmc-hs400-enhanced-strobe");
 
 	return 0;
 }
