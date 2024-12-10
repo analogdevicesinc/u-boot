@@ -63,8 +63,6 @@
 #define SDHCI_CCLK_DC_POS                        (0U)
 
 /* PHY register field values */
-#define SDHCI_PHY_PAD_SN                         (0x8U)
-#define SDHCI_PHY_PAD_SP                         (0x8U)
 #define SDHCI_PHY_SLVDLY                         (0x2U)
 #define SDHCI_PHY_WAIT_CYCLE                     (0x0U)
 #define SDHCI_PHY_JUMPSTEP                       (0x20U)
@@ -112,6 +110,13 @@
 #define SDHCI_PHY_OPS_ENABLE_DLL_AFTER_CLK       (2U)
 #define SDHCI_PHY_OPS_SET_DELAY                  (3U)
 
+/* Driver strength */
+#define SDHCI_PHY_DRV_STRENGTH_33_OHM                  (14)
+#define SDHCI_PHY_DRV_STRENGTH_40_OHM                  (12)
+#define SDHCI_PHY_DRV_STRENGTH_50_OHM                  (8)
+#define SDHCI_PHY_DRV_STRENGTH_66_OHM                  (4)
+#define SDHCI_PHY_DRV_STRENGTH_100_OHM                 (0)
+
 /* Host Controller - PHY interface */
 struct adi_phy_opts {
 	u8 event;
@@ -123,6 +128,7 @@ struct adi_sdhci_phy {
 	u32 dcode_legacy;
 	u32 dcode_hs200;
 	u32 dcode_hs400;
+	u32 drv_strength;
 };
 
 static void adi_sdhci_phy_writel(struct adi_sdhci_phy *adi_phy, u32 val, int reg)
@@ -297,8 +303,8 @@ static int adi_sdhci_phy_init(struct phy *phy)
 
 	/* sdhci PHY general configuration */
 	u32_val = adi_sdhci_phy_readl(adi_phy, SDHCI_PHY_CNFG_R_OFF);
-	u32_val |= ((SDHCI_PHY_PAD_SP << SDHCI_PAD_SP_POS) |
-		    (SDHCI_PHY_PAD_SN << SDHCI_PAD_SN_POS));
+	u32_val |= ((adi_phy->drv_strength << SDHCI_PAD_SP_POS) |
+		    (adi_phy->drv_strength << SDHCI_PAD_SN_POS));
 	adi_sdhci_phy_writel(adi_phy, u32_val, SDHCI_PHY_CNFG_R_OFF);
 
 	/* Command/response PAD settings */
@@ -388,9 +394,33 @@ static int adi_sdhci_phy_configure(struct phy *phy, void *params)
 
 void adi_sdhci_phy_device_tree(struct udevice *dev, struct adi_sdhci_phy *adi_phy)
 {
+	u32 drv_impedance;
+
 	adi_phy->dcode_legacy = dev_read_u32_default(dev, "adi,dcode-legacy", SDHCI_DEFAULT_CCLK_DC_LEGACY);
 	adi_phy->dcode_hs200 = dev_read_u32_default(dev, "adi,dcode-hs200", SDHCI_DEFAULT_CCLK_DC_HS200);
 	adi_phy->dcode_hs400 = dev_read_u32_default(dev, "adi,dcode-hs400", SDHCI_DEFAULT_CCLK_DC_HS400);
+	drv_impedance = dev_read_u32_default(dev, "adi,driver-strength-ohm", SDHCI_PHY_DRV_STRENGTH_50_OHM);
+
+	switch (drv_impedance) {
+	case 33:
+		adi_phy->drv_strength = SDHCI_PHY_DRV_STRENGTH_33_OHM;
+		break;
+	case 40:
+		adi_phy->drv_strength = SDHCI_PHY_DRV_STRENGTH_40_OHM;
+		break;
+	case 50:
+		adi_phy->drv_strength = SDHCI_PHY_DRV_STRENGTH_50_OHM;
+		break;
+	case 66:
+		adi_phy->drv_strength = SDHCI_PHY_DRV_STRENGTH_66_OHM;
+		break;
+	case 100:
+		adi_phy->drv_strength = SDHCI_PHY_DRV_STRENGTH_100_OHM;
+		break;
+	default:
+		adi_phy->drv_strength = SDHCI_PHY_DRV_STRENGTH_50_OHM;
+		pr_err("Invalid driver impedance (%d). Using default (50 ohm)\n", drv_impedance);
+	}
 }
 
 static int adi_sdhci_phy_probe(struct udevice *dev)
