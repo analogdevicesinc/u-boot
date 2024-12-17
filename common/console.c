@@ -548,11 +548,6 @@ int getchar(void)
 {
 	int ch;
 
-#if CONFIG_IS_ENABLED(PANIC_ON_CONSOLE_INPUT)
-	/* Do not allow U-Boot to accept console input */
-	panic("ERROR: Console input not allowed.");
-#endif
-
 	if (IS_ENABLED(CONFIG_DISABLE_CONSOLE) && (gd->flags & GD_FLG_DISABLE_CONSOLE))
 		return 0;
 
@@ -574,11 +569,6 @@ int getchar(void)
 
 int tstc(void)
 {
-#if CONFIG_IS_ENABLED(PANIC_ON_CONSOLE_INPUT)
-	/* Do not allow U-Boot to accept console input */
-	panic("ERROR: Console input not allowed.");
-#endif
-
 	if (IS_ENABLED(CONFIG_DISABLE_CONSOLE) && (gd->flags & GD_FLG_DISABLE_CONSOLE))
 		return 0;
 

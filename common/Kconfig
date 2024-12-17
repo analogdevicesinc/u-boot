@@ -49,10 +49,10 @@ config DISABLE_CONSOLE
 	help
 		Disable console (in & out).
 
-config PANIC_ON_CONSOLE_INPUT
-        bool "Panic on console input"
+config DISABLE_CONSOLE_INPUT
+        bool "Disable console input"
         help
-        Panic if U-Boot attempts to read from console input.
+		Disable console in
 
 config IDENT_STRING
 	string "Board specific string to be added to uboot version string"

@@ -390,6 +390,11 @@ int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr)
 		"echo PROGRAMMING SUCCESS"
 		);
 
+#if CONFIG_IS_ENABLED(DISABLE_CONSOLE_INPUT)
+	/* Disable console input */
+	env_set("stdin", "nulldev");
+#endif
+
 	return 0;
 }
 
