@@ -15,6 +15,7 @@
 #include <adrv906x_def.h>
 #include <adrv906x_fdt.h>
 #include <adrv_common.h>
+#include <err.h>
 
 #define MAX_BOOT_DEV_NAME_LENGTH    16
 #define MAX_NUM_MACS                6
@@ -147,12 +148,12 @@ static int plat_set_prop_okay(void *blob, char *node_name)
 
 	node = fdt_path_offset(blob, node_name);
 	if (node < 0) {
-		log_err("Missing %s node in device tree\n", node_name);
+		plat_error_message("Missing %s node in device tree", node_name);
 		return -1;
 	}
 	ret = fdt_setprop_string(blob, node, "status", "okay");
 	if (ret < 0) {
-		log_err("Unable to set status prop for node %s\n", node_name);
+		plat_error_message("Unable to set status prop for node %s", node_name);
 		return -1;
 	}
 
@@ -166,12 +167,12 @@ static int plat_set_prop_disabled(void *blob, char *node_name)
 
 	node = fdt_path_offset(blob, node_name);
 	if (node < 0) {
-		log_err("Missing %s node in device tree\n", node_name);
+		plat_error_message("Missing %s node in device tree", node_name);
 		return -1;
 	}
 	ret = fdt_setprop_string(blob, node, "status", "disabled");
 	if (ret < 0) {
-		log_err("Unable to set status prop for node %s\n", node_name);
+		plat_error_message("Unable to set status prop for node %s", node_name);
 		return -1;
 	}
 
@@ -185,12 +186,12 @@ static int plat_del_prop(void *blob, char *node_name, char *property)
 
 	node = fdt_path_offset(blob, node_name);
 	if (node < 0) {
-		log_err("Missing %s node in device tree\n", node_name);
+		plat_error_message("Missing %s node in device tree", node_name);
 		return -1;
 	}
 	ret = fdt_delprop(blob, node, property);
 	if (ret < 0) {
-		log_err("Unable to remove property %s for node %s\n", property, node_name);
+		plat_error_message("Unable to remove property %s for node %s", property, node_name);
 		return -1;
 	}
 
@@ -242,7 +243,7 @@ static int plat_get_reserved_region_size(void *blob, char *name, uint64_t *size)
 	snprintf(node_name, MAX_NODE_NAME_LENGTH, "/reserved-memory");
 	node = fdt_path_offset(blob, node_name);
 	if (node < 0) {
-		log_err("Unable to find %s node\n", node_name);
+		plat_error_message("Unable to find %s node", node_name);
 		return -1;
 	}
 
@@ -253,7 +254,7 @@ static int plat_get_reserved_region_size(void *blob, char *name, uint64_t *size)
 	snprintf(node_name, MAX_NODE_NAME_LENGTH, "/reserved-memory/%s", name);
 	node = fdt_path_offset(blob, node_name);
 	if (node < 0) {
-		log_err("Unable to find %s node\n", node_name);
+		plat_error_message("Unable to find %s node", node_name);
 		return -1;
 	}
 
@@ -292,7 +293,7 @@ static int plat_populate_reserved_region(void *blob, char *name, uint64_t addres
 	snprintf(node_name, MAX_NODE_NAME_LENGTH, "/reserved-memory");
 	node = fdt_path_offset(blob, node_name);
 	if (node < 0) {
-		log_err("Unable to find %s node\n", node_name);
+		plat_error_message("Unable to find %s node", node_name);
 		return -1;
 	}
 
@@ -302,7 +303,7 @@ static int plat_populate_reserved_region(void *blob, char *name, uint64_t addres
 	snprintf(node_name, MAX_NODE_NAME_LENGTH, "/reserved-memory/%s", name);
 	node = fdt_path_offset(blob, node_name);
 	if (node < 0) {
-		log_err("Unable to find %s node\n", node_name);
+		plat_error_message("Unable to find %s node", node_name);
 		return -1;
 	}
 
@@ -415,12 +416,12 @@ static int plat_memory_regions_fixup(void *blob)
 
 	/* 2. DDR base address configured at the top of DDR seen by Linux */
 	if (size >= gd->ram_size) {
-		log_err("ddr-reserved@0 region size is larger than DRAM size\n");
+		plat_error_message("ddr-reserved@0 region size is larger than DRAM size");
 		return -1;
 	}
 	address = gd->ram_base + gd->ram_size - size;
 	if (address < gd->ram_top) {
-		log_err("ddr-reserved@0 region size exceeds reserved region size\n");
+		plat_error_message("ddr-reserved@0 region size exceeds reserved region size");
 		return -1;
 	}
 
@@ -448,7 +449,7 @@ static int plat_memory_regions_fixup(void *blob)
 			/* Add secondary DDR region */
 			node = fdt_path_offset(blob, "/memory");
 			if (node < 0) {
-				log_err("Unable to find reserved-memory node\n");
+				plat_error_message("Unable to find reserved-memory node");
 				return -1;
 			}
 
@@ -485,7 +486,7 @@ static int plat_memory_regions_fixup(void *blob)
 		 */
 		node = fdt_path_offset(blob, "/sram_memory");
 		if (node < 0) {
-			log_err("Unable to find reserved-memory node\n");
+			plat_error_message("Unable to find reserved-memory node");
 			return -1;
 		}
 
@@ -590,7 +591,7 @@ static int plat_uio_fixup(void *blob)
 				if (fdt_getprop(blob, node, "status", NULL)) {
 					ret = fdt_setprop_string(blob, node, "status", "okay");
 					if (ret < 0) {
-						log_err("Unable to set status prop for node %s\n", name);
+						plat_error_message("Unable to set status prop for node %s", name);
 						return ret;
 					}
 				}
@@ -657,12 +658,12 @@ static int plat_sysc_fixup(void *blob)
 		snprintf(node_name, MAX_NODE_NAME_LENGTH, "/uart@%08x", PL011_3_BASE);
 		node = fdt_path_offset(blob, node_name);
 		if (node < 0) {
-			log_err("Missing %s node in device tree\n", node_name);
+			plat_error_message("Missing %s node in device tree", node_name);
 			return node;
 		}
 		ret = fdt_setprop_string(blob, node, "status", "okay");
 		if (ret < 0) {
-			log_err("Unable to set status prop for node %s\n", node_name);
+			plat_error_message("Unable to set status prop for node %s", node_name);
 			return ret;
 		}
 	}
@@ -776,13 +777,13 @@ int adrv906x_kernel_fdt_fixup(void *blob)
 	snprintf(node_name, MAX_NODE_NAME_LENGTH, "/mmc@%08x", EMMC_0_BASE);
 	node = fdt_path_offset(blob, node_name);
 	if (node < 0) {
-		log_err("Missing %s node in device tree\n", node_name);
+		plat_error_message("Missing %s node in device tree", node_name);
 		return node;
 	}
 
 	ret = fdt_setprop_u32(blob, node, "max-frequency", (uint32_t)clk_freq);
 	if (ret < 0) {
-		log_err("Unable to set status prop for node %s\n", node_name);
+		plat_error_message("Unable to set status prop for node %s", node_name);
 		return ret;
 	}
 
@@ -792,31 +793,31 @@ int adrv906x_kernel_fdt_fixup(void *blob)
 		snprintf(node_name, MAX_NODE_NAME_LENGTH, "/v_uart@%08x", VIRTUAL_PL011_0_0_BASE);
 		node = fdt_path_offset(blob, node_name);
 		if (node < 0) {
-			log_err("Missing %s node in device tree\n", node_name);
+			plat_error_message("Missing %s node in device tree", node_name);
 			return node;
 		}
 		ret = fdt_setprop_string(blob, node, "status", "okay");
 		if (ret < 0) {
-			log_err("Unable to set status prop for node %s\n", node_name);
+			plat_error_message("Unable to set status prop for node %s", node_name);
 			return ret;
 		}
 	}
 
 	ret = plat_memory_regions_fixup(blob);
 	if (ret < 0) {
-		log_err("Unable to fix up memory regions\n");
+		plat_error_message("Unable to fix up memory regions");
 		return -1;
 	}
 
 	ret = plat_uio_fixup(blob);
 	if (ret < 0) {
-		log_err("Unable to fix up secondary uio nodes\n");
+		plat_error_message("Unable to fix up secondary uio nodes");
 		return -1;
 	}
 
 	ret = plat_eth_fixup(blob);
 	if (ret < 0) {
-		log_err("Unable to fix up ethernet mac addresses\n");
+		plat_error_message("Unable to fix up ethernet mac addresses");
 		return -1;
 	}
 
@@ -824,7 +825,7 @@ int adrv906x_kernel_fdt_fixup(void *blob)
 	if (is_sysc() == true) {
 		ret = plat_sysc_fixup(blob);
 		if (ret < 0) {
-			log_err("Unable to configure SystemC-specific devices\n");
+			plat_error_message("Unable to configure SystemC-specific devices");
 			return ret;
 		}
 	}
@@ -833,7 +834,7 @@ int adrv906x_kernel_fdt_fixup(void *blob)
 	if ((is_protium() == true) || (is_palladium() == true)) {
 		ret = plat_protium_palladium_fixup(blob);
 		if (ret < 0) {
-			log_err("Unable to configure Protium/Palladium-specific devices\n");
+			plat_error_message("Unable to configure Protium/Palladium-specific devices");
 			return ret;
 		}
 	}

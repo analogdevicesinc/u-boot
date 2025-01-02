@@ -12,6 +12,7 @@
 #define BOOT_DEV_HOST "host"
 
 #define MAX_NODE_NAME_LENGTH     80
+#define MAX_NODE_STRING_LENGTH     200
 
 int common_kernel_fdt_fixup(void *blob);
 int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr);
@@ -22,6 +23,8 @@ int get_boot_device(const char **boot_device);
 int get_lifecycle_state(const char **description, uint32_t *deployed);
 int get_enforcement_counter(void);
 char *get_platform(void);
+void plat_log_error(char *message);
+int get_dt_error_num(void);
 
 /* To be implemented by SoC-specific layer */
 bool is_boot_device_active(const char *boot_device);

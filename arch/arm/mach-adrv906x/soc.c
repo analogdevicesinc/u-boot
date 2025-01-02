@@ -18,6 +18,7 @@
 #include <adrv906x_def.h>
 #include <adrv906x_fdt.h>
 #include <adrv_common.h>
+#include <err.h>
 
 #ifdef ADRV906X_UBOOT_STANDALONE
 #define ADI_ADRV906X_TSGEN_BASE   0x20044000
@@ -88,7 +89,7 @@ int dram_init(void)
 	/* Get the primary memory base addr and size from the device tree */
 	ret = fdtdec_decode_ram_size(gd->fdt_blob, NULL, 0, (phys_addr_t *)&gd->ram_base, (phys_size_t *)&gd->ram_size, NULL);
 	if (ret || (gd->ram_base == 0) || (gd->ram_size == 0)) {
-		log_err("Failed to extract memory info from 'memory' node device tree\n");
+		plat_error_message("Failed to extract memory info from 'memory' node device tree");
 		return -ENXIO;
 	}
 
@@ -98,7 +99,7 @@ int dram_init(void)
 	if ((ret == 0) && (is_dual_tile == 1)) {
 		ret = fdtdec_decode_ram_size(gd->fdt_blob, "/memory-secondary", 0, &secondary_ram_base, &secondary_ram_size, NULL);
 		if (ret) {
-			log_err("Failed to extract memory info from 'memory-secondary' node for secondary tile.\n");
+			plat_error_message("Failed to extract memory info from 'memory-secondary' node for secondary tile.");
 			return -ENXIO;
 		}
 	}
@@ -164,7 +165,7 @@ static int arch_misc_init_sysc(void)
 			ret = blk_get_device_by_str("mmc", "1", &desc);
 
 		if (ret < 0) {
-			log_err("Failed to find boot device 0\n");
+			plat_error_message("Failed to find boot device 0");
 			return ret;
 		}
 

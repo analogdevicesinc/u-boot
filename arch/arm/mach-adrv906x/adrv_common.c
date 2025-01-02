@@ -30,6 +30,10 @@ DECLARE_GLOBAL_DATA_PTR;
  */
 static unsigned long device_tree __section(".data") = 0;
 
+/* Kernel device tree handle */
+static void *kernel_dt = NULL;
+static bool kernel_dt_valid = false;
+
 /* Builds and set the SF probe command as an U-boot environment variable. Does not set
  * the environment variable if an error is detected with the SF device tree node*/
 static void build_sf_probe_command(uint64_t qspi_0_base_addr)
@@ -51,14 +55,15 @@ static void build_sf_probe_command(uint64_t qspi_0_base_addr)
 	snprintf(node_name, MAX_NODE_NAME_LENGTH, "/spi@%08llx", qspi_0_base_addr);
 	node = fdt_path_offset(blob, node_name);
 	if (node < 0) {
-		log_err("Error: Failed to find sf node, not populating sf probe command. \n");
+		plat_error_message("Error: Failed to find sf node, not populating sf probe command. ");
+		plat_error_message("Core channel error info:0x%x", 2);
 		return;
 	}
 	bus_num = fdtdec_get_int(blob, node, "bus-num", 0);
 
 	subnode = fdt_first_subnode(blob, node);
 	if (subnode < 0) {
-		log_err("Error: Subnode with SPI flash config missing! Not Populating sf probe command. \n");
+		plat_error_message("Error: Subnode with SPI flash config missing! Not Populating sf probe command. ");
 		return;
 	}
 
@@ -111,6 +116,46 @@ void *board_fdt_blob_setup(void)
 	return NULL;
 }
 
+/* Log error message to kernel device tree */
+void plat_log_error(char *input)
+{
+	int node;
+	int err = -1;
+	uint32_t error_num = 0;
+	char name[MAX_NODE_NAME_LENGTH];
+
+	/* Verify kernel device tree handle is valid */
+	if (!kernel_dt_valid) {
+		log_info("Kernel device tree is not valid\n");
+		return;
+	}
+
+	/* Get error-log node offset */
+	node = fdt_path_offset(kernel_dt, "/chosen/boot/error-log");
+	if (node < 0) {
+		log_info("Unable to access /chosen/boot/error-log node\n");
+		return;
+	}
+
+	/* Get number of errors in error-log */
+	error_num = fdtdec_get_uint(kernel_dt, node, "errors", 0);
+
+	/* Get property name for this error */
+	snprintf(name, MAX_NODE_NAME_LENGTH, "error-%d", error_num);
+
+	/* Set property with error/warning message */
+	err = fdt_setprop_string(kernel_dt, node, name, input);
+	if (err != 0) {
+		log_info("Unable to log error to device tree\n");
+		return;
+	}
+
+	/* Set new number of errors */
+	err = fdt_setprop_u32(kernel_dt, node, "errors", error_num + 1);
+	if (err != 0)
+		log_info("Unable to update log\n");
+}
+
 int common_kernel_fdt_fixup(void *blob)
 {
 	const char *boot_device = NULL;
@@ -123,6 +168,12 @@ int common_kernel_fdt_fixup(void *blob)
 	uint64_t kaslr_seed;
 	int node;
 	int ret;
+	int property;
+	int new_node;
+
+	/* Save handle to device tree for error logging to kernel device tree */
+	kernel_dt = blob;
+	kernel_dt_valid = true;
 
 	/* Add the boot slot and boot device to the kernel device tree */
 	node = fdt_path_offset(blob, "/chosen/boot");
@@ -199,6 +250,42 @@ int common_kernel_fdt_fixup(void *blob)
 			return ret;
 	}
 
+	/* Pass error log from U-boot device tree to kernel device tree */
+	/* Get /chosen/boot node in kernel device tree */
+	node = fdt_path_offset(blob, "/chosen/boot");
+	if (node < 0)
+		return node;
+
+	/* Add error-log node under /chosen/boot node in kernel device tree */
+	snprintf(node_name, MAX_NODE_NAME_LENGTH, "error-log");
+	node = fdt_add_subnode(blob, node, node_name);
+	if (node < 0)
+		return node;
+
+	/* Get error-log node in U-boot device tree */
+	new_node = fdt_path_offset(gd->fdt_blob, "/boot/error-log");
+	if (node < 0)
+		return node;
+
+	/* Copy over each error-log property from U-boot to kernel device tree*/
+	fdt_for_each_property_offset(property, gd->fdt_blob, new_node) {
+		int length;
+		const char *name;
+		const void *prop;
+
+		/* Get property from hw_config */
+		prop = fdt_getprop_by_offset(gd->fdt_blob, property, &name, &length);
+		if (!prop) {
+			log_info("Unable to read error-log property from HW_CONFIG\n");
+			continue;
+		}
+
+		/* Add property to kernel device tree */
+		ret = fdt_setprop(blob, node, name, prop, length);
+		if (ret < 0)
+			log_info("Unable to copy property %s from HW_CONFIG to kernel device tree\n", name);
+	}
+
 	return 0;
 }
 
@@ -222,12 +309,12 @@ int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr)
 	/* Get the current boot device, verify it, then announce it */
 	ret = get_boot_device(&boot_device);
 	if (ret < 0) {
-		log_err("Failed to read boot device\n");
+		plat_error_message("Failed to read boot device");
 		return ret;
 	}
 	if (!is_boot_device_active(BOOT_DEV_SD_0) && !is_boot_device_active(BOOT_DEV_EMMC_0) &&
 	    !is_boot_device_active(BOOT_DEV_QSPI_0) && !is_boot_device_active(BOOT_DEV_HOST)) {
-		log_err("Invalid boot device specified\n");
+		plat_error_message("Invalid boot device specified");
 		return -1;
 	}
 	log_info("Active boot device: %s\n", boot_device);
@@ -235,11 +322,11 @@ int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr)
 	/* Get the current boot slot, verify it, then announce it */
 	ret = get_boot_slot(&boot_slot);
 	if (ret < 0) {
-		log_err("Failed to read boot slot\n");
+		plat_error_message("Failed to read boot slot");
 		return ret;
 	}
 	if (boot_slot[0] != 'a' && boot_slot[0] != 'b') {
-		log_err("Invalid boot slot %c\n", boot_slot[0]);
+		plat_error_message("Invalid boot slot %c", boot_slot[0]);
 		return -1;
 	}
 	log_info("Active boot slot: %c\n", boot_slot[0]);
@@ -253,14 +340,14 @@ int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr)
 	if (is_boot_device_active(BOOT_DEV_QSPI_0)) {
 		sf_probe_cmd = env_get("adrv_sf_probe_cmd");
 		if (!sf_probe_cmd) {
-			log_err("SF probe command not set. \n");
+			plat_error_message("SF probe command not set. ");
 			return -1;
 		}
 
 		mtd_probe_devices();
 		mtd = get_mtd_device_nm(kern_part_name);
 		if (IS_ERR_OR_NULL(mtd)) {
-			log_err("Failed to find boot device 0\n");
+			plat_error_message("Failed to find boot device 0");
 			return -1;
 		}
 		env_set("adrv_bootdevice", "spi flash");
@@ -285,13 +372,13 @@ int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr)
 		}
 
 		if (ret < 0) {
-			log_err("Failed to find boot device 0\n");
+			plat_error_message("Failed to find boot device 0");
 			return ret;
 		}
 		/* Get a handle to the active boot slot's kernel partition */
 		part = part_get_info_by_name(desc, kern_part_name, &info);
 		if (part < 0) {
-			log_err("Failed to find kernel_%c partition \n", *boot_slot);
+			plat_error_message("Failed to find kernel_%c partition ", *boot_slot);
 			return part;
 		}
 		env_set_ulong("adrv_bootpart", part);
@@ -299,7 +386,7 @@ int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr)
 
 		sf_probe_cmd = env_get("adrv_sf_probe_cmd");
 		if (!sf_probe_cmd)
-			log_warning("SF probe command not set, issues may arise if trying to write to SPI Flash.\n");
+			plat_warn_message("SF probe command not set, issues may arise if trying to write to SPI Flash.");
 	} else {
 		env_set("adrv_dev_loadcmd", "exit 1");
 		env_set("adrv_bootdevice", "host");
@@ -309,14 +396,14 @@ int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr)
 	/* Get anti-rollback node */
 	node = fdt_path_offset(gd->fdt_blob, "/boot/anti-rollback");
 	if (node < 0) {
-		log_err("/boot/anti-rollback node not found\n");
+		plat_error_message("/boot/anti-rollback node not found");
 		return node;
 	}
 
 	/* Get enforcement-counter set from TF-A */
 	ret = fdtdec_get_int(gd->fdt_blob, node, "enforcement-counter", 0);
 	if (ret < 0) {
-		log_err("Failed to get enforcement-counter\n");
+		plat_error_message("Failed to get enforcement-counter");
 		return ret;
 	}
 	env_set_ulong("enforcement_counter", ret);
@@ -486,6 +573,24 @@ int get_enforcement_counter(void)
 		return -1;
 
 	return fdtdec_get_uint(gd->fdt_blob, node, "enforcement-counter", -1);
+}
+
+int get_dt_error_num(void)
+{
+	int node;
+
+	/* Get number of errors in error-log */
+	if (kernel_dt_valid) {
+		/* Get error-log node offset */
+		node = fdt_path_offset(kernel_dt, "/chosen/boot/error-log");
+		if (node < 0) {
+			log_info("Unable to access /chosen/boot/error-log node\n");
+			return -1;
+		}
+
+		return fdtdec_get_uint(kernel_dt, node, "errors", 0);
+	}
+	return -1;
 }
 
 char *get_platform(void)
