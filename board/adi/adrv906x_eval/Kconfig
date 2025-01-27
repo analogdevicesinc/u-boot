@@ -30,3 +30,9 @@ config CMD_ADI_EXT_UTILS
 	default n
 	help
 	  Enable ADI-specific U-Boot commands such as trusted app hosts.
+
+config ADI_ADRV_DEBUG
+	bool "Enable ADRV debug version features"
+	default n
+	help
+	  Enable ADI-specific U-Boot debug features

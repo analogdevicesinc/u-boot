@@ -406,6 +406,21 @@ int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr)
 		plat_error_message("Failed to get enforcement-counter");
 		return ret;
 	}
+
+#if CONFIG_IS_ENABLED(ADI_ADRV_DEBUG)
+	/* Workaround: Tests may inject this property to fake 'enforcement-counter' */
+	{
+		int test_enforcement_ctr;
+
+		node = fdt_path_offset(gd->fdt_blob, "/boot");
+		if (node >= 0) {
+			test_enforcement_ctr = fdtdec_get_int(gd->fdt_blob, node, "test-enforcement-counter", 0);
+			if (test_enforcement_ctr >= 0)
+				ret = test_enforcement_ctr;
+		}
+	}
+#endif
+
 	env_set_ulong("enforcement_counter", ret);
 
 	/* Build the command (and error checking) for loading the FIT from the boot device
