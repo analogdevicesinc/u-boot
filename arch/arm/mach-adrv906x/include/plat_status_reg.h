@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Analog Devices Incorporated, All Rights Reserved
+ * Copyright (c) 2025, Analog Devices Incorporated, All Rights Reserved
  *
  * SPDX-License-Identifier: GPL-2.0
  */
@@ -17,6 +17,9 @@ typedef enum {
 	WATCHDOG_RESET,
 	CACHE_ECC_ERROR,
 	DRAM_ECC_ERROR,
+	DRAM_INIT_ERROR,
+	MCS_FAIL,
+	MBIAS_CAL_FAIL,
 	OTHER_RESET_CAUSE
 } reset_cause_t;
 
