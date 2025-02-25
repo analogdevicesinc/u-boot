@@ -12,7 +12,8 @@
  * This enum MUST MATCH those defined in arm-trusted-firmware (/plat/adi/adrv/common/include/plat_status_reg.h) and linux (/drivers/soc/adi/adrv906x-err.c)
  */
 typedef enum {
-	RESET_VALUE,
+	COLD_BOOT,
+	WARM_RESET,
 	IMG_VERIFY_FAIL,
 	WATCHDOG_RESET,
 	CACHE_ECC_ERROR,
