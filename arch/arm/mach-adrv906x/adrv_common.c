@@ -250,6 +250,17 @@ int common_kernel_fdt_fixup(void *blob)
 			return ret;
 	}
 
+	/* Pass reset cause from U-boot device tree to kernel device tree */
+	node = fdt_path_offset(blob, "/chosen/boot");
+	if (node < 0)
+		return node;
+	ret = get_reset_cause();
+	if (ret < 0)
+		return ret;
+	ret = fdt_setprop_u32(blob, node, "reset-cause", ret);
+	if (ret < 0)
+		return ret;
+
 	/* Pass error log from U-boot device tree to kernel device tree */
 	/* Get /chosen/boot node in kernel device tree */
 	node = fdt_path_offset(blob, "/chosen/boot");
@@ -588,6 +599,17 @@ int get_enforcement_counter(void)
 		return -1;
 
 	return fdtdec_get_uint(gd->fdt_blob, node, "enforcement-counter", -1);
+}
+
+int get_reset_cause(void)
+{
+	int node;
+
+	node = fdt_path_offset(gd->fdt_blob, "/boot");
+	if (node < 0)
+		return -1;
+
+	return fdtdec_get_uint(gd->fdt_blob, node, "reset-cause", -1);
 }
 
 int get_dt_error_num(void)

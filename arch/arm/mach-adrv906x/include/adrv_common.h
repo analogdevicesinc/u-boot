@@ -25,6 +25,7 @@ int get_enforcement_counter(void);
 char *get_platform(void);
 void plat_log_error(char *message);
 int get_dt_error_num(void);
+int get_reset_cause(void);
 
 /* To be implemented by SoC-specific layer */
 bool is_boot_device_active(const char *boot_device);
