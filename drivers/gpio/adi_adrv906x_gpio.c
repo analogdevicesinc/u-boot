@@ -165,7 +165,12 @@ static int adi_adrv906x_gpio_get_value(struct udevice *dev, unsigned gpio)
 	if (gpio > plat->gpio_count)
 		return -EINVAL;
 
-	base_addr = gpio_mode_base_addr + adrv906x_reg_base_s[GET_GPIO_REG(gpio)][GPIO_READ];
+	/* If gpio is input, read value from the read register, else write register */
+	if (adi_adrv906x_gpio_get_direction(dev, gpio) == GPIO_LINE_DIRECTION_IN)
+		base_addr = gpio_mode_base_addr + adrv906x_reg_base_s[GET_GPIO_REG(gpio)][GPIO_READ];
+	else
+		base_addr = gpio_mode_base_addr + adrv906x_reg_base_s[GET_GPIO_REG(gpio)][GPIO_WRITE];
+
 	offset = GET_GPIO_OFFSET(gpio);
 	bitmask = 0x1U << offset;
 
