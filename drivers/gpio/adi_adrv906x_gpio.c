@@ -109,7 +109,7 @@ static int adi_adrv906x_gpio_set_value(struct udevice *dev, unsigned gpio, int v
 	struct adi_adrv906x_gpio_plat *plat = dev_get_plat(dev);
 	uint32_t gpio_mode_base_addr = plat->base_addr;
 	ulong base_addr;
-	uint32_t offset, bitmask, reg;
+	uint32_t offset, bitmask;
 
 	if (gpio > plat->gpio_count)
 		return -EINVAL;
@@ -122,9 +122,7 @@ static int adi_adrv906x_gpio_set_value(struct udevice *dev, unsigned gpio, int v
 	else
 		base_addr = gpio_mode_base_addr + adrv906x_reg_base_s[GET_GPIO_REG(gpio)][GPIO_CLEAR];
 
-	reg = readl(base_addr);
-	reg |= bitmask;
-	writel(reg, base_addr);
+	writel(bitmask, base_addr);
 
 	return 0;
 }
