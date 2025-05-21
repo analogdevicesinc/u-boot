@@ -439,9 +439,17 @@ static int plat_memory_regions_fixup(void *blob)
 		ret = plat_set_prop_okay(blob, "/reserved-memory/sram-reserved@2");
 		if (ret < 0)
 			return -1;
-
 		/* and make it available to user space */
 		ret = plat_set_prop_okay(blob, "/sram-mmap@2");
+		if (ret < 0)
+			return -1;
+
+		/* Enable secondary XCORR reserved region */
+		ret = plat_set_prop_okay(blob, "/reserved-memory/xcorr-reserved@1");
+		if (ret < 0)
+			return -1;
+		/* and make it available to user space */
+		ret = plat_set_prop_okay(blob, "/xcorr-mmap@1");
 		if (ret < 0)
 			return -1;
 
@@ -491,6 +499,23 @@ static int plat_memory_regions_fixup(void *blob)
 		}
 
 		/* Read primary and secondary L4 ranges */
+		reg_tmp = (uint8_t *)fdt_getprop(blob, node, "reg", &len);
+		if (reg_tmp == 0)
+			return -1;
+
+		/* Write back only the primary region */
+		ret = fdt_setprop(blob, node, "reg", reg_tmp, len / 2);
+		if (ret < 0)
+			return ret;
+
+		/* Do the same for XCORR memory */
+		node = fdt_path_offset(blob, "/xcorr_memory");
+		if (node < 0) {
+			plat_error_message("Unable to find reserved-memory node");
+			return -1;
+		}
+
+		/* Read primary and secondary XCORR ranges */
 		reg_tmp = (uint8_t *)fdt_getprop(blob, node, "reg", &len);
 		if (reg_tmp == 0)
 			return -1;
