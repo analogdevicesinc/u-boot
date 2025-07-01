@@ -143,6 +143,17 @@
 &spi2{
 	clocks = <&clk ADSP_SC58X_CLK_CGU0_SCLK1>;
 	reg = <0x31044000 0x1000>;
+
+	flash1: is25lp512@1 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "jedec,spi-nor", "is25lp512";
+		reg = <1>;
+		spi-tx-bus-width = <4>;
+		spi-rx-bus-width = <4>;
+		spi-max-frequency = <10000000>;
+		bootph-pre-ram;
+	};
 };
 
 &wdog{

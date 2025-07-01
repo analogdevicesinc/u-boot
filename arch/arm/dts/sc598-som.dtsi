@@ -220,9 +220,18 @@
 };
 
 &spi2 {
-	status = "okay";
-
 	clocks = <&clk ADSP_SC598_CLK_SPI>;
+
+	flash1: is25lp512@1 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "jedec,spi-nor", "is25lp512";
+		reg = <1>;
+		spi-tx-bus-width = <4>;
+		spi-rx-bus-width = <4>;
+		spi-max-frequency = <10000000>;
+		bootph-pre-ram;
+	};
 };
 
 &mmc0 {
