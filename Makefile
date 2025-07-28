@@ -1370,7 +1370,6 @@ u-boot-nodtb.bin: u-boot FORCE
 	$(BOARD_SIZE_CHECK)
 
 u-boot.ldr:	u-boot
-		$(CREATE_LDR_ENV)
 		$(LDR) -T $(CONFIG_LDR_CPU) -c $@ $< $(LDR_FLAGS)
 		$(BOARD_SIZE_CHECK)
 
