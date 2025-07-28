@@ -22,33 +22,33 @@
 
 		eeprom {
 			gpio-hog;
-			gpios = <0 GPIO_ACTIVE_HIGH>;
-			output-low;
+			gpios = <0 GPIO_ACTIVE_LOW>;
+			output-high;
 			line-name = "eeprom-en";
 			bootph-pre-ram;
 		};
 
 		pushbutton {
 			gpio-hog;
-			gpios = <1 GPIO_ACTIVE_HIGH>;
-			output-low;
+			gpios = <1 GPIO_ACTIVE_LOW>;
+			output-high;
 			line-name = "pushbutton-en";
 			bootph-pre-ram;
 		};
 
 		microsd {
 			gpio-hog;
-			gpios = <2 GPIO_ACTIVE_HIGH>;
-			output-high;
-			line-name = "~microsd-spi";
+			gpios = <2 GPIO_ACTIVE_LOW>;
+			output-low;
+			line-name = "microsd-spi";
 			bootph-pre-ram;
 		};
 
 		ftdi {
 			gpio-hog;
-			gpios = <3 GPIO_ACTIVE_HIGH>;
-			output-low;
-			line-name = "~ftdi-usb-en";
+			gpios = <3 GPIO_ACTIVE_LOW>;
+			output-high;
+			line-name = "ftdi-usb-en";
 			bootph-pre-ram;
 		};
 
@@ -78,7 +78,7 @@
 
 		octal {
 			gpio-hog;
-			gpios = <8 GPIO_ACTIVE_HIGH>;
+			gpios = <8 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "octal-spi-cs-en";
 			bootph-pre-ram;
