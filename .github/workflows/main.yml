@@ -1,0 +1,25 @@
+name: U-Boot CI
+
+on:
+  pull_request:
+    branches:
+      - 'adi-u-boot-2025.07.y'
+
+jobs:
+  build_arm:
+    uses: analogdevicesinc/u-boot/.github/workflows/build-arm.yml@ci
+    with:
+      defconfig: ${{ matrix.defconfig }}
+    strategy:
+      matrix:
+        defconfig:
+          - 'sc594-som-ezkit-spl_defconfig'
+
+  build_aarch64:
+    uses: analogdevicesinc/u-boot/.github/workflows/build-aarch64.yml@ci
+    with:
+      defconfig: ${{ matrix.defconfig }}
+    strategy:
+      matrix:
+        defconfig:
+          - 'sc598-som-ezkit-spl_defconfig'
