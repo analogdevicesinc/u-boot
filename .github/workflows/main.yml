@@ -1,0 +1,31 @@
+name: U-Boot CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - 'adi-xlnx-u-boot-2018.2.y'
+
+jobs:
+  build_arm:
+    uses: analogdevicesinc/u-boot/.github/workflows/build-arm.yml@ci
+    with:
+      defconfig: ${{ matrix.defconfig }}
+    strategy:
+      matrix:
+        defconfig:
+          - 'zynq_adrv9361_defconfig'
+          - 'zynq_adrv9364_defconfig'
+          - 'zynq_coraz7_defconfig'
+
+  build_aarch64:
+    uses: analogdevicesinc/u-boot/.github/workflows/build-aarch64.yml@ci
+    with:
+      defconfig: ${{ matrix.defconfig }}
+    strategy:
+      matrix:
+        defconfig:
+          - 'adi_zynqmp_adrv9009_zu11eg_adrv2crr_fmc_defconfig'
+
+  check:
+    uses: analogdevicesinc/u-boot/.github/workflows/checks.yml@ci
