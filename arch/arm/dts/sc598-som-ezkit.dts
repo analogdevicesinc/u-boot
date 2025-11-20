@@ -112,7 +112,7 @@
 			gpio-hog;
 			gpios = <12 GPIO_ACTIVE_HIGH>;
 			output-high;
-			line-name = "~mlb-en";
+			line-name = "mlb-en";
 			bootph-pre-ram;
 		};
 

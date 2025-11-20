@@ -80,7 +80,7 @@
 &i2c2 {
 	clocks = <&clk ADSP_SC594_CLK_CGU0_SCLK0>;
 
-	gpio_expander1: mcp23017@21 {
+	crr_gpio_expander: mcp23017@21 {
 		compatible = "microchip,mcp23017";
 		reg = <0x21>;
 		gpio-controller;
