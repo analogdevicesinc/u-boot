@@ -128,6 +128,7 @@ dtb-$(CONFIG_ARCH_UNIPHIER_SLD8) += \
 	uniphier-sld8-ref.dtb
 
 dtb-$(CONFIG_ARCH_ZYNQ) += \
+	zynq-adrv9361.dtb \
 	zynq-cc108.dtb \
 	zynq-cse-nand.dtb \
 	zynq-cse-nor.dtb \
