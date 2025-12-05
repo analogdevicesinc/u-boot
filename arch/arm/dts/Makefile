@@ -222,6 +222,7 @@ dtb-$(CONFIG_ARCH_UNIPHIER_SLD8) += \
 
 dtb-$(CONFIG_ARCH_ZYNQ) += \
 	bitmain-antminer-s9.dtb \
+	zynq-adrv9361.dtb \
 	zynq-cc108.dtb \
 	zynq-cse-nand.dtb \
 	zynq-cse-nor.dtb \
