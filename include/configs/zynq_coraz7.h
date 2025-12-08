@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2016 Digilent Inc.
  *
  * Configuration for Zynq Development Board - Cora Z7
  * See zynq-common.h for Zynq common configs
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_ZYNQ_CORAZ7_H

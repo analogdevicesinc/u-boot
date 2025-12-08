@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Digilent Cora Z7 board DTS
  *
  *  Copyright (C) 2016 Digilent
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 /dts-v1/;
 #include "zynq-7000.dtsi"
