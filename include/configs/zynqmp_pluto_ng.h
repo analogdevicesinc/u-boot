@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Configuration for Analog Devices, Inc. Pluto NG
  *
  * (C) Copyright 2021 Analog Devices, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_ZYNQMP_PLUTO_NG_H
