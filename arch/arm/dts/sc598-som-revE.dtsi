@@ -8,7 +8,7 @@
 #include "sc598-som.dtsi"
 
 &i2c2 {
-	gpio_expander1: adp5587@34 {
+	som_gpio_expander: adp5587@34 {
 		compatible = "adi,adp5587";
 		reg = <0x34>;
 		gpio-controller;
