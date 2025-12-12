@@ -79,7 +79,7 @@
 		octal {
 			gpio-hog;
 			gpios = <8 GPIO_ACTIVE_LOW>;
-			output-high;
+			output-low;
 			line-name = "octal-spi-cs-en";
 			bootph-pre-ram;
 		};
