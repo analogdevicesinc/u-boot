@@ -1,0 +1,154 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# (C) Copyright 2026 - Analog Devices, Inc.
+
+if TARGET_SC846_SOM
+
+config LDR_CPU
+	default "ADSP-SC846-0.0"
+
+config SYS_BOARD
+	default "sc846-som"
+
+config SYS_CONFIG_NAME
+	default "sc846-som"
+
+config DEFAULT_DEVICE_TREE
+	default "sc846-som"
+
+config ADI_IMAGE
+	default "minimal"
+
+config CUSTOM_SYS_INIT_SP_ADDR
+	default 0x96000000
+
+# SPL
+
+config SPL_OF_LIBFDT_ASSUME_MASK
+	default 0x0
+
+# SPI Flash
+
+config SF_DEFAULT_BUS
+	default 2
+
+config SF_DEFAULT_CS
+	default 1
+
+config SF_DEFAULT_SPEED
+	default 10000000
+
+# Clock Configs
+
+config CGU0_DF_DIV
+	default 0
+
+# MSEL
+config CGU0_VCO_MULT
+	default 80
+
+# Core Clock divider
+config CGU0_CCLK_DIV
+	default 2
+
+# System Clock divider
+config CGU0_SCLK_DIV
+	default 4
+
+config CGU0_SCLK0_DIV
+	default 4
+
+config CGU0_SCLK1_DIV
+	default 2
+
+# DDR Clock divider
+config CGU0_DCLK_DIV
+	default 3
+
+# Output Clock divider
+config CGU0_OCLK_DIV
+	default 20
+
+# SCLK1 extended divisor
+config CGU0_DIV_S1SELEX
+	default 6
+
+# CGU1 MSEL
+config CGU1_VCO_MULT
+	default 72
+
+config CGU1_DF_DIV
+	default 0
+
+# Core Clock divider
+config CGU1_CCLK_DIV
+	default 16
+
+# System Clock divider
+config CGU1_SCLK_DIV
+	default 8
+
+config CGU1_SCLK0_DIV
+	default 4
+
+config CGU1_SCLK1_DIV
+	default 2
+
+# DDR Clock divider
+config CGU1_DCLK_DIV
+	default 18
+
+# Output Clock divider
+config CGU1_OCLK_DIV
+	default 16
+
+# SCLK1 extended divisor
+config CGU1_DIV_S0SELEX
+	default 36
+
+# SCLK1 extended divisor
+config CGU1_DIV_S1SELEX
+	default 90
+
+# SHARC-FX
+
+config CDU0_CLKO0
+	default 1
+
+# CORE 0
+config CDU0_CLKO1
+	default 7
+
+# CORE 1
+config CDU0_CLKO2
+	default 7
+
+# DDR
+config CDU0_CLKO3
+	default 1
+
+# CAN
+config CDU0_CLKO4
+	default 3
+
+# SPDIF
+config CDU0_CLKO5
+	default 1
+
+# SPI
+config CDU0_CLKO6
+	default 3
+
+# GIGE
+config CDU0_CLKO7
+	default 1
+
+# xSPI2
+config CDU0_CLKO8
+	default 3
+
+# LINKPORT
+config CDU0_CLKO9
+	default 1
+
+endif
