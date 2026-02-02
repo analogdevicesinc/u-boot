@@ -52,7 +52,7 @@ config TIMER_EARLY
 
 config ADI_SC5XX_TIMER
 	bool "ADI ADSP-SC5xx Timer Support"
-	depends on TIMER && (SC57X || SC58X || SC59X || SC59X_64)
+	depends on TIMER && (SC57X || SC58X || SC59X || SC59X_64 || SC846)
 	help
 	  gptimer based timer support on ADI's ADSP-SC5xx platforms. Available
 	  but not required on sc59x-64-based platforms (598 and similar).
