@@ -11,6 +11,25 @@ config COMMON_CLK_ADI_SHARED
 	  Required for shared code between SoC clock drivers. Automatically
 	  selected by an appropriate SoC-specific clock driver version.
 
+config COMMON_CLK_ADI_SC846
+	bool "Clock driver for ADI SC846 SoCs"
+	select DM
+	select CLK
+	select CLK_CCF
+	select OF_CONTROL
+	select CMD_CLK
+	select SPL_DM if SPL
+	select SPL_CLK if SPL
+	select SPL_CLK_CCF if SPL
+	select SPL_OF_CONTROL if SPL
+	select COMMON_CLK_ADI_SHARED
+	depends on SC846
+	help
+	  This driver supports the system clocks on Analog Devices SC846-series
+	  SoCs. It includes CGU and CDU clocks and supports gating unused clocks.
+	  Modifying PLL configuration is not supported; that must be done prior
+	  to booting the kernel. Clock dividers after the PLLs may be configured.
+
 config COMMON_CLK_ADI_SC598
 	bool "Clock driver for ADI SC598 SoCs"
 	select DM

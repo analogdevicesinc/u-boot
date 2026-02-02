@@ -101,7 +101,7 @@ static inline struct clk *cgu_gate(const char *name, const char *parent,
 		CLK_GATE_SET_TO_DISABLE, NULL);
 }
 
-static inline int cdu_check_clocks(struct clk *clks[], size_t count)
+static int cdu_check_clocks(struct clk *clks[], size_t count)
 {
 	size_t i;
 
