@@ -36,6 +36,7 @@ struct adi_wdt_priv {
 	void __iomem *rcu_base;
 	void __iomem *sec_base;
 	void __iomem *wdt_base;
+	u32 secid;
 	struct clk clock;
 };
 
@@ -72,7 +73,7 @@ static int adi_wdt_start(struct udevice *dev, u64 timeout_ms, ulong flags)
 	iowrite32(0xc1, priv->sec_base + SEC_FCTL);
 
 	/* enable SEC fault source for watchdog0 */
-	setbits_32(priv->sec_base + SEC_SCTL0 + (3*8), 0x6);
+	setbits_32(priv->sec_base + SEC_SCTL0 + (priv->secid * 8), 0x6);
 
 	/* Enable SYSCD_RESETb input */
 	iowrite32(0x100, priv->rcu_base + RCU_CTL);
@@ -95,6 +96,7 @@ static int adi_wdt_probe(struct udevice *dev)
 	struct adi_wdt_priv *priv = dev_get_priv(dev);
 	int ret;
 	struct resource res;
+	u32 secid;
 
 	ret = dev_read_resource_byname(dev, "rcu", &res);
 	if (ret)
@@ -110,6 +112,11 @@ static int adi_wdt_probe(struct udevice *dev)
 	if (ret)
 		return ret;
 	priv->wdt_base = devm_ioremap(dev, res.start, resource_size(&res));
+
+	ret = dev_read_u32(dev, "secid", &secid);
+	if (ret)
+		return ret;
+	priv->secid = secid;
 
 	ret = clk_get_by_name(dev, "sclk0", &priv->clock);
 	if (ret < 0) {
