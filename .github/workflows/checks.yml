@@ -2,24 +2,29 @@ name: Checks
 
 on:
   workflow_call:
+    inputs:
+      strategy:
+        required: false
+        type: string
+        default: "commit" # when supported, or "file"
+      checkpatch_extraignores:
+        type: string
+        default: ""
     outputs:
       fatal:
         value: ${{ jobs.checks.outputs.fatal}}
-      fail:
-        value: ${{ jobs.checks.outputs.fail }}
-      warn:
-        value: ${{ jobs.checks.outputs.warn }}
+      summary:
+        value: ${{ jobs.checks.outputs.summary }}
 
 jobs:
   checks:
     timeout-minutes: 7200
-    runs-on: [self-hosted, repo-only, v3]
+    runs-on: [self-hosted, repo-only, v4]
     continue-on-error: true
 
     outputs:
       fatal: ${{ steps.assert.outputs.fatal }}
-      fail: ${{ steps.assert.outputs.fail }}
-      warn: ${{ steps.assert.outputs.warn }}
+      summary: ${{ steps.assert.outputs.summary }}
 
     steps:
     - uses: analogdevicesinc/doctools/checkout@action
@@ -27,9 +32,9 @@ jobs:
     - name: Get sources
       run: |
         get_file () {
-          echo https://raw.githubusercontent.com/analogdevicesinc/linux/refs/heads/ci/$1
+          echo https://raw.githubusercontent.com/analogdevicesinc/u-boot/refs/heads/ci/$1
           curl -sL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o $1 \
-              https://raw.githubusercontent.com/analogdevicesinc/linux/refs/heads/ci/$1
+              https://raw.githubusercontent.com/analogdevicesinc/u-boot/refs/heads/ci/$1
         }
 
         mkdir -p ci
@@ -57,7 +62,8 @@ jobs:
     - name: Check patch
       if: ${{ !cancelled() && env.fatal != 'true' }}
       run: |
-        status=0; timeout 1d bash -c "source ./ci/build.sh ; check_checkpatch" || status=$?
+        export CHECKPATCH_EXTRAIGNORES="${{ inputs.checkpatch_extraignores }}";
+        status=0; timeout 1d bash -c "source ./ci/build.sh ; check_checkpatch ${{ inputs.strategy }}" || status=$?
         [ $status -eq 124 ] && echo "step_fail_checkpatch_timeout=true" >> "$GITHUB_ENV"
         exit $status
 
@@ -67,12 +73,6 @@ jobs:
         status=0; timeout 1d bash -c "source ./ci/build.sh ; check_coccicheck" || status=$?
         [ $status -eq 124 ] && echo "step_fail_coccicheck_timeout=true" >> "$GITHUB_ENV"
         exit $status
-
-    - name: Check dt-bindings
-      if: ${{ !cancelled() && env.fatal != 'true' }}
-      run: |
-        source ./ci/build.sh
-        check_dt_binding_check
 
     - name: Check defconfigs
       if: ${{ !cancelled() && env.fatal != 'true' }}
@@ -90,4 +90,4 @@ jobs:
       run: |
         echo "fatal=$fatal" >> "$GITHUB_OUTPUT"
         source ./ci/runner_env.sh
-        export_labels
+        export_job_summary
