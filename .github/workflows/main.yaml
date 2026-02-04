@@ -1,0 +1,21 @@
+name: U-Boot CI
+
+on:
+  pull_request:
+    branches:
+      - 'staging/samana-dev'
+
+jobs:
+
+  build_aarch64:
+    uses: analogdevicesinc/u-boot/.github/workflows/build-aarch64.yml@ci
+    secrets: inherit
+    with:
+      defconfig: 'adrv906x-eval_defconfig'
+
+  checks:
+    uses: analogdevicesinc/u-boot/.github/workflows/checks.yml@ci
+    secrets: inherit
+    with:
+      strategy: "commit"
+      checkpatch_extraignores: "LIVETREE PREFER_IF CMD_TEST"
