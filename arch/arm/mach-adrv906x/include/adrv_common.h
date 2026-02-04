@@ -15,12 +15,12 @@
 #define MAX_NODE_STRING_LENGTH     200
 
 int common_kernel_fdt_fixup(void *blob);
-int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr);
+int arch_misc_init_common(u64 boot_addr, u64 qspi_0_base_addr);
 int get_boot_slot(const char **boot_slot);
 int get_te_boot_slot(const char **boot_slot);
-int get_kaslr_seed(uint64_t *kaslr_seed);
+int get_kaslr_seed(u64 *kaslr_seed);
 int get_boot_device(const char **boot_device);
-int get_lifecycle_state(const char **description, uint32_t *deployed);
+int get_lifecycle_state(const char **description, u32 *deployed);
 int get_enforcement_counter(void);
 char *get_platform(void);
 void plat_log_error(char *message);

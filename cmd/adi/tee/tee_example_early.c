@@ -1,18 +1,16 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright (c) 2022, Analog Devices Inc.
- *
- * SPDX-License-Identifier: GPL-2.0+
+ * Copyright (c) 2022 Analog Devices, Inc.
  */
 
-#include <common.h>
 #include <command.h>
 #include <tee.h>
 #include <vsprintf.h>
 #include <dm/util.h>
 #include <example_early_ta.h>
 
-static u32 tee_session = 0;
-static struct udevice *tee_device = NULL;
+static u32 tee_session;
+static struct udevice *tee_device;
 
 int do_tee_example_early_open(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 {
@@ -25,9 +23,9 @@ int do_tee_example_early_open(struct cmd_tbl *cmdtp, int flag, int argc, char *c
 		return CMD_RET_FAILURE;
 	}
 
-	if (tee_device == NULL) {
+	if (!tee_device) {
 		tee_device = tee_find_device(tee_device, NULL, NULL, NULL);
-		if (tee_device == NULL) {
+		if (!tee_device) {
 			printf("Failed to find TEE device\n");
 			return CMD_RET_FAILURE;
 		}
@@ -87,15 +85,9 @@ int do_tee_example_early_dummy(struct cmd_tbl *cmdtp, int flag, int argc, char *
 }
 
 static struct cmd_tbl cmd_sub[] = {
-	U_BOOT_CMD_MKENT(
-		open,  1, 0, do_tee_example_early_open,	 "", ""
-		),
-	U_BOOT_CMD_MKENT(
-		close, 1, 0, do_tee_example_early_close, "", ""
-		),
-	U_BOOT_CMD_MKENT(
-		dummy, 2, 0, do_tee_example_early_dummy, "", ""
-		),
+	U_BOOT_CMD_MKENT(open, 1, 0, do_tee_example_early_open, "", ""),
+	U_BOOT_CMD_MKENT(close, 1, 0, do_tee_example_early_close, "", ""),
+	U_BOOT_CMD_MKENT(dummy, 2, 0, do_tee_example_early_dummy, "", ""),
 };
 
 int do_tee_example_early(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
@@ -116,13 +108,11 @@ int do_tee_example_early(struct cmd_tbl *cmdtp, int flag, int argc, char *const 
 	return cp->cmd(cmdtp, flag, argc, argv);
 }
 
-U_BOOT_CMD(
-	/* command, maxargs, repeatable, handler_fn */
-	tee_example_early, CONFIG_SYS_MAXARGS, 0, do_tee_example_early,
+U_BOOT_CMD(tee_example_early, CONFIG_SYS_MAXARGS, 0, do_tee_example_early,
 	/* brief help text */
 	"Invoke commands of the 'example_early' TA.",
 	/* full usage text */
-	/* (the cmd is ommitted from the first line, u-boot inserts it) */
+	/* (the cmd is omitted from the first line, u-boot inserts it) */
 	"open - Open a session to the 'example_early' TA.\n"
 	"tee_example_early close - Close the current 'example_early' TA session.\n"
 	"tee_example_early dummy <num> - Invoke the TA 'dummy' command with <num>.\n"

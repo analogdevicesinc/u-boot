@@ -1061,10 +1061,10 @@ config ARCH_RMOBILE
 	imply ARCH_MISC_INIT if DISPLAY_CPUINFO
 
 config ARCH_ADRV906X
-        bool "ADI ADRV906X SoC"
-        select ARM64
-        select DM
-        imply CMD_DM
+	bool "ADI ADRV906X SoC"
+	select ARM64
+	select DM
+	imply CMD_DM
 
 config ARCH_SNAPDRAGON
 	bool "Qualcomm Snapdragon SoCs"

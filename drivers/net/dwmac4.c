@@ -15,7 +15,6 @@
  *   and speeds match that in several places (MDIO, phy link configuration, etc)
  */
 
-#include <common.h>
 #include <clk.h>
 #include <cpu_func.h>
 #include <dm.h>
@@ -45,7 +44,7 @@ static int dw_mdio_read(struct mii_dev *bus, int addr, int devad, int reg)
 	struct dwmac4_dev *priv = (struct dwmac4_dev *)bus->priv;
 	ulong start;
 	u32 miiaddr;
-	int timeout = CONFIG_MDIO_TIMEOUT;
+	int timeout = DWMAC4_MDIO_TIMEOUT;
 
 	miiaddr = ((addr << MII_ADDR_SHIFT) & MII_ADDR_MASK) |
 		  ((reg << MII_REG_SHIFT) & MII_REG_MASK);
@@ -70,7 +69,7 @@ static int dw_mdio_write(struct mii_dev *bus, int addr, int devad, int reg,
 	struct dwmac4_dev *priv = (struct dwmac4_dev *)bus->priv;
 	ulong start;
 	u32 miiaddr;
-	int ret = -ETIMEDOUT, timeout = CONFIG_MDIO_TIMEOUT;
+	int ret = -ETIMEDOUT, timeout = DWMAC4_MDIO_TIMEOUT;
 
 	writel(val, priv->ioaddr + GMAC_MDIO_DATA);
 	miiaddr = ((addr << MII_ADDR_SHIFT) & MII_ADDR_MASK) |
@@ -158,9 +157,9 @@ static void tx_descs_init(struct dwmac4_dev *priv)
 	val |= DMA_CONTROL_OSP;
 	writel(val, priv->ioaddr + DMA_CHAN_TX_CONTROL(0));
 
-	for (idx = 0; idx < CONFIG_TX_DESCR_NUM; idx++) {
+	for (idx = 0; idx < DWMAC4_TX_DESCR_NUM; idx++) {
 		desc_p = &desc_table_p[idx];
-		desc_p->dmamac_addr = (ulong) & txbuffs[idx * CONFIG_ETH_BUFSIZE];
+		desc_p->dmamac_addr = (ulong)&txbuffs[idx * DWMAC4_ETH_BUFSIZE];
 		desc_p->des1 = 0;
 		desc_p->des2 = 0;
 		desc_p->des3 = 0;
@@ -171,9 +170,9 @@ static void tx_descs_init(struct dwmac4_dev *priv)
 			   (ulong)priv->tx_mac_descrtable +
 			   sizeof(priv->tx_mac_descrtable));
 
-	writel((ulong) & desc_table_p[0], priv->ioaddr + DMA_CHAN_TX_BASE_ADDR(0));
-	writel((ulong) & desc_table_p[0], priv->ioaddr + DMA_CHAN_TX_END_ADDR(0));
-	writel(CONFIG_TX_DESCR_NUM - 1, priv->ioaddr + DMA_CHAN_TX_RING_LEN(0));
+	writel((ulong)&desc_table_p[0], priv->ioaddr + DMA_CHAN_TX_BASE_ADDR(0));
+	writel((ulong)&desc_table_p[0], priv->ioaddr + DMA_CHAN_TX_END_ADDR(0));
+	writel(DWMAC4_TX_DESCR_NUM - 1, priv->ioaddr + DMA_CHAN_TX_RING_LEN(0));
 	priv->tx_currdescnum = 0;
 }
 
@@ -197,13 +196,13 @@ static void rx_descs_init(struct dwmac4_dev *priv)
 	// Set the buffer size that applies to all rx dma descriptors in channel 0
 	val = readl(priv->ioaddr + DMA_CHAN_RX_CONTROL(0));
 	val &= ~DMA_RBSZ_MASK;
-	val |= CONFIG_ETH_BUFSIZE << DMA_RBSZ_SHIFT;
+	val |= DWMAC4_ETH_BUFSIZE << DMA_RBSZ_SHIFT;
 	val |= DMA_RXPBL << DMA_CONTROL_PBL_SHIFT;
 	writel(val, priv->ioaddr + DMA_CHAN_RX_CONTROL(0));
 
-	for (idx = 0; idx < CONFIG_RX_DESCR_NUM; idx++) {
+	for (idx = 0; idx < DWMAC4_RX_DESCR_NUM; idx++) {
 		desc_p = &desc_table_p[idx];
-		desc_p->dmamac_addr = (ulong) & rxbuffs[idx * CONFIG_ETH_BUFSIZE];
+		desc_p->dmamac_addr = (ulong)&rxbuffs[idx * DWMAC4_ETH_BUFSIZE];
 		desc_p->des1 = 0;
 		desc_p->des2 = 0;
 		desc_p->des3 = RDES3_OWN | RDES3_BUFFER1_VALID_ADDR;
@@ -215,9 +214,9 @@ static void rx_descs_init(struct dwmac4_dev *priv)
 			   sizeof(priv->rx_mac_descrtable));
 
 	writel((ulong)desc_table_p, priv->ioaddr + DMA_CHAN_RX_BASE_ADDR(0));
-	writel((ulong)(desc_table_p + CONFIG_RX_DESCR_NUM),
+	writel((ulong)(desc_table_p + DWMAC4_RX_DESCR_NUM),
 	       priv->ioaddr + DMA_CHAN_RX_END_ADDR(0));
-	writel(CONFIG_RX_DESCR_NUM - 1, priv->ioaddr + DMA_CHAN_RX_RING_LEN(0));
+	writel(DWMAC4_RX_DESCR_NUM - 1, priv->ioaddr + DMA_CHAN_RX_RING_LEN(0));
 }
 
 static int _dw_write_hwaddr(struct dwmac4_dev *priv, u8 *mac_id)
@@ -234,7 +233,7 @@ static int _dw_write_hwaddr(struct dwmac4_dev *priv, u8 *mac_id)
 	return 0;
 }
 
-#ifdef CONFIG_CLK
+#ifdef DWMAC4_CLK
 static int _dw_set_tx_clk_speed(struct dwmac4_dev *priv, struct phy_device *phydev)
 {
 	ulong rate;
@@ -269,7 +268,7 @@ static int dw_adjust_link(struct dwmac4_dev *priv, struct phy_device *phydev)
 {
 	u32 conf = readl(priv->ioaddr + GMAC_CONFIG);
 
-#ifdef CONFIG_CLK
+#ifdef DWMAC4_CLK
 	int ret;
 #endif
 
@@ -295,7 +294,7 @@ static int dw_adjust_link(struct dwmac4_dev *priv, struct phy_device *phydev)
 
 	writel(conf, priv->ioaddr + GMAC_CONFIG);
 
-#ifdef CONFIG_CLK
+#ifdef DWMAC4_CLK
 	ret = _dw_set_tx_clk_speed(priv, phydev);
 	if (ret < 0)
 		return ret;
@@ -339,7 +338,7 @@ static int designware_eth_init(struct dwmac4_dev *priv, u8 *enetaddr)
 
 	start = get_timer(0);
 	while (readl(priv->ioaddr + DMA_BUS_MODE) & DMA_BUS_MODE_SFT_RESET) {
-		if (get_timer(start) >= CONFIG_MACRESET_TIMEOUT) {
+		if (get_timer(start) >= DWMAC4_MACRESET_TIMEOUT) {
 			printf("DMA reset timeout\n");
 			return -ETIMEDOUT;
 		}
@@ -475,13 +474,13 @@ static int _dw_eth_send(struct dwmac4_dev *priv, void *packet, int length)
 	flush_dcache_range(desc_start, desc_end);
 
 	/* Test the wrap-around condition. */
-	if (++desc_num >= CONFIG_TX_DESCR_NUM)
+	if (++desc_num >= DWMAC4_TX_DESCR_NUM)
 		desc_num = 0;
 
 	priv->tx_currdescnum = desc_num;
 
 	/* Start the transmission */
-	writel((ulong) & priv->tx_mac_descrtable[desc_num],
+	writel((ulong)&priv->tx_mac_descrtable[desc_num],
 	       priv->ioaddr + DMA_CHAN_TX_END_ADDR(0));
 
 	return 0;
@@ -495,7 +494,7 @@ static int _dw_eth_recv(struct dwmac4_dev *priv, uchar **packetp)
 	/* In ring mode we start at the beginning of the ring and iterate to find ready
 	 * descriptors, typically we will reuse index 0 a bunch of times
 	 */
-	for (desc_num = 0; desc_num < CONFIG_RX_DESCR_NUM; ++desc_num) {
+	for (desc_num = 0; desc_num < DWMAC4_RX_DESCR_NUM; ++desc_num) {
 		struct dwmac4_dma_desc *desc_p = &priv->rx_mac_descrtable[desc_num];
 		ulong desc_start = (ulong)desc_p;
 		ulong desc_end = desc_start +
@@ -535,7 +534,7 @@ static int _dw_free_pkt(struct dwmac4_dev *priv)
 	/*
 	 * Reinitialize current descriptor
 	 */
-	desc_p->dmamac_addr = (ulong) & priv->rxbuffs[desc_num * CONFIG_ETH_BUFSIZE];
+	desc_p->dmamac_addr = (ulong)&priv->rxbuffs[desc_num * DWMAC4_ETH_BUFSIZE];
 	desc_p->des1 = 0;
 	desc_p->des2 = 0;
 	desc_p->des3 = RDES3_OWN | RDES3_BUFFER1_VALID_ADDR;
@@ -544,7 +543,7 @@ static int _dw_free_pkt(struct dwmac4_dev *priv)
 	flush_dcache_range(desc_start, desc_end);
 
 	/* let hardware know the ring has been updated, it will start at offset 0 again */
-	writel((ulong)(priv->rx_mac_descrtable + CONFIG_RX_DESCR_NUM),
+	writel((ulong)(priv->rx_mac_descrtable + DWMAC4_RX_DESCR_NUM),
 	       priv->ioaddr + DMA_CHAN_RX_END_ADDR(0));
 
 	return 0;
@@ -555,8 +554,8 @@ static int dw_phy_init(struct dwmac4_dev *priv, void *dev)
 	struct phy_device *phydev;
 	int phy_addr = -1, ret;
 
-#ifdef CONFIG_PHY_ADDR
-	phy_addr = CONFIG_PHY_ADDR;
+#ifdef DWMAC4_PHY_ADDR
+	phy_addr = DWMAC4_PHY_ADDR;
 #endif
 
 	phydev = phy_connect(priv->bus, phy_addr, dev, priv->interface);
@@ -732,7 +731,7 @@ int designware_eth_probe(struct udevice *dev)
 	struct dwmac4_dev *priv = dev_get_priv(dev);
 	int ret, err;
 
-#ifdef CONFIG_CLK
+#ifdef DWMAC4_CLK
 	int i, clock_nb;
 
 	priv->clock_count = 0;
@@ -749,7 +748,7 @@ int designware_eth_probe(struct udevice *dev)
 				break;
 
 			err = clk_enable(&priv->clocks[i]);
-			if (err && err != -ENOSYS && err != -ENOTSUPP) {
+			if (err && err != -ENOSYS && err != -EOPNOTSUPP) {
 				pr_err("failed to enable clock %d\n", i);
 				clk_free(&priv->clocks[i]);
 				goto clk_err;
@@ -800,7 +799,7 @@ int designware_eth_probe(struct udevice *dev)
 	mdio_free(priv->bus);
 mdio_err:
 
-#ifdef CONFIG_CLK
+#ifdef DWMAC4_CLK
 clk_err:
 	ret = clk_release_all(priv->clocks, priv->clock_count);
 	if (ret)
@@ -818,7 +817,7 @@ static int designware_eth_remove(struct udevice *dev)
 	mdio_unregister(priv->bus);
 	mdio_free(priv->bus);
 
-#ifdef CONFIG_CLK
+#ifdef DWMAC4_CLK
 	return clk_release_all(priv->clocks, priv->clock_count);
 #else
 	return 0;

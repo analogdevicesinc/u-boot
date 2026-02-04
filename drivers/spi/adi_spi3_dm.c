@@ -11,7 +11,6 @@
  *
  */
 
-#include <common.h>
 #include <log.h>
 #include <malloc.h>
 #include <spi.h>
@@ -83,6 +82,7 @@ int adi_spi_cs_valid(unsigned int bus, unsigned int cs)
 		return 0;
 	return cs < MAX_CTRL_CS;
 }
+
 /* TODO: gpio cs is not currently supported */
 int cs_is_valid(unsigned int bus, unsigned int cs)
 {
@@ -105,7 +105,7 @@ static int adi_spi_ofdata_to_platdata(struct udevice *bus)
 	plat->bus_num = fdtdec_get_int(blob, node, "bus-num", 0);
 
 	addr = dev_read_addr_index(bus, 0);
-	if (FDT_ADDR_T_NONE == addr)
+	if (addr == FDT_ADDR_T_NONE)
 		return -EINVAL;
 
 	plat->regs = (struct adi_spi_regs *)addr;
@@ -113,7 +113,7 @@ static int adi_spi_ofdata_to_platdata(struct udevice *bus)
 	/* DMA support (optional) */
 	tx_dde_addr = dev_read_addr_index(bus, 1);
 	rx_dde_addr = dev_read_addr_index(bus, 2);
-	if ((FDT_ADDR_T_NONE == tx_dde_addr) || (FDT_ADDR_T_NONE == rx_dde_addr)) {
+	if (tx_dde_addr == FDT_ADDR_T_NONE || rx_dde_addr == FDT_ADDR_T_NONE) {
 		/* No DMA support */
 		plat->tx_dde_regs = NULL;
 		plat->rx_dde_regs = NULL;
@@ -122,14 +122,13 @@ static int adi_spi_ofdata_to_platdata(struct udevice *bus)
 		plat->rx_dde_regs = (struct adi_spi_dde_regs *)rx_dde_addr;
 	}
 
-	/* All other paramters are embedded in the child node */
+	/* All other parameters are embedded in the child node */
 	subnode = fdt_first_subnode(blob, node);
 	if (subnode < 0) {
 		printf("Error: subnode with SPI flash config missing!\n");
 		return -ENODEV;
 	}
 	plat->max_hz = fdtdec_get_int(blob, subnode, "spi-max-frequency", 500000);
-
 
 	/* Read other parameters from DT */
 	plat->cs_num = fdtdec_get_int(blob, subnode, "reg", 0);
@@ -219,7 +218,8 @@ static int adi_spi_release_bus(struct udevice *dev)
 
 		/* Disable DMA channels
 		 * It is also a good practice to ensure that internal machinery
-		 * is clean in case of coming from an error */
+		 * is clean in case of coming from an error
+		 */
 		writel(0, &priv->tx_dde_regs->config);
 		ret = readl_poll_timeout(&priv->tx_dde_regs->status, val,
 					 (val & DDE_STAT_RUN) == DDE_STAT_STOPPED,
@@ -242,9 +242,11 @@ void adi_spi_cs_activate(struct adi_spi_priv *priv)
 {
 	if (is_gpio_cs(priv->cs_num)) {
 		unsigned int cs = gpio_cs(priv->cs_num);
+
 		gpio_set_value(cs, priv->cs_pol);
 	} else {
 		u32 ssel;
+
 		ssel = readl(&priv->regs->ssel);
 		ssel |= BIT_SSEL_EN(priv->cs_num);
 		if (priv->cs_pol)
@@ -259,10 +261,12 @@ void adi_spi_cs_deactivate(struct adi_spi_priv *priv)
 {
 	if (is_gpio_cs(priv->cs_num)) {
 		unsigned int cs = gpio_cs(priv->cs_num);
+
 		gpio_set_value(cs, !priv->cs_pol);
 		gpio_set_value(cs, 1);
 	} else {
 		u32 ssel;
+
 		ssel = readl(&priv->regs->ssel);
 		if (priv->cs_pol)
 			ssel &= ~BIT_SSEL_VAL(priv->cs_num);
@@ -317,7 +321,7 @@ static int adi_qspi_tx_xfer(struct adi_spi_priv *priv, u8 *buf, u32 transfer_len
 
 	/* Send */
 	if (priv->use_dma) {
-		uint32_t cfg;
+		u32 cfg;
 
 		/* Get PSIZE/MSIZE */
 		adi_qspi_get_buses_size((uintptr_t)buf, transfer_len, &psize, &msize);
@@ -402,7 +406,7 @@ static int adi_qspi_rx_xfer(struct adi_spi_priv *priv, u8 *buf, u32 transfer_len
 
 	/* Receive */
 	if (priv->use_dma) {
-		uint32_t cfg;
+		u32 cfg;
 
 		/* Get PSIZE/MSIZE */
 		adi_qspi_get_buses_size((uintptr_t)buf, transfer_len, &psize, &msize);
@@ -591,7 +595,7 @@ static int adi_spi_set_speed(struct udevice *bus, uint speed)
 static int adi_spi_set_mode(struct udevice *bus, uint mode)
 {
 	struct adi_spi_priv *priv = dev_get_priv(bus);
-	uint32_t reg;
+	u32 reg;
 
 	reg = SPI_CTL_EN | SPI_CTL_MSTR;
 	if (mode & SPI_CPHA)
@@ -631,7 +635,7 @@ int adi_spi_mem_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
 	int i;
 
 	if (!spi_mem_supports_op(slave, op))
-		return -ENOTSUPP;
+		return -EOPNOTSUPP;
 
 	/* Prepare 'opcode-addr-dummy' (op_buf) buffer */
 	pos = 0;
@@ -664,8 +668,7 @@ int adi_spi_mem_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
 
 	/* Send opcode */
 	flag = SPI_XFER_BEGIN;
-	if ((op->addr.nbytes == 0) && (op->dummy.nbytes == 0) &&
-	    !tx_buf && !rx_buf)
+	if (op->addr.nbytes == 0 && op->dummy.nbytes == 0 && !tx_buf && !rx_buf)
 		flag |= SPI_XFER_END;
 	if (op->cmd.buswidth == 4)
 		flag |= SPI_XFER_QUAD;
@@ -677,7 +680,7 @@ int adi_spi_mem_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
 	/* Send address */
 	if (op->addr.nbytes) {
 		flag = 0;
-		if ((op->dummy.nbytes == 0) && !tx_buf && !rx_buf)
+		if (op->dummy.nbytes == 0 && !tx_buf && !rx_buf)
 			flag |= SPI_XFER_END;
 		if (op->addr.buswidth == 4)
 			flag |= SPI_XFER_QUAD;

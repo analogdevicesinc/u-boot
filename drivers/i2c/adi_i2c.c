@@ -10,7 +10,6 @@
  * Contact: Greg Malysa <greg.malysa@timesys.com>
  */
 
-#include <common.h>
 #include <command.h>
 #include <i2c.h>
 #include <asm/arch-adi/twi.h>

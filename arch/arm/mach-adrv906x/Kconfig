@@ -11,6 +11,11 @@ choice
 
 config TARGET_ADRV906X_EVAL
 	bool "ADRV906X evaluation board"
+	help
+	  Support for all Analog Devices, Inc. ADRV906x-based evaluation
+	  platforms. This includes Denali and Titan as well as
+	  derivative designs, in both single-tile and dual-tile
+	  configurations.
 
 endchoice
 

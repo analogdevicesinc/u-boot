@@ -341,6 +341,7 @@ config WDT_SMC
 	depends on WDT
 	help
 	  Select this to enable SMC based watchdog timer
+	  Originally used for adrv906x-based evaluation boards.
 
 config WDT_STM32MP
 	bool "IWDG watchdog driver for STM32 MP's family"

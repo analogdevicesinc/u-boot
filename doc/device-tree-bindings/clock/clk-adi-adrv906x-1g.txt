@@ -8,7 +8,7 @@ Required properties:
 - compatible : shall be "adi,adrv906x-1g-clock"
 - reg : base address shall be EMAC_1G_YODA (register to set the clock divider
         and enable/disable the clock)
-- #clock-cells : shall be set to 1 (argument: phy interface 
+- #clock-cells : shall be set to 1 (argument: phy interface
                  (PHY_INTERFACE_MODE_RMII | PHY_INTERFACE_MODE_RGMII))
 - clocks: parent clock. (fixed-clock type)
 - clocks-names: Arbitrary name
@@ -33,7 +33,7 @@ Example:
 		clock-names = "dwmac_clkin";
 		status = "okay";
 		u-boot,dm-pre-reloc;
-	};	
+	};
 
 	adi_dwmac_dev: adi_dwmac_node@EMAC_1G_BASE_UADDR {
 		compatible = "snps,dwmac-5.20";

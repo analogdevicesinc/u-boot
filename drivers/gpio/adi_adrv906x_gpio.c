@@ -1,10 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
+// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * (C) Copyright 2023 - Analog Devices, Inc.
  *
  */
 
-#include <common.h>
 #include <dm.h>
 #include <errno.h>
 #include <malloc.h>
@@ -16,8 +15,8 @@
 #include "adi_adrv906x_gpio.h"
 
 /* Calculate the GPIO register and bit offset based on the pin number (0-115) */
-#define GET_GPIO_REG(pin)       (pin / 32)
-#define GET_GPIO_OFFSET(pin)    (pin % 32)
+#define GET_GPIO_REG(pin)       ((pin) / 32)
+#define GET_GPIO_OFFSET(pin)    ((pin) % 32)
 
 #define GPIO_DIR_CONTROL_SIZE    (4)    /* Size of each GPIO mode direction control register */
 #define GPIO_REG_NUM    (4)             /* Number of GPIO registers */
@@ -41,13 +40,13 @@ static ulong adrv906x_reg_base_s[GPIO_REG_NUM][GPIO_FUNCTION_NUM] = {
 };
 
 /* This enum must match the order of actions in adrv906x_reg_base_s */
-typedef enum {
+enum gpio_mode_action {
 	GPIO_WRITE	= 0,
 	GPIO_CLEAR	= 1,
 	GPIO_SET	= 2,
 	GPIO_TOGGLE	= 3,
 	GPIO_READ	= 4
-} gpio_mode_action_t;
+};
 
 struct adi_adrv906x_gpio_regs {
 	u32 data;                       /* Data register */
@@ -60,12 +59,12 @@ struct adi_adrv906x_gpio_plat {
 	ulong base_addr;
 };
 
-static int adi_adrv906x_gpio_get_direction(struct udevice *dev, unsigned gpio)
+static int adi_adrv906x_gpio_get_direction(struct udevice *dev, unsigned int gpio)
 {
 	struct adi_adrv906x_gpio_plat *plat = dev_get_plat(dev);
-	uint64_t gpio_mode_base_addr = plat->base_addr;
-	uint32_t offset, data;
-	uint64_t base_addr;
+	u64 gpio_mode_base_addr = plat->base_addr;
+	u32 offset, data;
+	u64 base_addr;
 
 	if (gpio > plat->gpio_count)
 		return -EINVAL;
@@ -83,12 +82,12 @@ static int adi_adrv906x_gpio_get_direction(struct udevice *dev, unsigned gpio)
 		return GPIO_LINE_DIRECTION_IN;
 }
 
-static int adi_adrv906x_gpio_direction_input(struct udevice *dev, unsigned gpio)
+static int adi_adrv906x_gpio_direction_input(struct udevice *dev, unsigned int gpio)
 {
 	struct adi_adrv906x_gpio_plat *plat = dev_get_plat(dev);
-	uint64_t gpio_mode_base_addr = plat->base_addr;
+	u64 gpio_mode_base_addr = plat->base_addr;
 	ulong base_addr;
-	uint32_t offset, data, cleared_data;
+	u32 offset, data, cleared_data;
 
 	if (gpio > plat->gpio_count)
 		return -EINVAL;
@@ -104,12 +103,12 @@ static int adi_adrv906x_gpio_direction_input(struct udevice *dev, unsigned gpio)
 	return 0;
 }
 
-static int adi_adrv906x_gpio_set_value(struct udevice *dev, unsigned gpio, int val)
+static int adi_adrv906x_gpio_set_value(struct udevice *dev, unsigned int gpio, int val)
 {
 	struct adi_adrv906x_gpio_plat *plat = dev_get_plat(dev);
-	uint32_t gpio_mode_base_addr = plat->base_addr;
+	u32 gpio_mode_base_addr = plat->base_addr;
 	ulong base_addr;
-	uint32_t offset, bitmask;
+	u32 offset, bitmask;
 
 	if (gpio > plat->gpio_count)
 		return -EINVAL;
@@ -127,12 +126,12 @@ static int adi_adrv906x_gpio_set_value(struct udevice *dev, unsigned gpio, int v
 	return 0;
 }
 
-static int adi_adrv906x_gpio_direction_output(struct udevice *dev, unsigned gpio, int val)
+static int adi_adrv906x_gpio_direction_output(struct udevice *dev, unsigned int gpio, int val)
 {
 	struct adi_adrv906x_gpio_plat *plat = dev_get_plat(dev);
-	uint64_t gpio_mode_base_addr = plat->base_addr;
+	u64 gpio_mode_base_addr = plat->base_addr;
 	ulong base_addr;
-	uint32_t offset, data, cleared_data;
+	u32 offset, data, cleared_data;
 	int ret;
 
 	if (gpio > plat->gpio_count)
@@ -153,12 +152,12 @@ static int adi_adrv906x_gpio_direction_output(struct udevice *dev, unsigned gpio
 	return 0;
 }
 
-static int adi_adrv906x_gpio_get_value(struct udevice *dev, unsigned gpio)
+static int adi_adrv906x_gpio_get_value(struct udevice *dev, unsigned int gpio)
 {
 	struct adi_adrv906x_gpio_plat *plat = dev_get_plat(dev);
-	uint64_t gpio_mode_base_addr = plat->base_addr;
+	u64 gpio_mode_base_addr = plat->base_addr;
 	ulong base_addr;
-	uint32_t offset, data, bitmask;
+	u32 offset, data, bitmask;
 
 	if (gpio > plat->gpio_count)
 		return -EINVAL;
@@ -180,10 +179,10 @@ static int adi_adrv906x_gpio_get_value(struct udevice *dev, unsigned gpio)
 	return GPIO_PIN_STATE_LOW;
 }
 
-static int adi_adrv906x_gpio_get_function(struct udevice *dev, unsigned gpio)
+static int adi_adrv906x_gpio_get_function(struct udevice *dev, unsigned int gpio)
 {
 	struct adi_adrv906x_gpio_plat *plat = dev_get_plat(dev);
-	uint32_t reg = 0U;
+	u32 reg = 0U;
 
 	if (gpio > plat->gpio_count)
 		return -EINVAL;

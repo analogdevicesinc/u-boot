@@ -26,5 +26,4 @@
 #define SPI_0_BASE      0x20733000
 #define VIRTUAL_PL011_0_0_BASE  0x20064000
 
-
 #endif /* __ADI_ADRV906X_DEF_H__ */

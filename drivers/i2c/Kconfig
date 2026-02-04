@@ -158,7 +158,8 @@ config SYS_I2C_ADI
 	bool "ADI I2C driver"
 	depends on DM_I2C
 	help
-	  Add support for the ADI (Analog Devices) I2C driver
+	  Add support for the ADI (Analog Devices) I2C driver.
+	  Originally used for adrv906x-based evaluation boards.
 
 config SYS_I2C_AT91
 	bool "Atmel I2C driver"

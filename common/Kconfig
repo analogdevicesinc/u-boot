@@ -60,7 +60,8 @@ config DISABLE_CONSOLE
 config DISABLE_CONSOLE_INPUT
         bool "Disable console input"
         help
-		Disable console in
+	  Disable console (input only).
+	  Useful for security hardening.
 
 config IDENT_STRING
 	string "Board specific string to be added to uboot version string"

@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2024 Analog Devices, Inc.
  */
@@ -23,7 +23,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-int get_dual_tile(uint32_t *dual_tile)
+int get_dual_tile(u32 *dual_tile)
 {
 	int node;
 
@@ -36,10 +36,10 @@ int get_dual_tile(uint32_t *dual_tile)
 	return 0;
 }
 
-int get_secondary_linux_enabled(uint32_t *secondary_linux_enabled)
+int get_secondary_linux_enabled(u32 *secondary_linux_enabled)
 {
 	int node;
-	uint32_t dual_tile = 0;
+	u32 dual_tile = 0;
 
 	node = get_dual_tile(&dual_tile);
 	if (node != 0)
@@ -62,7 +62,7 @@ int get_secondary_linux_enabled(uint32_t *secondary_linux_enabled)
 int get_sysclk_freq(void)
 {
 	int node;
-	uint32_t sysclk_freq;
+	u32 sysclk_freq;
 
 	node = fdt_path_offset(gd->fdt_blob, "/sysclk");
 	if (node < 0)
@@ -76,7 +76,7 @@ int get_sysclk_freq(void)
 int get_hsdigclk_freq(void)
 {
 	int node;
-	uint32_t hsdigclk_freq;
+	u32 hsdigclk_freq;
 
 	node = fdt_path_offset(gd->fdt_blob, "/hsdigclk");
 	if (node < 0)
@@ -198,7 +198,7 @@ static int plat_del_prop(void *blob, char *node_name, char *property)
 	return 0;
 }
 
-static int get_mac_address(uint8_t index, uint8_t **mac)
+static int get_mac_address(u8 index, u8 **mac)
 {
 	int node;
 	char name[MAX_NODE_NAME_LENGTH];
@@ -208,34 +208,37 @@ static int get_mac_address(uint8_t index, uint8_t **mac)
 		return -1;
 
 	/* Get U-Boot eth node name (emacx) */
-	if (index == 0) snprintf(name, MAX_NODE_NAME_LENGTH, "/ethernet@%08x", EMAC_1G_BASE);
-	else snprintf(name, MAX_NODE_NAME_LENGTH, "/emac@%d", index + 1);
+	if (index == 0)
+		snprintf(name, MAX_NODE_NAME_LENGTH, "/ethernet@%08x", EMAC_1G_BASE);
+	else
+		snprintf(name, MAX_NODE_NAME_LENGTH, "/emac@%d", index + 1);
 	node_name = name;
 
 	/* There is a separate node for SystemC 1G ethernet (different IP and driver) */
 	if (is_sysc() == true)
-		if (index == 0) node_name = "/ethernet@2";
+		if (index == 0)
+			node_name = "/ethernet@2";
 
 	node = fdt_path_offset(gd->fdt_blob, node_name);
 	if (node < 0)
 		return -1;
 
 	*mac = (u8 *)fdt_getprop(gd->fdt_blob, node, "mac-address", NULL);
-	if (*mac == NULL)
+	if (!mac)
 		return -1;
 
 	return 0;
 }
 
-static int plat_get_reserved_region_size(void *blob, char *name, uint64_t *size)
+static int plat_get_reserved_region_size(void *blob, char *name, u64 *size)
 {
 	char node_name[MAX_NODE_NAME_LENGTH];
 	int node;
 	int address_cells;
 	int size_cells;
 	int len;
-	uint32_t u32_size;
-	uint64_t u64_size;
+	u32 u32_size;
+	u64 u64_size;
 	u8 tmp[16]; /* Up to 64-bit address + 64-bit size */
 	u8 *p = tmp;
 
@@ -268,17 +271,17 @@ static int plat_get_reserved_region_size(void *blob, char *name, uint64_t *size)
 	p += 4 * address_cells;
 
 	if (size_cells == 2) {
-		u64_size = *(uint64_t *)p;
+		u64_size = *(u64 *)p;
 		*size = fdt64_to_cpu(u64_size);
 	} else {
-		u32_size = *(uint32_t *)p;
+		u32_size = *(u32 *)p;
 		*size = fdt32_to_cpu(u32_size);
 	}
 
 	return 0;
 }
 
-static int plat_populate_reserved_region(void *blob, char *name, uint64_t address, uint64_t size)
+static int plat_populate_reserved_region(void *blob, char *name, u64 address, u64 size)
 {
 	char node_name[MAX_NODE_NAME_LENGTH];
 	int node;
@@ -392,11 +395,11 @@ static int plat_memory_regions_fixup(void *blob)
 	int ret;
 	int len;
 	char node_name[MAX_NODE_NAME_LENGTH];
-	uint8_t *reg_tmp;
-	uint32_t is_dual_tile;
-	uint32_t is_secondary_linux_enabled;
-	uint64_t address;
-	uint64_t size;
+	u8 *reg_tmp;
+	u32 is_dual_tile;
+	u32 is_secondary_linux_enabled;
+	u64 address;
+	u64 size;
 
 	ret = get_dual_tile(&is_dual_tile);
 	if (ret < 0)
@@ -411,7 +414,7 @@ static int plat_memory_regions_fixup(void *blob)
 	ret = plat_get_reserved_region_size(blob, node_name, &size);
 	if (ret < 0)
 		return ret;
-	if (is_sysc() && (size > MAX_RESERVED_MEM_SIZE_SYSC))
+	if (is_sysc() && size > MAX_RESERVED_MEM_SIZE_SYSC)
 		size = MAX_RESERVED_MEM_SIZE_SYSC;
 
 	/* 2. DDR base address configured at the top of DDR seen by Linux */
@@ -499,7 +502,7 @@ static int plat_memory_regions_fixup(void *blob)
 		}
 
 		/* Read primary and secondary L4 ranges */
-		reg_tmp = (uint8_t *)fdt_getprop(blob, node, "reg", &len);
+		reg_tmp = (u8 *)fdt_getprop(blob, node, "reg", &len);
 		if (reg_tmp == 0)
 			return -1;
 
@@ -516,7 +519,7 @@ static int plat_memory_regions_fixup(void *blob)
 		}
 
 		/* Read primary and secondary XCORR ranges */
-		reg_tmp = (uint8_t *)fdt_getprop(blob, node, "reg", &len);
+		reg_tmp = (u8 *)fdt_getprop(blob, node, "reg", &len);
 		if (reg_tmp == 0)
 			return -1;
 
@@ -532,8 +535,8 @@ static int plat_memory_regions_fixup(void *blob)
 static int plat_eth_fixup(void *blob)
 {
 	int ret;
-	uint32_t is_dual_tile;
-	uint8_t *mac;
+	u32 is_dual_tile;
+	u8 *mac;
 	int node;
 	char name[MAX_NODE_NAME_LENGTH];
 	char *node_name;
@@ -543,14 +546,14 @@ static int plat_eth_fixup(void *blob)
 		return ret;
 
 	for (int i = 0; i < MAX_NUM_MACS; i++) {
-		if ((!is_dual_tile) && (i >= (MAX_NUM_MACS / 2)))
+		if (!is_dual_tile && i >= (MAX_NUM_MACS / 2))
 			/* Skip secondary MACs in single-tile */
 			break;
 
 		/* Get Linux eth node name */
 
 		/* 1G eth */
-		if ((i == 0) || (i == 3))
+		if (i == 0 || i == 3)
 			snprintf(name, MAX_NODE_NAME_LENGTH, "/ethernet@%08X", (i == 0) ? EMAC_1G_BASE : SEC_EMAC_1G_BASE);
 		/* 10/25G eth */
 		else
@@ -562,18 +565,18 @@ static int plat_eth_fixup(void *blob)
 
 		/* There is a separate node for SystemC 1G ethernet (different IP and driver) */
 		if (is_sysc() == true)
-			if (i == 0) node_name = "/ethernet@2";
+			if (i == 0)
+				node_name = "/ethernet@2";
 
 		/* MAC should be propagated only if the corresponding Linux eth
 		 * node is present, and its MAC value is undefined
 		 */
 		node = fdt_path_offset(blob, node_name);
-		if ((node < 0) ||
-		    (NULL != fdt_getprop(blob, node, "mac-address", NULL)))
+		if (node < 0 || fdt_getprop(blob, node, "mac-address", NULL))
 			continue;
 
 		/* Propagate mac information, if available, from u-boot to Linux dtb */
-		if ((0 == get_mac_address(i, &mac)) && !is_zero_ethaddr(mac))
+		if (get_mac_address(i, &mac) == 0 && !is_zero_ethaddr(mac))
 			ret = fdt_setprop(blob, node, "mac-address", mac, ETH_ADDR_LEN);
 	}
 
@@ -583,8 +586,8 @@ static int plat_eth_fixup(void *blob)
 static int plat_uio_fixup(void *blob)
 {
 	int ret;
-	uint32_t is_dual_tile;
-	uint32_t is_secondary_linux_enabled;
+	u32 is_dual_tile;
+	u32 is_secondary_linux_enabled;
 
 	ret = get_dual_tile(&is_dual_tile);
 	if (ret < 0)
@@ -609,10 +612,9 @@ static int plat_uio_fixup(void *blob)
 				return FDT_ERR_NOTFOUND;
 
 			/* Enable secondary regions */
-			if ((!strncmp(name, "uio-adrv906x-regmap-sec-", 22)) ||
+			if (!strncmp(name, "uio-adrv906x-regmap-sec-", 22) ||
 			    /* Enable c2c interrupts if linux is not running in the secondary */
-			    ((!is_secondary_linux_enabled) &&
-			     (!strncmp(name, "uio-adrv906x-c2c-interrupt-", 25)))) {
+			    (!is_secondary_linux_enabled && !strncmp(name, "uio-adrv906x-c2c-interrupt-", 25))) {
 				if (fdt_getprop(blob, node, "status", NULL)) {
 					ret = fdt_setprop_string(blob, node, "status", "okay");
 					if (ret < 0) {
@@ -633,8 +635,8 @@ static int plat_sysc_fixup(void *blob)
 	int ret;
 	int node;
 	char node_name[MAX_NODE_NAME_LENGTH];
-	uint32_t is_dual_tile;
-	uint32_t is_secondary_linux_enabled;
+	u32 is_dual_tile;
+	u32 is_secondary_linux_enabled;
 
 	/* Enable SystemC-specific devices in kernel device tree */
 
@@ -655,7 +657,7 @@ static int plat_sysc_fixup(void *blob)
 	plat_set_prop_disabled(blob, node_name);
 	plat_set_prop_disabled(blob, "/ptpclk");
 	ret = get_dual_tile(&is_dual_tile);
-	if ((ret == 0) && (is_dual_tile == 1)) {
+	if (ret == 0 && is_dual_tile == 1) {
 		snprintf(node_name, MAX_NODE_NAME_LENGTH, "/adrv906x_net@%08X", SEC_EMAC_CMN_BASE);
 		plat_set_prop_disabled(blob, node_name);
 		snprintf(node_name, MAX_NODE_NAME_LENGTH, "/mdio@%08X", SEC_EMAC_PCS_0_BASE);
@@ -679,7 +681,7 @@ static int plat_sysc_fixup(void *blob)
 
 	/* Enable UART4 (PL011 UART3) for the virtual UART workaround */
 	ret = get_secondary_linux_enabled(&is_secondary_linux_enabled);
-	if ((ret == 0) && (is_secondary_linux_enabled == 1)) {
+	if (ret == 0 && is_secondary_linux_enabled == 1) {
 		snprintf(node_name, MAX_NODE_NAME_LENGTH, "/uart@%08x", PL011_3_BASE);
 		node = fdt_path_offset(blob, node_name);
 		if (node < 0) {
@@ -701,7 +703,7 @@ static int plat_protium_palladium_fixup(void *blob)
 {
 	int ret;
 	char node_name[MAX_NODE_NAME_LENGTH];
-	uint32_t is_dual_tile;
+	u32 is_dual_tile;
 
 	/* Disable ethernet */
 	snprintf(node_name, MAX_NODE_NAME_LENGTH, "/ethernet@%08X", EMAC_1G_BASE);
@@ -712,7 +714,7 @@ static int plat_protium_palladium_fixup(void *blob)
 	plat_set_prop_disabled(blob, node_name);
 	plat_set_prop_disabled(blob, "/ptpclk");
 	ret = get_dual_tile(&is_dual_tile);
-	if ((ret == 0) && (is_dual_tile == 1)) {
+	if (ret == 0 && is_dual_tile == 1) {
 		snprintf(node_name, MAX_NODE_NAME_LENGTH, "/adrv906x_net@%08X", SEC_EMAC_CMN_BASE);
 		plat_set_prop_disabled(blob, node_name);
 		snprintf(node_name, MAX_NODE_NAME_LENGTH, "/mdio@%08X", SEC_EMAC_PCS_0_BASE);
@@ -738,13 +740,13 @@ int adrv906x_kernel_fdt_fixup(void *blob)
 	int clk_freq;
 	int node;
 	char node_name[MAX_NODE_NAME_LENGTH];
-	uint32_t is_dual_tile;
-	uint32_t is_secondary_linux_enabled;
+	u32 is_dual_tile;
+	u32 is_secondary_linux_enabled;
 	int ret;
 
 	/* Set the dual-tile param, if dual-tile is enabled */
 	ret = get_dual_tile(&is_dual_tile);
-	if ((ret == 0) && (is_dual_tile == 1)) {
+	if (ret == 0 && is_dual_tile == 1) {
 		node = fdt_path_offset(blob, "/chosen/boot");
 		if (node < 0)
 			return node;
@@ -755,7 +757,7 @@ int adrv906x_kernel_fdt_fixup(void *blob)
 
 	/* Set the secondary-linux-enabled param, if enabled */
 	ret = get_secondary_linux_enabled(&is_secondary_linux_enabled);
-	if ((ret == 0) && (is_secondary_linux_enabled == 1)) {
+	if (ret == 0 && is_secondary_linux_enabled == 1) {
 		node = fdt_path_offset(blob, "/chosen/boot");
 		if (node < 0)
 			return node;
@@ -771,7 +773,7 @@ int adrv906x_kernel_fdt_fixup(void *blob)
 	node = fdt_path_offset(blob, "/sysclk");
 	if (node < 0)
 		return node;
-	ret = fdt_setprop_u32(blob, node, "clock-frequency", (uint32_t)clk_freq);
+	ret = fdt_setprop_u32(blob, node, "clock-frequency", (u32)clk_freq);
 	if (ret < 0)
 		return ret;
 
@@ -782,7 +784,7 @@ int adrv906x_kernel_fdt_fixup(void *blob)
 	node = fdt_path_offset(blob, "/hsdigclk");
 	if (node < 0)
 		return node;
-	ret = fdt_setprop_u32(blob, node, "clock-frequency", (uint32_t)clk_freq);
+	ret = fdt_setprop_u32(blob, node, "clock-frequency", (u32)clk_freq);
 	if (ret < 0)
 		return ret;
 
@@ -795,7 +797,7 @@ int adrv906x_kernel_fdt_fixup(void *blob)
 	if (node < 0)
 		return node;
 
-	ret = fdt_setprop_u32(blob, node, "clock-frequency", (uint32_t)clk_freq);
+	ret = fdt_setprop_u32(blob, node, "clock-frequency", (u32)clk_freq);
 	if (ret < 0)
 		return ret;
 
@@ -806,7 +808,7 @@ int adrv906x_kernel_fdt_fixup(void *blob)
 		return node;
 	}
 
-	ret = fdt_setprop_u32(blob, node, "max-frequency", (uint32_t)clk_freq);
+	ret = fdt_setprop_u32(blob, node, "max-frequency", (u32)clk_freq);
 	if (ret < 0) {
 		plat_error_message("Unable to set status prop for node %s", node_name);
 		return ret;
@@ -814,7 +816,7 @@ int adrv906x_kernel_fdt_fixup(void *blob)
 
 	/* For secondary Linux enabled systems, enable the virtual UART */
 	ret = get_secondary_linux_enabled(&is_secondary_linux_enabled);
-	if ((ret == 0) && (is_secondary_linux_enabled == 1)) {
+	if (ret == 0 && is_secondary_linux_enabled == 1) {
 		snprintf(node_name, MAX_NODE_NAME_LENGTH, "/v_uart@%08x", VIRTUAL_PL011_0_0_BASE);
 		node = fdt_path_offset(blob, node_name);
 		if (node < 0) {

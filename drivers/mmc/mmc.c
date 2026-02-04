@@ -3021,19 +3021,19 @@ int mmc_deinit(struct mmc *mmc)
 	if (!mmc->has_init)
 		return 0;
 
-        if (IS_SD(mmc)) {
-        	caps_filtered = mmc->card_caps &
-        		~(MMC_CAP(UHS_SDR12) | MMC_CAP(UHS_SDR25) |
-        		  MMC_CAP(UHS_SDR50) | MMC_CAP(UHS_DDR50) |
-        		  MMC_CAP(UHS_SDR104));
+	if (IS_SD(mmc)) {
+		caps_filtered = mmc->card_caps &
+			~(MMC_CAP(UHS_SDR12) | MMC_CAP(UHS_SDR25) |
+			  MMC_CAP(UHS_SDR50) | MMC_CAP(UHS_DDR50) |
+			  MMC_CAP(UHS_SDR104));
 
-        	return sd_select_mode_and_width(mmc, caps_filtered);
-        } else {
-        	caps_filtered = mmc->card_caps &
-        		~(MMC_CAP(MMC_HS_200) | MMC_CAP(MMC_HS_400) | MMC_CAP(MMC_HS_400_ES));
+		return sd_select_mode_and_width(mmc, caps_filtered);
+	} else {
+		caps_filtered = mmc->card_caps &
+			~(MMC_CAP(MMC_HS_200) | MMC_CAP(MMC_HS_400) | MMC_CAP(MMC_HS_400_ES));
 
-        	return mmc_select_mode_and_width(mmc, caps_filtered);
-        }
+		return mmc_select_mode_and_width(mmc, caps_filtered);
+	}
 }
 #endif
 

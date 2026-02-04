@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2024 Analog Devices, Inc.
  */
@@ -21,6 +21,52 @@
 #define BOOT_ADDR_LEN        20
 #define MAX_ENFORCEMENT_COUNTER_LENGTH     11
 
+#define ADRV906X_LOADCMD \
+	"echo \"Loading kernel FIT from ${adrv_bootpartname} partition on ${adrv_bootdevice} to ${adrv_bootaddr}...\";" \
+	"run adrv_dev_loadcmd;" \
+	"if test $? -ne 0; then env set reset_cause \"OTHER_RESET_CAUSE\"; panic \"Panic: Failed to load FIT\"; fi;" \
+	"fdt addr ${adrv_bootaddr} && " \
+	"fdt get value dflt_config /configurations default && " \
+	"fdt get value anti_rollback_version /configurations/${dflt_config} anti-rollback-version;" \
+	"if test $? -ne 0; then env set reset_cause \"IMG_VERIFY_FAIL\"; panic \"Panic: Unable to get FIT anti-rollback version\"; fi;" \
+	"if test $anti_rollback_version -lt $enforcement_counter; then env set reset_cause \"IMG_VERIFY_FAIL\"; panic \"Panic: FIT anti-rollback enforcement check failed\"; fi;"
+
+#define ADRV906X_BOOTCMD \
+	"echo \"\";" \
+	"run adrv_loadcmd;" \
+	"echo \"\";" \
+	"echo \"Booting FIT at ${adrv_bootaddr}...\";" \
+	"bootm ${adrv_bootaddr};" \
+	"if test $? -ne 0; then env set reset_cause \"OTHER_RESET_CAUSE\"; panic \"Panic: Failed to boot FIT\"; fi;"
+
+#define ADRV906X_INITPROGCMD \
+	"setenv count 0 && setenv failures 0; " \
+	"if test ${burnemmc} -ne 0; then " \
+	"echo Programming emmc && " \
+	"setenv blkoffset 0 && mmc dev 0 0; " \
+	"if test $? -ne 0; then echo Failed to assign mmc device && echo MMC PROBE FAILURE && exit 1; fi;" \
+	"while test ${count} -ne ${numemmcfiles}; " \
+	"do setexpr filename fmt mmc-%03d ${count} && setexpr checksumfile fmt mmc-%03d-checksum ${count} && " \
+	"tftp ${tftploadaddr} ${filename} && setenv emmcfilesize ${filesize} && setexpr emmcnumblocks ${emmcfilesize} / 0x200 && " \
+	"mmc write ${tftploadaddr} ${blkoffset} ${emmcnumblocks} && tftp ${crc1addr} ${checksumfile} && mw ${tftploadaddr} 0 ${emmcfilesize} && " \
+	"mmc read ${tftploadaddr} ${blkoffset} ${emmcnumblocks} && crc32 ${tftploadaddr} ${emmcfilesize} ${crc2addr} && cmp ${crc1addr} ${crc2addr} 0x1; " \
+	"if test $? -ne 0; then setexpr failures ${failures} + 0x1; else setexpr count ${count} + 0x1 && setexpr blkoffset ${blkoffset} + ${emmcnumblocks} && setenv failures 0; fi; " \
+	"if test ${failures} -gt 2; then echo PROGRAMMING FAILURE && exit 1; fi; " \
+	"done; fi; " \
+	"if test ${burnnorflash} -ne 0; then " \
+	"echo Programming SPI NOR Flash; " \
+	"setenv count 0 && setenv offset 0 && run adrv_sf_probe_cmd; " \
+	"if test $? -ne 0; then echo Failed to probe sf device && echo SF PROBE FAILURE && exit 1; fi;" \
+	"while test ${count} -ne ${numnorflashfiles}; " \
+	"do setexpr filename fmt nor_flash-%03d ${count} && setexpr checksumfile fmt nor_flash-%03d-checksum ${count} && " \
+	"tftp ${tftploadaddr} ${filename} && setenv norflashfilesize ${filesize} && sf erase ${offset} +${norflashfilesize} && sf write ${tftploadaddr} ${offset} ${norflashfilesize} && " \
+	"tftp ${crc1addr} ${checksumfile} && mw ${tftploadaddr} 0 ${norflashfilesize} && " \
+	"sf read ${tftploadaddr} ${offset} ${norflashfilesize} && crc32 ${tftploadaddr} ${norflashfilesize} ${crc2addr} && cmp ${crc1addr} ${crc2addr} 0x1; " \
+	"if test $? -ne 0; then setexpr failures ${failures} + 0x1; else setexpr count ${count} + 0x1; setexpr offset ${offset} + ${norflashfilesize}; setenv failures 0; fi; " \
+	"if test ${failures} -gt 2; then echo PROGRAMMING FAILURE && exit 1; fi;" \
+	"done; fi;" \
+	"echo PROGRAMMING SUCCESS" \
+
 DECLARE_GLOBAL_DATA_PTR;
 
 /*
@@ -28,25 +74,26 @@ DECLARE_GLOBAL_DATA_PTR;
  * This must be placed in .data since .bss is not setup
  * when save_boot_params() is called.
  */
-static unsigned long device_tree __section(".data") = 0;
+static unsigned long device_tree __section(".data");
 
 /* Kernel device tree handle */
-static void *kernel_dt = NULL;
-static bool kernel_dt_valid = false;
+static void *kernel_dt;
+static bool kernel_dt_valid;
 
 /* Builds and set the SF probe command as an U-boot environment variable. Does not set
- * the environment variable if an error is detected with the SF device tree node*/
-static void build_sf_probe_command(uint64_t qspi_0_base_addr)
+ * the environment variable if an error is detected with the SF device tree node
+ */
+static void build_sf_probe_command(u64 qspi_0_base_addr)
 {
 	int node;
 	int subnode;
 	const void *blob;
-	uint32_t bus_num;
-	uint32_t cs_num;
-	uint32_t spi_hz;
-	uint32_t tx_width;
-	uint32_t rx_width;
-	uint32_t mode;
+	u32 bus_num;
+	u32 cs_num;
+	u32 spi_hz;
+	u32 tx_width;
+	u32 rx_width;
+	u32 mode;
 	char node_name[MAX_NODE_NAME_LENGTH];
 	char sf_probe_params[SF_PARAMS_LEN];
 
@@ -121,7 +168,7 @@ void plat_log_error(char *input)
 {
 	int node;
 	int err = -1;
-	uint32_t error_num = 0;
+	u32 error_num = 0;
 	char name[MAX_NODE_NAME_LENGTH];
 
 	/* Verify kernel device tree handle is valid */
@@ -164,8 +211,8 @@ int common_kernel_fdt_fixup(void *blob)
 	const char *lifecycle_description = NULL;
 	char node_name[MAX_NODE_NAME_LENGTH];
 	char enforcement_counter[MAX_ENFORCEMENT_COUNTER_LENGTH];
-	uint32_t is_deployed;
-	uint64_t kaslr_seed;
+	u32 is_deployed;
+	u64 kaslr_seed;
 	int node;
 	int ret;
 	int property;
@@ -220,7 +267,7 @@ int common_kernel_fdt_fixup(void *blob)
 	ret = get_enforcement_counter();
 	if (ret < 0)
 		return ret;
-	snprintf(enforcement_counter, MAX_ENFORCEMENT_COUNTER_LENGTH, "%d", (uint32_t)ret);
+	snprintf(enforcement_counter, MAX_ENFORCEMENT_COUNTER_LENGTH, "%d", (u32)ret);
 	ret = fdt_setprop_string(blob, node, "enforcement-counter", enforcement_counter);
 	if (ret < 0)
 		return ret;
@@ -300,7 +347,7 @@ int common_kernel_fdt_fixup(void *blob)
 	return 0;
 }
 
-int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr)
+int arch_misc_init_common(u64 boot_addr, u64 qspi_0_base_addr)
 {
 	const char *boot_slot = NULL;
 	char kern_part_name[KERNEL_PART_STR_LEN] = "kernel_X";
@@ -312,7 +359,7 @@ int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr)
 	int ret;
 	struct mtd_info *mtd;
 	int node;
-	uint32_t len;
+	u32 len;
 	char *sf_probe_cmd;
 	char sf_read_params[SF_PARAMS_LEN];
 	char sf_load_cmd[SF_PARAMS_LEN];
@@ -367,7 +414,7 @@ int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr)
 		env_set_hex("adrv_bootpartsize", (ulong)(mtd->size));
 		snprintf(sf_load_cmd, SF_PARAMS_LEN, sf_probe_cmd);
 		len = snprintf(sf_read_params, SF_PARAMS_LEN, " sf read ${adrv_bootaddr} ${adrv_bootpartoff} ${adrv_bootpartsize}");
-		strncat(sf_load_cmd, sf_read_params, len);
+		strlcat(sf_load_cmd, sf_read_params, len);
 		env_set("adrv_dev_loadcmd", sf_load_cmd);
 		put_mtd_device(mtd);
 	} else if (is_boot_device_active(BOOT_DEV_EMMC_0) || is_boot_device_active(BOOT_DEV_SD_0)) {
@@ -418,9 +465,8 @@ int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr)
 		return ret;
 	}
 
-#if CONFIG_IS_ENABLED(ADI_ADRV_DEBUG)
 	/* Workaround: Tests may inject this property to fake 'enforcement-counter' */
-	{
+	if (IS_ENABLED(CONFIG_ADI_ADRV_DEBUG)) {
 		int test_enforcement_ctr;
 
 		node = fdt_path_offset(gd->fdt_blob, "/boot");
@@ -430,7 +476,6 @@ int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr)
 				ret = test_enforcement_ctr;
 		}
 	}
-#endif
 
 	env_set_ulong("enforcement_counter", ret);
 
@@ -439,23 +484,10 @@ int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr)
 	 * If anti-rollback counter is less than enforcement counter, set reset cause
 	 * and trigger warm reset
 	 */
-	env_set("adrv_loadcmd",
-		"echo \"Loading kernel FIT from ${adrv_bootpartname} partition on ${adrv_bootdevice} to ${adrv_bootaddr}...\";" \
-		"run adrv_dev_loadcmd;" \
-		"if test $? -ne 0; then env set reset_cause \"OTHER_RESET_CAUSE\"; panic \"Panic: Failed to load FIT\"; fi;" \
-		"fdt addr ${adrv_bootaddr} && " \
-		"fdt get value dflt_config /configurations default && " \
-		"fdt get value anti_rollback_version /configurations/${dflt_config} anti-rollback-version;" \
-		"if test $? -ne 0; then env set reset_cause \"IMG_VERIFY_FAIL\"; panic \"Panic: Unable to get FIT anti-rollback version\"; fi;" \
-		"if test $anti_rollback_version -lt $enforcement_counter; then env set reset_cause \"IMG_VERIFY_FAIL\"; panic \"Panic: FIT anti-rollback enforcement check failed\"; fi;");
+	env_set("adrv_loadcmd", ADRV906X_LOADCMD);
 
 	/* Setup 'adrv_bootcmd', which will be invoked during boot */
-	env_set("adrv_bootcmd", "echo \"\";" \
-		"run adrv_loadcmd;" \
-		"echo \"\";" \
-		"echo \"Booting FIT at ${adrv_bootaddr}...\";" \
-		"bootm ${adrv_bootaddr};" \
-		"if test $? -ne 0; then env set reset_cause \"OTHER_RESET_CAUSE\"; panic \"Panic: Failed to boot FIT\"; fi;");
+	env_set("adrv_bootcmd", ADRV906X_BOOTCMD);
 
 	/* Build the command for the initial programming of the eMMC and SPI flash
 	 * 1) Set addresses in RAM for storing the transferred TFTP files and the checksums for comparison
@@ -474,39 +506,11 @@ int arch_misc_init_common(uint64_t boot_addr, uint64_t qspi_0_base_addr)
 	 *		The tftploadaddr, crc1addr, crc2addr variables are addresses in DRAM that are platform specific and should be set by the respective platform. tftploadaddr should be set to a location with 256MB of available space to
 	 *		write the tftp files, and crc1addr and crc2addr need 4 bytes each. An example of addresses could be tftploadaddr=0x43000000, crc1addr=0x42000000, crc2addr=0x42000004.
 	 */
-	env_set("initialprogrammingcommand",
-		"setenv count 0 && setenv failures 0; " \
-		"if test ${burnemmc} -ne 0; then " \
-		"echo Programming emmc && " \
-		"setenv blkoffset 0 && mmc dev 0 0; " \
-		"if test $? -ne 0; then echo Failed to assign mmc device && echo MMC PROBE FAILURE && exit 1; fi;" \
-		"while test ${count} -ne ${numemmcfiles}; " \
-		"do setexpr filename fmt mmc-%03d ${count} && setexpr checksumfile fmt mmc-%03d-checksum ${count} && " \
-		"tftp ${tftploadaddr} ${filename} && setenv emmcfilesize ${filesize} && setexpr emmcnumblocks ${emmcfilesize} / 0x200 && " \
-		"mmc write ${tftploadaddr} ${blkoffset} ${emmcnumblocks} && tftp ${crc1addr} ${checksumfile} && mw ${tftploadaddr} 0 ${emmcfilesize} && " \
-		"mmc read ${tftploadaddr} ${blkoffset} ${emmcnumblocks} && crc32 ${tftploadaddr} ${emmcfilesize} ${crc2addr} && cmp ${crc1addr} ${crc2addr} 0x1; " \
-		"if test $? -ne 0; then setexpr failures ${failures} + 0x1; else setexpr count ${count} + 0x1 && setexpr blkoffset ${blkoffset} + ${emmcnumblocks} && setenv failures 0; fi; " \
-		"if test ${failures} -gt 2; then echo PROGRAMMING FAILURE && exit 1; fi; "
-		"done; fi; " \
-		"if test ${burnnorflash} -ne 0; then " \
-		"echo Programming SPI NOR Flash; " \
-		"setenv count 0 && setenv offset 0 && run adrv_sf_probe_cmd; " \
-		"if test $? -ne 0; then echo Failed to probe sf device && echo SF PROBE FAILURE && exit 1; fi;" \
-		"while test ${count} -ne ${numnorflashfiles}; " \
-		"do setexpr filename fmt nor_flash-%03d ${count} && setexpr checksumfile fmt nor_flash-%03d-checksum ${count} && " \
-		"tftp ${tftploadaddr} ${filename} && setenv norflashfilesize ${filesize} && sf erase ${offset} +${norflashfilesize} && sf write ${tftploadaddr} ${offset} ${norflashfilesize} && " \
-		"tftp ${crc1addr} ${checksumfile} && mw ${tftploadaddr} 0 ${norflashfilesize} && " \
-		"sf read ${tftploadaddr} ${offset} ${norflashfilesize} && crc32 ${tftploadaddr} ${norflashfilesize} ${crc2addr} && cmp ${crc1addr} ${crc2addr} 0x1; " \
-		"if test $? -ne 0; then setexpr failures ${failures} + 0x1; else setexpr count ${count} + 0x1; setexpr offset ${offset} + ${norflashfilesize}; setenv failures 0; fi; " \
-		"if test ${failures} -gt 2; then echo PROGRAMMING FAILURE && exit 1; fi;" \
-		"done; fi;" \
-		"echo PROGRAMMING SUCCESS"
-		);
+	env_set("initialprogrammingcommand", ADRV906X_INITPROGCMD);
 
-#if CONFIG_IS_ENABLED(DISABLE_CONSOLE_INPUT)
 	/* Disable console input */
-	env_set("stdin", "nulldev");
-#endif
+	if (IS_ENABLED(CONFIG_DISABLE_CONSOLE_INPUT))
+		env_set("stdin", "nulldev");
 
 	return 0;
 }
@@ -553,12 +557,12 @@ int get_te_boot_slot(const char **boot_slot)
 	return 0;
 }
 
-int get_kaslr_seed(uint64_t *kaslr_seed)
+int get_kaslr_seed(u64 *kaslr_seed)
 {
 	int len = 0;
 	fdt64_t kaslr;
 	const fdt64_t *kaslr_node;
-	uint32_t *tmp1, *tmp2;
+	u32 *tmp1, *tmp2;
 	int node;
 	int ret;
 
@@ -571,8 +575,9 @@ int get_kaslr_seed(uint64_t *kaslr_seed)
 		return -1;
 
 	/* the address may not be on 64 bit boundary, have to use 32 bit access
-	 * to avoid exception */
-	tmp1 = (uint32_t *)kaslr_node;
+	 * to avoid exception
+	 */
+	tmp1 = (u32 *)kaslr_node;
 	kaslr = *tmp1;
 	kaslr = kaslr << 32;
 	tmp2 = tmp1 + 4;
@@ -585,7 +590,7 @@ int get_kaslr_seed(uint64_t *kaslr_seed)
 	return ret;
 }
 
-int get_lifecycle_state(const char **description, uint32_t *deployed)
+int get_lifecycle_state(const char **description, u32 *deployed)
 {
 	int node;
 	int len = 0;

@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
+// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * (C) Copyright 2023 - Analog Devices, Inc.
  *
@@ -6,7 +6,6 @@
  * - Currently only supports RGMII targets (as its dwmac4 driver counterpart)
  */
 
-#include <common.h>
 #include <clk.h>
 #include <clk-uclass.h>
 #include <dm.h>
@@ -79,14 +78,14 @@
 #define ETH1G_REFCLK_REFPATH_PD                 0 /* BIT(17) */
 #define ETH1G_REFCLK_DEFAULT_VAL                ETH1G_REFCLK_REFPATH_PD
 
-#define HZ_TO_MHZ(freq)                         (freq * 1000 * 1000)
+#define HZ_TO_MHZ(freq)                         ((freq) * 1000 * 1000)
 #define CLK_25MHZ                               HZ_TO_MHZ(25)
 #define CLK_50MHZ                               HZ_TO_MHZ(50)
 #define CLK_125MHZ                              HZ_TO_MHZ(125)
 
 struct adrv906x_priv_data {
-	uint32_t base_clk_speed;
-	uint32_t phy_interface;
+	u32 base_clk_speed;
+	u32 phy_interface;
 	void __iomem *clk_div_base;
 };
 
@@ -94,9 +93,9 @@ struct adrv906x_priv_data sam_priv;
 
 static int adrv906x_dwmac_set_clk_dividers(struct adrv906x_priv_data *priv, ulong rate)
 {
-	uint32_t reg;
-	uint32_t osc_div;
-	uint32_t rmii_div;
+	u32 reg;
+	u32 osc_div;
+	u32 rmii_div;
 
 	/* Sanity checks */
 	if ((priv->base_clk_speed % rate) != 0) {
@@ -104,21 +103,20 @@ static int adrv906x_dwmac_set_clk_dividers(struct adrv906x_priv_data *priv, ulon
 		return -EINVAL;
 	}
 
-	if ((priv->phy_interface == PHY_INTERFACE_MODE_RMII) &&
-	    ((priv->base_clk_speed % CLK_50MHZ) != 0)) {
+	if (priv->phy_interface == PHY_INTERFACE_MODE_RMII &&
+	    priv->base_clk_speed % CLK_50MHZ != 0) {
 		pr_err("Unable to get RMII PHY clock (50 MHz)\n");
 		return -1;
 	}
 
-
-	if ((priv->phy_interface == PHY_INTERFACE_MODE_RMII) &&
-	    (rate == CLK_125MHZ)) {
+	if (priv->phy_interface == PHY_INTERFACE_MODE_RMII &&
+	    rate == CLK_125MHZ) {
 		pr_err("RMII does not support 1000 Mbs");
 		return -1;
 	}
 
-	if ((priv->phy_interface != PHY_INTERFACE_MODE_RMII) &&
-	    (priv->phy_interface != PHY_INTERFACE_MODE_RGMII)) {
+	if (priv->phy_interface != PHY_INTERFACE_MODE_RMII &&
+	    priv->phy_interface != PHY_INTERFACE_MODE_RGMII) {
 		pr_err("MAC-PHY Interface (%d) not supported", priv->phy_interface);
 		return -1;
 	}
@@ -205,7 +203,7 @@ const struct clk_ops adi_clk_ops = {
 
 static void adrv906x_clk_buffer_enable(void __iomem *clk_ctrl_base, bool term_en)
 {
-	uint32_t val;
+	u32 val;
 
 	clk_ctrl_base = (void __iomem *)0x20190000;
 	/* eth1_devclk: enable buffer and divide by 1 (buffered input clock) */
@@ -231,11 +229,11 @@ static int adrv906x_1g_clock_probe(struct udevice *dev)
 	struct clk clkin;
 	void __iomem *clk_ctrl_base;
 	bool term_en;
-	uint32_t adi_ctrl_reg[2];
+	u32 adi_ctrl_reg[2];
 
 	/* ADRV906X ethernet 1g input clock  */
 	clk_name = dev_read_string(dev, "clock-names");
-	if (clk_name == NULL) {
+	if (!clk_name) {
 		pr_err("failed to get /%s/clock-names\n", dev->name);
 		return -1;
 	}
@@ -251,7 +249,7 @@ static int adrv906x_1g_clock_probe(struct udevice *dev)
 	sam_priv.base_clk_speed = clk_get_rate(&clkin);
 
 	/* ADRV906x ethernet 1g Buffer input clock */
-	ret = dev_read_u32_array(dev, "adi,ctrl-reg", adi_ctrl_reg, sizeof(adi_ctrl_reg) / sizeof(adi_ctrl_reg[0]));
+	ret = dev_read_u32_array(dev, "adi,ctrl-reg", adi_ctrl_reg, ARRAY_SIZE(adi_ctrl_reg));
 	if (ret < 0) {
 		pr_err("failed to get clock control base address\n");
 		return ret;

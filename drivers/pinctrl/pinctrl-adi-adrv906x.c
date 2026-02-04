@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
+// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * (C) Copyright 2022 - Analog Devices, Inc.
  *
@@ -8,7 +8,6 @@
  *
  */
 
-#include <common.h>
 #include <dm.h>
 #include <dm/device.h>
 #include <dm/pinctrl.h>
@@ -59,7 +58,7 @@ struct adi_adrv906x_pinctrl_priv {
 	int dedicated_io_start_pin_num;
 };
 
-static int adi_adrv906x_pinctrl_pinmux_set(struct udevice *udev, unsigned pin, unsigned src_mux, unsigned config)
+static int adi_adrv906x_pinctrl_pinmux_set(struct udevice *udev, unsigned int pin, unsigned int src_mux, unsigned int config)
 {
 	struct arm_smccc_res res;
 	int drive_strength;

@@ -251,7 +251,8 @@ config CLK_ADI_ADRV906X_1G
 	bool "Clock divider support for ADRV906X 1G Ethernet"
 	depends on CLK && ARCH_ADRV906X
 	help
-	  Support ADRV906X clock divider configuration for 1G ethernet (Synopsys IP)
+	  Support ADRV906X clock divider configuration for 1G ethernet.
+	  (Synopsys IP)
 
 source "drivers/clk/analogbits/Kconfig"
 source "drivers/clk/at91/Kconfig"

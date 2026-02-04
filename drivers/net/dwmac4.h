@@ -20,7 +20,7 @@
 #define GMAC_VLAN_HASH_TABLE            0x00000058
 #define GMAC_RX_FLOW_CTRL               0x00000090
 #define GMAC_VLAN_INCL                  0x00000060
-#define GMAC_QX_TX_FLOW_CTRL(x)         (0x70 + x * 4)
+#define GMAC_QX_TX_FLOW_CTRL(x)         (0x70 + (x) * 4)
 #define GMAC_TXQ_PRTY_MAP0              0x98
 #define GMAC_TXQ_PRTY_MAP1              0x9C
 #define GMAC_RXQ_CTRL0                  0x000000a0
@@ -41,8 +41,8 @@
 #define GMAC_MDIO_ADDR                  0x00000200
 #define GMAC_MDIO_DATA                  0x00000204
 #define GMAC_ARP_ADDR                   0x00000210
-#define GMAC_ADDR_HIGH(reg)             (0x300 + reg * 8)
-#define GMAC_ADDR_LOW(reg)              (0x304 + reg * 8)
+#define GMAC_ADDR_HIGH(reg)             (0x300 + (reg) * 8)
+#define GMAC_ADDR_LOW(reg)              (0x304 + (reg) * 8)
 
 /* RX Queues Enables */
 #define GMAC_RXQCTRL0_RXQ0EN_AV         0x1
@@ -96,11 +96,11 @@
 #define GMAC_RX_FLOW_CTRL_RFE           BIT(0)
 
 /* RX Queues Priorities */
-#define GMAC_RXQCTRL_PSRQX_MASK(x)      GENMASK(7 + ((x) * 8), 0 + ((x) * 8))
+#define GMAC_RXQCTRL_PSRQX_MASK(x)      (0xff << 8 * (x))
 #define GMAC_RXQCTRL_PSRQX_SHIFT(x)     ((x) * 8)
 
 /* TX Queues Priorities */
-#define GMAC_TXQCTRL_PSTQX_MASK(x)      GENMASK(7 + ((x) * 8), 0 + ((x) * 8))
+#define GMAC_TXQCTRL_PSTQX_MASK(x)      (0xff << 8 * (x))
 #define GMAC_TXQCTRL_PSTQX_SHIFT(x)     ((x) * 8)
 
 /* MAC Flow Control TX */
@@ -272,13 +272,13 @@ enum power_event {
 #define MTL_RXQ_DMA_MAP1                0x00000c34      /* queue 4 to 7 */
 #define MTL_RXQ_DMA_Q04MDMACH_MASK      GENMASK(3, 0)
 #define MTL_RXQ_DMA_Q04MDMACH(x)        ((x) << 0)
-#define MTL_RXQ_DMA_QXMDMACH_MASK(x)    GENMASK(11 + (8 * ((x) - 1)), 8 * (x))
+#define MTL_RXQ_DMA_QXMDMACH_MASK(x)    (0xf << 8 * (x))
 #define MTL_RXQ_DMA_QXMDMACH(chan, q)   ((chan) << (8 * (q)))
 
 #define MTL_CHAN_BASE_ADDR              0x00000d00
 #define MTL_CHAN_BASE_OFFSET            0x40
 #define MTL_CHANX_BASE_ADDR(x)          (MTL_CHAN_BASE_ADDR + \
-					 (x * MTL_CHAN_BASE_OFFSET))
+					 ((x) * MTL_CHAN_BASE_OFFSET))
 
 #define MTL_CHAN_TX_OP_MODE(x)          MTL_CHANX_BASE_ADDR(x)
 #define MTL_CHAN_TX_DEBUG(x)            (MTL_CHANX_BASE_ADDR(x) + 0x8)
@@ -456,14 +456,14 @@ enum power_event {
 #define GMAC_PHYIF_CTRLSTATUS_SPEED_25          0x1
 #define GMAC_PHYIF_CTRLSTATUS_SPEED_2_5         0x0
 
-#define CONFIG_TX_DESCR_NUM     16
-#define CONFIG_RX_DESCR_NUM     16
-#define CONFIG_ETH_BUFSIZE      2048
-#define TX_TOTAL_BUFSIZE        (CONFIG_ETH_BUFSIZE * CONFIG_TX_DESCR_NUM)
-#define RX_TOTAL_BUFSIZE        (CONFIG_ETH_BUFSIZE * CONFIG_RX_DESCR_NUM)
+#define DWMAC4_TX_DESCR_NUM     16
+#define DWMAC4_RX_DESCR_NUM     16
+#define DWMAC4_ETH_BUFSIZE      2048
+#define TX_TOTAL_BUFSIZE        (DWMAC4_ETH_BUFSIZE * DWMAC4_TX_DESCR_NUM)
+#define RX_TOTAL_BUFSIZE        (DWMAC4_ETH_BUFSIZE * DWMAC4_RX_DESCR_NUM)
 
-#define CONFIG_MACRESET_TIMEOUT (3 * CONFIG_SYS_HZ)
-#define CONFIG_MDIO_TIMEOUT     (3 * CONFIG_SYS_HZ)
+#define DWMAC4_MACRESET_TIMEOUT (3 * CONFIG_SYS_HZ)
+#define DWMAC4_MDIO_TIMEOUT     (3 * CONFIG_SYS_HZ)
 
 struct dwmac4_dma_desc {
 	u32 dmamac_addr;
@@ -473,8 +473,8 @@ struct dwmac4_dma_desc {
 };
 
 struct dwmac4_dev {
-	struct dwmac4_dma_desc tx_mac_descrtable[CONFIG_TX_DESCR_NUM];
-	struct dwmac4_dma_desc rx_mac_descrtable[CONFIG_RX_DESCR_NUM];
+	struct dwmac4_dma_desc tx_mac_descrtable[DWMAC4_TX_DESCR_NUM];
+	struct dwmac4_dma_desc rx_mac_descrtable[DWMAC4_RX_DESCR_NUM];
 	char txbuffs[TX_TOTAL_BUFSIZE] __aligned(ARCH_DMA_MINALIGN);
 	char rxbuffs[RX_TOTAL_BUFSIZE] __aligned(ARCH_DMA_MINALIGN);
 
@@ -492,7 +492,7 @@ struct dwmac4_dev {
 #if CONFIG_IS_ENABLED(DM_GPIO)
 	struct gpio_desc reset_gpio;
 #endif
-#ifdef CONFIG_CLK
+#ifdef DWMAC4_CLK
 	struct clk *clocks;     /* clock list */
 	int clock_count;        /* number of clock in clock list */
 #endif

@@ -269,7 +269,8 @@ config MMC_SDHCI_ADI
 	depends on DM_MMC && OF_CONTROL
 	depends on MMC_SDHCI
 	help
-	  ADI SD/MMC controller support
+	  ADI SD/MMC controller support.
+	  Originally used for adrv906x-based evaluation boards.
 
 config MMC_DW_SOCFPGA
 	bool "SOCFPGA specific extensions for Synopsys DW Memory Card Interface"

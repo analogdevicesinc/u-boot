@@ -9,5 +9,4 @@
 #define SCRATCH 0x40000
 #define SCRATCH_NS      0x80000
 
-
 #endif /* __ADI_ADRV906X_STATUS_REG_H__ */

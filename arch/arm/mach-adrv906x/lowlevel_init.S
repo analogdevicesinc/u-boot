@@ -1,6 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright (C) 2021 Analog Devices Inc.
- * Licensed under the GPL-2 or later.
+ * Copyright (C) 2021 Analog Devices, Inc.
  */
 
 #include <asm-offsets.h>

@@ -83,7 +83,7 @@
 #define DMA_CHAN_BASE_ADDR              0x00001100
 #define DMA_CHAN_BASE_OFFSET            0x80
 #define DMA_CHANX_BASE_ADDR(x)          (DMA_CHAN_BASE_ADDR + \
-					 (x * DMA_CHAN_BASE_OFFSET))
+					 ((x) * DMA_CHAN_BASE_OFFSET))
 #define DMA_CHAN_REG_NUMBER             17
 
 #define DMA_CHAN_CONTROL(x)             DMA_CHANX_BASE_ADDR(x)

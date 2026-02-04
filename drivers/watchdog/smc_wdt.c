@@ -1,7 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0-only
 #include <asm/global_data.h>
 #include <asm/io.h>
 #include <clk.h>
-#include <common.h>
 #include <dm/device.h>
 #include <dm/fdtaddr.h>
 #include <dm/read.h>

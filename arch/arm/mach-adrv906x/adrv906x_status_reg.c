@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2024 Analog Devices, Inc.
  */
@@ -14,7 +14,7 @@
 /* This value must match the value found in arm-trusted-firmware (plat/adi/adrv/adrv906x/adrv906x_status_reg.c) and in linux (/drivers/soc/adi/adrv906x-err.c) */
 #define RESET_CAUSE_NS_OFFSET              0
 
-unsigned int rd_status_reg(status_reg_id_t reg)
+unsigned int rd_status_reg(enum status_reg_id reg)
 {
 	switch (reg) {
 	case RESET_CAUSE_NS:
@@ -26,7 +26,7 @@ unsigned int rd_status_reg(status_reg_id_t reg)
 	}
 }
 
-bool wr_status_reg(status_reg_id_t reg, unsigned int value)
+bool wr_status_reg(enum status_reg_id reg, unsigned int value)
 {
 	switch (reg) {
 	case RESET_CAUSE_NS:

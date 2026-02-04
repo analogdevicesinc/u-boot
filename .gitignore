@@ -104,10 +104,6 @@ GTAGS
 # Python cache
 __pycache__
 
-# Yocto symlinks
-oe-logs
-oe-workdir
-
 # Python code coverage output (python3-coverage html)
 /htmlcov/
 

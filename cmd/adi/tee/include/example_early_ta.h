@@ -1,12 +1,10 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright (c) 2022, Analog Devices Inc.
- *
- * SPDX-License-Identifier: GPL-2.0+
+ * Copyright (c) 2022 Analog Devices, Inc.
  */
 
 #ifndef TA_EXAMPLE_EARLY_H
 #define TA_EXAMPLE_EARLY_H
-
 
 /*
  * This UUID must match the one defined in
@@ -31,7 +29,8 @@
 enum ta_example_early_cmds {
 	TA_EXAMPLE_EARLY_CMD_DUMMY,
 	/* New commands go above this comment.
-	 * Keep 'COUNT' as the last entry. */
+	 * Keep 'COUNT' as the last entry.
+	 */
 	TA_EXAMPLE_EARLY_CMDS_COUNT
 };
 

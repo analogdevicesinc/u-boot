@@ -5,6 +5,8 @@ config CMD_TEE_EXAMPLE_EARLY
 	bool "The example_early Trusted Application Host"
 	default n
 	help
-	  The Trusted Application Host for example_early.
+	  The Trusted Application Host for example_early, which is
+	  simply a demonstration app showing how to interact between
+	  U-Boot and the Trusted Execution Environment.
 
 endmenu

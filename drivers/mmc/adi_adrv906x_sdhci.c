@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
+// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * (C) Copyright 2023 - Analog Devices, Inc.
  *
@@ -100,9 +100,6 @@ struct adi_sdhc {
 	void *base;
 };
 
-
-bool is_protium(void);
-bool is_palladium(void);
 static int adi_sdhci_set_delay(struct sdhci_host *host);
 
 static int adi_sdhci_setup_phy(struct udevice *dev)
@@ -194,7 +191,7 @@ static int adi_sdhci_config_dll(struct sdhci_host *host, u32 clock, bool enable)
 		/* Disable here DLL */
 		return 0;
 
-	if (enable == false)
+	if (!enable)
 		phy_opts.event = SDHCI_PHY_OPS_CFG_DLL_NO_CLK;
 	else
 		phy_opts.event = SDHCI_PHY_OPS_ENABLE_DLL_AFTER_CLK;
@@ -234,7 +231,7 @@ static void adi_sdhci_fix_rx_clock_glitch(struct sdhci_host *host, enum bus_mode
 	u32 reg;
 
 	/* This configuration helps to fix this issue (verified in RTL and GLS simulations) */
-	if ((mode == MMC_HS_400_ES) || (mode == MMC_HS_400) || (mode == MMC_HS_200))
+	if (mode == MMC_HS_400_ES || mode == MMC_HS_400 || mode == MMC_HS_200)
 		reg = (POST_CHANGE_DLY_LESS_4_CYCLES << POST_CHANGE_DLY_OFF);
 	else
 		reg = (POST_CHANGE_DLY_LESS_4_CYCLES << POST_CHANGE_DLY_OFF) |
@@ -303,8 +300,8 @@ static int adi_sdhci_set_uhs_timing(struct sdhci_host *host)
 	u32 reg;
 
 	/* Workaround: general framework uses a wrong HS400 definition */
-	if ((mmc->selected_mode == MMC_HS_400) ||
-	    (mmc->selected_mode == MMC_HS_400_ES)) {
+	if (mmc->selected_mode == MMC_HS_400 ||
+	    mmc->selected_mode == MMC_HS_400_ES) {
 		reg = sdhci_readw(host, SDHCI_HOST_CONTROL2);
 		reg &= ~SDHCI_CTRL_UHS_MASK;
 		reg |= SDHCI_CTRL_HS400_STD;
@@ -365,16 +362,11 @@ static int adi_sdhci_platform_execute_tuning(struct mmc *mmc, u8 opcode)
 	int loop_cnt = 0;
 	int ret = 0;
 
-	/* Synopsys eMMC PHY delay lines code is not synthetizable for
-	 * protium/palladium, so tuning sequence procedure is not supported */
-	if ((is_protium() || is_palladium()))
-		return 0;
-
 	/* clock tuning is not needed for upto 52MHz */
-	if (!((mmc->selected_mode == MMC_HS_200) ||
-	      (mmc->selected_mode == MMC_HS_400) ||
-	      (mmc->selected_mode == UHS_SDR104) ||
-	      (mmc->selected_mode == UHS_SDR50)))
+	if (!(mmc->selected_mode == MMC_HS_200 ||
+	      mmc->selected_mode == MMC_HS_400 ||
+	      mmc->selected_mode == UHS_SDR104 ||
+	      mmc->selected_mode == UHS_SDR50))
 		return 0;
 
 	/*
@@ -470,7 +462,7 @@ static const struct sdhci_ops adi_sdhci_sd_ops = {
 
 static int adi_sdhci_deinit(struct sdhci_host *host)
 {
-	uint16_t u16_reg_data;
+	u16 u16_reg_data;
 	unsigned int timeout = SDHCI_IDLE_TIMEOUT;
 
 	/* Wait for the host controller to become idle before stopping card clock.*/
@@ -554,12 +546,14 @@ static int adi_sdhci_probe(struct udevice *dev)
 			/* General framework enables HS200 even if "no-1-8-v"
 			 * property is present in device tree as long as both
 			 * the card and the host support it, This quirk allows
-			 * to disable HSx00 modes.*/
+			 * to disable HSx00 modes.
+			 */
 			host->quirks |= SDHCI_QUIRK_NO_1_8_V;
 	} else {
 		/* As per Spec, Host System should set Voltage support to 3.3V
 		 * or 3.0V for SD card. But, ADI drives 1.8V and level shifter
-		 * in the board converts to 3.3V */
+		 * in the board converts to 3.3V
+		 */
 		host->voltages = MMC_VDD_32_33 | MMC_VDD_33_34;
 
 		host->quirks |= SDHCI_QUIRK_BROKEN_VOLTAGE;
@@ -576,7 +570,7 @@ static int adi_sdhci_probe(struct udevice *dev)
 		return ret;
 
 	if (is_emmc) {
-		int16_t emmc_ctrl;
+		s16 emmc_ctrl;
 
 		/* Set CARD_IS_EMMC bit */
 		emmc_ctrl = sdhci_readw(host, SDHCI_VENDOR1_EMMC_CTRL_R_OFF);
