@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: GPL-2.0+
+#
+# (C) Copyright 2024 Analog Devices, Inc.
+
+menu "ADI ADRV906X board type"
+	depends on ARCH_ADRV906X
+
+choice
+	prompt "Board type select"
+	default TARGET_ADRV906X_EVAL
+
+config TARGET_ADRV906X_EVAL
+	bool "ADRV906X evaluation board"
+
+endchoice
+
+source "board/adi/adrv906x_eval/Kconfig"
+
+endmenu
+

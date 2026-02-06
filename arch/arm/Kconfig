@@ -930,6 +930,12 @@ config ARCH_RMOBILE
 	imply SYS_THUMB_BUILD
 	imply ARCH_MISC_INIT if DISPLAY_CPUINFO
 
+config ARCH_ADRV906X
+        bool "ADI ADRV906X SoC"
+        select ARM64
+        select DM
+        imply CMD_DM
+
 config ARCH_SNAPDRAGON
 	bool "Qualcomm Snapdragon SoCs"
 	select ARM64
@@ -2007,6 +2013,8 @@ source "arch/arm/mach-qemu/Kconfig"
 source "arch/arm/mach-rockchip/Kconfig"
 
 source "arch/arm/mach-s5pc1xx/Kconfig"
+
+source "arch/arm/mach-adrv906x/Kconfig"
 
 source "arch/arm/mach-snapdragon/Kconfig"
 
