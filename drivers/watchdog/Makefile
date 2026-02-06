@@ -33,6 +33,7 @@ obj-$(CONFIG_WDT_OCTEONTX) += octeontx_wdt.o
 obj-$(CONFIG_WDT_OMAP3) += omap_wdt.o
 obj-$(CONFIG_WDT_SBSA) += sbsa_gwdt.o
 obj-$(CONFIG_WDT_K3_RTI) += rti_wdt.o
+obj-$(CONFIG_WDT_SMC) += smc_wdt.o
 obj-$(CONFIG_WDT_SP805) += sp805_wdt.o
 obj-$(CONFIG_WDT_STM32MP) += stm32mp_wdt.o
 obj-$(CONFIG_WDT_TANGIER) += tangier_wdt.o
