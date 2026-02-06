@@ -1,0 +1,32 @@
+menu "ADI ADRV906X evaluation board"
+	depends on TARGET_ADRV906X_EVAL
+
+config SYS_CONFIG_NAME
+        string "Board configuration name"
+	default "adi_adrv906x_eval"
+        help
+          This option contains information about board configuration name.
+          Based on this option include/configs/<CONFIG_SYS_CONFIG_NAME>.h header
+          will be used for board configuration.
+
+config SYS_BOARD
+	string "Board name"
+	default "adrv906x_eval"
+
+endmenu
+
+config SYS_VENDOR
+	string 
+	depends on TARGET_ADRV906X_EVAL
+	default "adi"
+
+config SYS_SOC
+	string
+	depends on TARGET_ADRV906X_EVAL
+	default "adrv906x"
+
+config CMD_ADI_EXT_UTILS
+	bool "Enable Analog Devices-specific U-Boot commands"
+	default n
+	help
+	  Enable ADI-specific U-Boot commands such as trusted app hosts.
