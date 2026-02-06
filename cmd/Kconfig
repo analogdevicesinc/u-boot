@@ -80,6 +80,8 @@ config BUILD_BIN2C
 
 comment "Commands"
 
+source "cmd/adi/Kconfig"
+
 menu "Info commands"
 
 config CMD_ACPI

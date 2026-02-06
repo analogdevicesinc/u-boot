@@ -1,0 +1,6 @@
+menu "ADI commands"
+depends on CMD_ADI_EXT_UTILS
+
+source "cmd/adi/tee/Kconfig"
+
+endmenu
