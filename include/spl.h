@@ -14,9 +14,10 @@
 #include <asm/global_data.h>
 #include <asm/spl.h>
 #include <handoff.h>
+#include <mmc.h>
 
 struct blk_desc;
-struct image_header;
+struct legacy_img_hdr;
 
 /* Value in r0 indicates we booted from U-Boot */
 #define UBOOT_NOT_LOADED_FROM_SPL	0x13578642
@@ -28,7 +29,9 @@ struct image_header;
 #define MMCSD_MODE_EMMCBOOT	3
 
 struct blk_desc;
-struct image_header;
+struct legacy_img_hdr;
+struct spl_boot_device;
+enum boot_device;
 
 /*
  * u_boot_first_phase() - check if this is the first U-Boot phase
@@ -60,9 +63,12 @@ static inline bool u_boot_first_phase(void)
 enum u_boot_phase {
 	PHASE_NONE,	/* Invalid phase, signifying before U-Boot */
 	PHASE_TPL,	/* Running in TPL */
+	PHASE_VPL,	/* Running in VPL */
 	PHASE_SPL,	/* Running in SPL */
 	PHASE_BOARD_F,	/* Running in U-Boot before relocation */
 	PHASE_BOARD_R,	/* Running in U-Boot after relocation */
+
+	PHASE_COUNT,
 };
 
 /**
@@ -106,13 +112,15 @@ enum u_boot_phase {
  *       ...
  *    }
  *
- * @return U-Boot phase
+ * Return: U-Boot phase
  */
 static inline enum u_boot_phase spl_phase(void)
 {
 #ifdef CONFIG_TPL_BUILD
 	return PHASE_TPL;
-#elif CONFIG_SPL_BUILD
+#elif defined(CONFIG_VPL_BUILD)
+	return PHASE_VPL;
+#elif defined(CONFIG_SPL_BUILD)
 	return PHASE_SPL;
 #else
 	DECLARE_GLOBAL_DATA_PTR;
@@ -124,32 +132,49 @@ static inline enum u_boot_phase spl_phase(void)
 #endif
 }
 
+/* returns true if in U-Boot proper, false if in SPL */
+static inline bool spl_in_proper(void)
+{
+#ifdef CONFIG_SPL_BUILD
+	return false;
+#endif
+
+	return true;
+}
+
 /**
  * spl_prev_phase() - Figure out the previous U-Boot phase
  *
- * @return the previous phase from this one, e.g. if called in SPL this returns
+ * Return: the previous phase from this one, e.g. if called in SPL this returns
  *	PHASE_TPL, if TPL is enabled
  */
 static inline enum u_boot_phase spl_prev_phase(void)
 {
 #ifdef CONFIG_TPL_BUILD
 	return PHASE_NONE;
+#elif defined(CONFIG_VPL_BUILD)
+	return PHASE_TPL;	/* VPL requires TPL */
 #elif defined(CONFIG_SPL_BUILD)
-	return IS_ENABLED(CONFIG_TPL) ? PHASE_TPL : PHASE_NONE;
+	return IS_ENABLED(CONFIG_VPL) ? PHASE_VPL :
+		IS_ENABLED(CONFIG_TPL) ? PHASE_TPL :
+		PHASE_NONE;
 #else
-	return IS_ENABLED(CONFIG_SPL) ? PHASE_SPL : PHASE_NONE;
+	return IS_ENABLED(CONFIG_SPL) ? PHASE_SPL :
+		PHASE_NONE;
 #endif
 }
 
 /**
  * spl_next_phase() - Figure out the next U-Boot phase
  *
- * @return the next phase from this one, e.g. if called in TPL this returns
+ * Return: the next phase from this one, e.g. if called in TPL this returns
  *	PHASE_SPL
  */
 static inline enum u_boot_phase spl_next_phase(void)
 {
 #ifdef CONFIG_TPL_BUILD
+	return IS_ENABLED(CONFIG_VPL) ? PHASE_VPL : PHASE_SPL;
+#elif defined(CONFIG_VPL_BUILD)
 	return PHASE_SPL;
 #else
 	return PHASE_BOARD_F;
@@ -159,13 +184,15 @@ static inline enum u_boot_phase spl_next_phase(void)
 /**
  * spl_phase_name() - Get the name of the current phase
  *
- * @return phase name
+ * Return: phase name
  */
 static inline const char *spl_phase_name(enum u_boot_phase phase)
 {
 	switch (phase) {
 	case PHASE_TPL:
 		return "TPL";
+	case PHASE_VPL:
+		return "VPL";
 	case PHASE_SPL:
 		return "SPL";
 	case PHASE_BOARD_F:
@@ -180,13 +207,15 @@ static inline const char *spl_phase_name(enum u_boot_phase phase)
  * spl_phase_prefix() - Get the prefix  of the current phase
  *
  * @phase: Phase to look up
- * @return phase prefix ("spl", "tpl", etc.)
+ * Return: phase prefix ("spl", "tpl", etc.)
  */
 static inline const char *spl_phase_prefix(enum u_boot_phase phase)
 {
 	switch (phase) {
 	case PHASE_TPL:
 		return "tpl";
+	case PHASE_VPL:
+		return "vpl";
 	case PHASE_SPL:
 		return "spl";
 	case PHASE_BOARD_F:
@@ -201,6 +230,8 @@ static inline const char *spl_phase_prefix(enum u_boot_phase phase)
 #ifdef CONFIG_SPL_BUILD
 # ifdef CONFIG_TPL_BUILD
 #  define SPL_TPL_NAME	"TPL"
+# elif defined(CONFIG_VPL_BUILD)
+#  define SPL_TPL_NAME	"VPL"
 # else
 #  define SPL_TPL_NAME	"SPL"
 # endif
@@ -209,6 +240,18 @@ static inline const char *spl_phase_prefix(enum u_boot_phase phase)
 # define SPL_TPL_NAME	""
 # define SPL_TPL_PROMPT	""
 #endif
+
+/**
+ * enum spl_sandbox_flags - flags for sandbox's use of spl_image_info->flags
+ *
+ * @SPL_SANDBOXF_ARG_IS_FNAME: arg is the filename to jump to (default)
+ * @SPL_SANDBOXF_ARG_IS_BUF: arg is the containing image to jump to, @offset is
+ *	the start offset within the image, @size is the size of the image
+ */
+enum spl_sandbox_flags {
+	SPL_SANDBOXF_ARG_IS_FNAME = 0,
+	SPL_SANDBOXF_ARG_IS_BUF,
+};
 
 struct spl_image_info {
 	const char *name;
@@ -229,6 +272,15 @@ struct spl_image_info {
 	ulong dcrc;
 #endif
 };
+
+static inline void *spl_image_fdt_addr(struct spl_image_info *info)
+{
+#if CONFIG_IS_ENABLED(LOAD_FIT) || CONFIG_IS_ENABLED(LOAD_FIT_FULL)
+	return info->fdt_addr;
+#else
+	return 0;
+#endif
+}
 
 /**
  * Information required to load data from a device
@@ -268,8 +320,10 @@ struct spl_load_info {
  */
 binman_sym_extern(ulong, u_boot_any, image_pos);
 binman_sym_extern(ulong, u_boot_any, size);
-binman_sym_extern(ulong, spl, image_pos);
-binman_sym_extern(ulong, spl, size);
+binman_sym_extern(ulong, u_boot_spl_any, image_pos);
+binman_sym_extern(ulong, u_boot_spl_any, size);
+binman_sym_extern(ulong, u_boot_vpl_any, image_pos);
+binman_sym_extern(ulong, u_boot_vpl_any, size);
 
 /**
  * spl_get_image_pos() - get the image position of the next phase
@@ -289,9 +343,9 @@ ulong spl_get_image_size(void);
  * spl_get_image_text_base() - get the text base of the next phase
  *
  * This returns the address that the next stage is linked to run at, i.e.
- * CONFIG_SPL_TEXT_BASE or CONFIG_SYS_TEXT_BASE
+ * CONFIG_SPL_TEXT_BASE or CONFIG_TEXT_BASE
  *
- * @return text-base address
+ * Return: text-base address
  */
 ulong spl_get_image_text_base(void);
 
@@ -303,6 +357,14 @@ ulong spl_get_image_text_base(void);
  * of spl_load_simple_fit().
  */
 bool spl_load_simple_fit_skip_processing(void);
+
+/**
+ * spl_load_simple_fit_fix_load() - Hook to make fixes
+ * after fit image header is loaded
+ *
+ * Returns pointer to fit
+ */
+void *spl_load_simple_fit_fix_load(const void *fit);
 
 /**
  * spl_load_simple_fit() - Loads a fit image from a device.
@@ -325,14 +387,18 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
  * spl_load_legacy_img() - Loads a legacy image from a device.
  * @spl_image:	Image description to set up
  * @load:	Structure containing the information required to load data.
- * @header:	Pointer to image header (including appended image)
+ * @offset:	Pointer to image
+ * @hdr:	Pointer to image header
  *
  * Reads an legacy image from the device. Loads u-boot image to
  * specified load address.
  * Returns 0 on success.
  */
 int spl_load_legacy_img(struct spl_image_info *spl_image,
-			struct spl_load_info *load, ulong header);
+			struct spl_boot_device *bootdev,
+			struct spl_load_info *load, ulong offset,
+			struct legacy_img_hdr *hdr);
+
 
 /**
  * spl_load_imx_container() - Loads a imx container image from a device.
@@ -350,6 +416,32 @@ int spl_load_imx_container(struct spl_image_info *spl_image,
 void preloader_console_init(void);
 u32 spl_boot_device(void);
 
+struct spi_flash;
+
+/**
+ * spl_spi_get_uboot_offs() - Lookup function for the SPI boot offset
+ * @flash: The spi flash to boot from
+ *
+ * Return: The offset of U-Boot within the SPI flash
+ */
+unsigned int spl_spi_get_uboot_offs(struct spi_flash *flash);
+
+/**
+ * spl_spi_boot_bus() - Lookup function for the SPI boot bus source.
+ *
+ * This function returns the SF bus to load from.
+ * If not overridden, it is weakly defined in common/spl/spl_spi.c.
+ */
+u32 spl_spi_boot_bus(void);
+
+/**
+ * spl_spi_boot_cs() - Lookup function for the SPI boot CS source.
+ *
+ * This function returns the SF CS to load from.
+ * If not overridden, it is weakly defined in common/spl/spl_spi.c.
+ */
+u32 spl_spi_boot_cs(void);
+
 /**
  * spl_mmc_boot_mode() - Lookup function for the mode of an MMC boot source.
  * @boot_device:	ID of the device which the MMC driver wants to read
@@ -365,7 +457,7 @@ u32 spl_boot_device(void);
  * Note:  It is important to use the boot_device parameter instead of e.g.
  * spl_boot_device() as U-Boot is not always loaded from the same device as SPL.
  */
-u32 spl_mmc_boot_mode(const u32 boot_device);
+u32 spl_mmc_boot_mode(struct mmc *mmc, const u32 boot_device);
 
 /**
  * spl_mmc_boot_partition() - MMC partition to load U-Boot from.
@@ -405,11 +497,50 @@ int spl_mmc_emmc_boot_partition(struct mmc *mmc);
 void spl_set_bd(void);
 
 /**
+ * spl_mmc_get_uboot_raw_sector() - Provide raw sector of the start of U-Boot (architecture override)
+ *
+ * This is a weak function which by default will provide the raw sector that is
+ * where the start of the U-Boot image has been written to.
+ *
+ * @mmc: struct mmc that describes the devie where U-Boot resides
+ * @raw_sect: The raw sector number where U-Boot is by default.
+ * Return: The raw sector location that U-Boot resides at
+ */
+unsigned long arch_spl_mmc_get_uboot_raw_sector(struct mmc *mmc,
+						unsigned long raw_sect);
+
+/**
+ * spl_mmc_get_uboot_raw_sector() - Provide raw sector of the start of U-Boot (board override)
+ *
+ * This is a weak function which by default will provide the raw sector that is
+ * where the start of the U-Boot image has been written to.
+ *
+ * @mmc: struct mmc that describes the devie where U-Boot resides
+ * @raw_sect: The raw sector number where U-Boot is by default.
+ * Return: The raw sector location that U-Boot resides at
+ */
+unsigned long board_spl_mmc_get_uboot_raw_sector(struct mmc *mmc,
+						 unsigned long raw_sect);
+
+/**
+ * spl_mmc_get_uboot_raw_sector() - Provide raw sector of the start of U-Boot
+ *
+ * This is a weak function which by default will provide the raw sector that is
+ * where the start of the U-Boot image has been written to.
+ *
+ * @mmc: struct mmc that describes the devie where U-Boot resides
+ * @raw_sect: The raw sector number where U-Boot is by default.
+ * Return: The raw sector location that U-Boot resides at
+ */
+unsigned long spl_mmc_get_uboot_raw_sector(struct mmc *mmc,
+					   unsigned long raw_sect);
+
+/**
  * spl_set_header_raw_uboot() - Set up a standard SPL image structure
  *
  * This sets up the given spl_image which the standard values obtained from
  * config options: CONFIG_SYS_MONITOR_LEN, CONFIG_SYS_UBOOT_START,
- * CONFIG_SYS_TEXT_BASE.
+ * CONFIG_TEXT_BASE.
  *
  * @spl_image: Image description to set up
  */
@@ -427,10 +558,11 @@ void spl_set_header_raw_uboot(struct spl_image_info *spl_image);
  *
  * @spl_image: Image description to set up
  * @header image header to parse
- * @return 0 if a header was correctly parsed, -ve on error
+ * Return: 0 if a header was correctly parsed, -ve on error
  */
 int spl_parse_image_header(struct spl_image_info *spl_image,
-			   const struct image_header *header);
+			   const struct spl_boot_device *bootdev,
+			   const struct legacy_img_hdr *header);
 
 void spl_board_prepare_for_linux(void);
 
@@ -449,7 +581,18 @@ void spl_board_prepare_for_linux(void);
 void spl_board_prepare_for_optee(void *fdt);
 void spl_board_prepare_for_boot(void);
 int spl_board_ubi_load_image(u32 boot_device);
-int spl_board_boot_device(u32 boot_device);
+int spl_board_boot_device(enum boot_device boot_dev_spl);
+
+/**
+ * spl_board_loader_name() - Return a name for the loader
+ *
+ * This is a weak function which might be overridden by the board code. With
+ * that a board specific value for the device where the U-Boot will be loaded
+ * from can be set. By default it returns NULL.
+ *
+ * @boot_device:	ID of the device which SPL wants to load U-Boot from.
+ */
+const char *spl_board_loader_name(u32 boot_device);
 
 /**
  * jump_to_image_linux() - Jump to a Linux kernel from SPL
@@ -461,13 +604,22 @@ int spl_board_boot_device(u32 boot_device);
 void __noreturn jump_to_image_linux(struct spl_image_info *spl_image);
 
 /**
+ * jump_to_image_optee() - Jump to OP-TEE OS from SPL
+ *
+ * This jumps into OP-TEE OS using the information in @spl_image.
+ *
+ * @spl_image: Image description to set up
+ */
+void __noreturn jump_to_image_optee(struct spl_image_info *spl_image);
+
+/**
  * spl_start_uboot() - Check if SPL should start the kernel or U-Boot
  *
  * This is called by the various SPL loaders to determine whether the board
  * wants to load the kernel or U-Boot. This function should be provided by
  * the board.
  *
- * @return 0 if SPL should start the kernel, 1 if U-Boot must be started
+ * Return: 0 if SPL should start the kernel, 1 if U-Boot must be started
  */
 int spl_start_uboot(void);
 
@@ -524,7 +676,9 @@ struct spl_image_loader {
 static inline const char *spl_loader_name(const struct spl_image_loader *loader)
 {
 #ifdef CONFIG_SPL_LIBCOMMON_SUPPORT
-	return loader->name;
+	const char *name;
+	name = spl_board_loader_name(loader->boot_device);
+	return name ?: loader->name;
 #else
 	return NULL;
 #endif
@@ -555,21 +709,44 @@ static inline const char *spl_loader_name(const struct spl_image_loader *loader)
 	}
 #endif
 
+#define SPL_LOAD_IMAGE_GET(_priority, _boot_device, _method) \
+	ll_entry_get(struct spl_image_loader, \
+		     _boot_device ## _priority ## _method, spl_image_loader)
+
 /* SPL FAT image functions */
+
+/**
+ * spl_fat_force_reregister() - Force reregistration of FAT block devices
+ *
+ * To avoid repeatedly looking up block devices, spl_load_image_fat keeps track
+ * of whether it has already registered a block device. This is fine for most
+ * cases, but when running unit tests all devices are removed and recreated
+ * in-between tests. This function will force re-registration of any block
+ * devices, ensuring that we don't try to use an invalid block device.
+ */
+void spl_fat_force_reregister(void);
+
 int spl_load_image_fat(struct spl_image_info *spl_image,
+		       struct spl_boot_device *bootdev,
 		       struct blk_desc *block_dev, int partition,
 		       const char *filename);
 int spl_load_image_fat_os(struct spl_image_info *spl_image,
+			  struct spl_boot_device *bootdev,
 			  struct blk_desc *block_dev, int partition);
 
 void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image);
 
 /* SPL EXT image functions */
 int spl_load_image_ext(struct spl_image_info *spl_image,
+		       struct spl_boot_device *bootdev,
 		       struct blk_desc *block_dev, int partition,
 		       const char *filename);
 int spl_load_image_ext_os(struct spl_image_info *spl_image,
+			  struct spl_boot_device *bootdev,
 			  struct blk_desc *block_dev, int partition);
+int spl_blk_load_image(struct spl_image_info *spl_image,
+		       struct spl_boot_device *bootdev,
+		       enum uclass_id uclass_id, int devnum, int partnum);
 
 /**
  * spl_early_init() - Set up device tree and driver model in SPL if enabled
@@ -601,9 +778,13 @@ int spl_early_init(void);
  */
 int spl_init(void);
 
-#ifdef CONFIG_SPL_BOARD_INIT
+/*
+ * spl_board_init() - Do board-specific init in SPL
+ *
+ * If xPL_BOARD_INIT is enabled, this is called from board_init_r() before
+ * jumping to the next phase.
+ */
 void spl_board_init(void);
-#endif
 
 /**
  * spl_was_boot_source() - check if U-Boot booted from SPL
@@ -611,7 +792,7 @@ void spl_board_init(void);
  * This will normally be true, but if U-Boot jumps to second U-Boot, it will
  * be false. This should be implemented by board-specific code.
  *
- * @return true if U-Boot booted from SPL, else false
+ * Return: true if U-Boot booted from SPL, else false
  */
 bool spl_was_boot_source(void);
 
@@ -620,9 +801,19 @@ bool spl_was_boot_source(void);
  * @param usb_index - usb controller number
  * @param mmc_dev -  mmc device nubmer
  *
- * @return 0 on success, otherwise error code
+ * Return: 0 on success, otherwise error code
  */
 int spl_dfu_cmd(int usbctrl, char *dfu_alt_info, char *interface, char *devstr);
+
+/**
+ * spl_mmc_clear_cache() - Clear cached MMC devices
+ *
+ * To avoid reinitializing MMCs, spl_mmc_load caches the most-recently-used MMC
+ * device. This is fine for most cases, but when running unit tests all devices
+ * are removed and recreated in-between tests. This function will clear any
+ * cached state, ensuring that we don't try to use an invalid MMC.
+ */
+void spl_mmc_clear_cache(void);
 
 int spl_mmc_load_image(struct spl_image_info *spl_image,
 		       struct spl_boot_device *bootdev);
@@ -636,7 +827,7 @@ int spl_mmc_load_image(struct spl_image_info *spl_image,
  * @param raw_part	Partition to load from (in RAW mode)
  * @param raw_sect	Sector to load from (in RAW mode)
  *
- * @return 0 on success, otherwise error code
+ * Return: 0 on success, otherwise error code
  */
 int spl_mmc_load(struct spl_image_info *spl_image,
 		 struct spl_boot_device *bootdev,
@@ -652,7 +843,7 @@ int spl_mmc_load(struct spl_image_info *spl_image,
  * @param raw_part	Fat partition to load from
  * @param filename	Name of file to load
  *
- * @return 0 on success, otherwise error code
+ * Return: 0 on success, otherwise error code
  */
 int spl_usb_load(struct spl_image_info *spl_image,
 		 struct spl_boot_device *bootdev,
@@ -664,7 +855,7 @@ int spl_ymodem_load_image(struct spl_image_info *spl_image,
 /**
  * spl_invoke_atf - boot using an ARM trusted firmware image
  */
-void spl_invoke_atf(struct spl_image_info *spl_image);
+void __noreturn spl_invoke_atf(struct spl_image_info *spl_image);
 
 /**
  * bl2_plat_get_bl31_params() - return params for bl31.
@@ -751,12 +942,12 @@ struct bl_params *bl2_plat_get_bl31_params_v2_default(uintptr_t bl32_entry,
  * @arg2: device tree address, (ARMv7 standard bootarg #2)
  * @arg3: non-secure entry address (ARMv7 bootarg #0)
  */
-void spl_optee_entry(void *arg0, void *arg1, void *arg2, void *arg3);
+void __noreturn spl_optee_entry(void *arg0, void *arg1, void *arg2, void *arg3);
 
 /**
  * spl_invoke_opensbi - boot using a RISC-V OpenSBI image
  */
-void spl_invoke_opensbi(struct spl_image_info *spl_image);
+void __noreturn spl_invoke_opensbi(struct spl_image_info *spl_image);
 
 /**
  * board_return_to_bootrom - allow for boards to continue with the boot ROM
@@ -768,12 +959,6 @@ void spl_invoke_opensbi(struct spl_image_info *spl_image);
  */
 int board_return_to_bootrom(struct spl_image_info *spl_image,
 			    struct spl_boot_device *bootdev);
-
-/**
- * board_spl_fit_post_load - allow process images after loading finished
- * @fit: Pointer to a valid Flattened Image Tree blob
- */
-void board_spl_fit_post_load(const void *fit);
 
 /**
  * board_spl_fit_size_align - specific size align before processing payload
@@ -793,7 +978,44 @@ void spl_perform_fixups(struct spl_image_info *spl_image);
  * Returns memory area which can be populated by partial image data,
  * ie. uImage or fitImage header.
  */
-struct image_header *spl_get_load_buffer(ssize_t offset, size_t size);
+struct legacy_img_hdr *spl_get_load_buffer(ssize_t offset, size_t size);
 
+/**
+ * board_spl_fit_append_fdt_skip(): test whether DTO application should be skipped
+ * @name:	DTO node name within fitImage images node
+ *
+ * A board-specific function used to indicate whether a DTO from fitImage
+ * configuration node 'fdt' property DT and DTO list should be applied onto
+ * the base DT or not applied.
+ *
+ * This is useful in case of DTOs which implement e.g. different board revision
+ * details, where such DTO should be applied on one board revision, and should
+ * not be applied on another board revision.
+ *
+ * Return:	0 to indicate DTO is not skipped, all else to indicate DTO is skipped.
+ */
+int board_spl_fit_append_fdt_skip(const char *name);
+
+void board_boot_order(u32 *spl_boot_list);
 void spl_save_restore_data(void);
+
+/**
+ * spl_load_fit_image() - Fully parse and a FIT image in SPL
+ *
+ * @spl_image: SPL Image data to fill in
+ * @header: Pointer to FIT image
+ * Return 0 if OK, -ve on error
+ */
+int spl_load_fit_image(struct spl_image_info *spl_image,
+		       const struct legacy_img_hdr *header);
+
+/*
+ * spl_decompression_enabled() - check decompression support is enabled for SPL build
+ *
+ * Returns  true  if decompression support is enabled, else False
+ */
+static inline bool spl_decompression_enabled(void)
+{
+	return IS_ENABLED(CONFIG_SPL_GZIP) || IS_ENABLED(CONFIG_SPL_LZMA);
+}
 #endif

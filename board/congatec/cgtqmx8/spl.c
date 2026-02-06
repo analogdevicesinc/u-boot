@@ -6,9 +6,11 @@
 
 #include <common.h>
 #include <dm.h>
+#include <fdt_support.h>
 #include <init.h>
 #include <log.h>
 #include <spl.h>
+#include <asm/sections.h>
 #include <dm/uclass.h>
 #include <dm/device.h>
 #include <dm/uclass-internal.h>
@@ -29,13 +31,10 @@ void spl_board_init(void)
 			continue;
 	}
 
-	offset = fdt_node_offset_by_compatible(gd->fdt_blob, -1, "nxp,imx8-pd");
-	while (offset != -FDT_ERR_NOTFOUND) {
+	fdt_for_each_node_by_compatible(offset, gd->fdt_blob, -1,
+					"nxp,imx8-pd")
 		lists_bind_fdt(gd->dm_root, offset_to_ofnode(offset),
-			       NULL, true);
-		offset = fdt_node_offset_by_compatible(gd->fdt_blob, offset,
-						       "nxp,imx8-pd");
-	}
+			       NULL, NULL, true);
 
 	uclass_find_first_device(UCLASS_POWER_DOMAIN, &dev);
 

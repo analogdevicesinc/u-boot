@@ -6,10 +6,12 @@
 # Normal rules (sorted alphabetically)
 #
 .*
+!.checkpatch.conf
 *.a
 *.asn1.[ch]
 *.bin
 *.cfgout
+*.cover
 *.dtb
 *.dtbo
 *.dtb.S
@@ -22,6 +24,7 @@
 *.lex.c
 *.lst
 *.mod.c
+*.mbx
 *.o
 *.o.*
 *.order
@@ -32,7 +35,7 @@
 *.tab.[ch]
 
 # Build tree
-/build-*
+/build*
 
 #
 # Top-level generic files
@@ -41,8 +44,10 @@ fit-dtb.blob*
 /MLO*
 /SPL*
 /System.map
-/u-boot*
 /boards.cfg
+/mkimage-in-simple-bin*
+/simple-bin*
+/u-boot*
 /*.log
 
 #
@@ -50,6 +55,7 @@ fit-dtb.blob*
 #
 !.gitignore
 !.mailmap
+!.get_maintainer.*
 
 #
 # Generated files
@@ -61,6 +67,8 @@ fit-dtb.blob*
 #
 # Generated include files
 #
+/include/autoconf.mk*
+/include/config.h
 /include/config/
 /include/generated/
 
@@ -100,3 +108,15 @@ __pycache__
 oe-logs
 oe-workdir
 
+# Python code coverage output (python3-coverage html)
+/htmlcov/
+
+# pylint files
+/pylint.cur
+/pylint.out/
+
+# qconfig database
+/qconfig.db
+
+# Clang's compilation database file
+/compile_commands.json

@@ -3,6 +3,8 @@
  * Copyright (c) 2018 Google, Inc
  */
 
+#define LOG_CATEGORY	LOGC_BOOT
+
 #include <common.h>
 #include <debug_uart.h>
 #include <dm.h>
@@ -18,11 +20,6 @@
 #include <asm-generic/sections.h>
 
 DECLARE_GLOBAL_DATA_PTR;
-
-__weak int arch_cpu_init_dm(void)
-{
-	return 0;
-}
 
 static int x86_tpl_init(void)
 {
@@ -42,11 +39,6 @@ static int x86_tpl_init(void)
 	ret = arch_cpu_init();
 	if (ret) {
 		debug("%s: arch_cpu_init() failed\n", __func__);
-		return ret;
-	}
-	ret = arch_cpu_init_dm();
-	if (ret) {
-		debug("%s: arch_cpu_init_dm() failed\n", __func__);
 		return ret;
 	}
 	preloader_console_init();
@@ -139,7 +131,7 @@ void spl_board_init(void)
  * for devices, so the TPL BARs continue to be used. Once U-Boot starts it does
  * the auto allocation (after relocation).
  */
-#if !CONFIG_IS_ENABLED(OF_PLATDATA)
+#if CONFIG_IS_ENABLED(OF_REAL)
 static const struct udevice_id tpl_fake_pci_ids[] = {
 	{ .compatible = "pci-x86" },
 	{ }

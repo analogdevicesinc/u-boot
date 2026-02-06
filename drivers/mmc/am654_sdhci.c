@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright (C) 2018 Texas Instruments Incorporated - http://www.ti.com/
+ * Copyright (C) 2018 Texas Instruments Incorporated - https://www.ti.com/
  *
  * Texas Instruments' K3 SD Host Controller Interface
  */
@@ -584,7 +584,7 @@ static int am654_sdhci_of_to_plat(struct udevice *dev)
 	int ret;
 
 	host->name = dev->name;
-	host->ioaddr = (void *)dev_read_addr(dev);
+	host->ioaddr = dev_read_addr_ptr(dev);
 	plat->non_removable = dev_read_bool(dev, "non-removable");
 
 	if (plat->flags & DLL_PRESENT) {
@@ -668,6 +668,10 @@ static const struct udevice_id am654_sdhci_ids[] = {
 	},
 	{
 		.compatible = "ti,am64-sdhci-4bit",
+		.data = (ulong)&sdhci_am64_4bit_drvdata,
+	},
+	{
+		.compatible = "ti,am62-sdhci",
 		.data = (ulong)&sdhci_am64_4bit_drvdata,
 	},
 	{ }

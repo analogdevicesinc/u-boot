@@ -16,6 +16,7 @@
 #include <asm/global_data.h>
 #include <dt-bindings/reset/stih407-resets.h>
 #include <linux/bitops.h>
+#include <linux/printk.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -280,16 +281,6 @@ static int sti_reset_program_hw(struct reset_ctl *reset_ctl, int assert)
 	return 0;
 }
 
-static int sti_reset_request(struct reset_ctl *reset_ctl)
-{
-	return 0;
-}
-
-static int sti_reset_free(struct reset_ctl *reset_ctl)
-{
-	return 0;
-}
-
 static int sti_reset_assert(struct reset_ctl *reset_ctl)
 {
 	return sti_reset_program_hw(reset_ctl, true);
@@ -301,8 +292,6 @@ static int sti_reset_deassert(struct reset_ctl *reset_ctl)
 }
 
 struct reset_ops sti_reset_ops = {
-	.request = sti_reset_request,
-	.rfree = sti_reset_free,
 	.rst_assert = sti_reset_assert,
 	.rst_deassert = sti_reset_deassert,
 };

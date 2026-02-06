@@ -16,6 +16,7 @@
 #include <miiphy.h>
 #include <net.h>
 #include <wait_bit.h>
+#include <linux/printk.h>
 
 #include "mscc_xfer.h"
 #include "mscc_miim.h"
@@ -482,7 +483,7 @@ static int servalt_probe(struct udevice *dev)
 			continue;
 
 		phy_connect(priv->ports[i].bus, priv->ports[i].phy_addr, dev,
-			    PHY_INTERFACE_MODE_NONE);
+			    PHY_INTERFACE_MODE_NA);
 	}
 
 	return 0;

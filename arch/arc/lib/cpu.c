@@ -3,7 +3,7 @@
  * Copyright (C) 2013-2014, 2018 Synopsys, Inc. All rights reserved.
  */
 
-#include <common.h>
+#include <clock_legacy.h>
 #include <init.h>
 #include <malloc.h>
 #include <vsprintf.h>
@@ -18,8 +18,8 @@ int arch_cpu_init(void)
 {
 	timer_init();
 
-	gd->cpu_clk = CONFIG_SYS_CLK_FREQ;
-	gd->ram_size = CONFIG_SYS_SDRAM_SIZE;
+	gd->cpu_clk = get_board_sys_clk();
+	gd->ram_size = CFG_SYS_SDRAM_SIZE;
 
 	cache_init();
 

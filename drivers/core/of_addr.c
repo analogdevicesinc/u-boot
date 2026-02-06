@@ -14,6 +14,7 @@
 #include <dm/of_addr.h>
 #include <linux/err.h>
 #include <linux/ioport.h>
+#include <linux/printk.h>
 
 /* Max address size we deal with */
 #define OF_MAX_ADDR_CELLS	4
@@ -367,7 +368,7 @@ int of_get_dma_range(const struct device_node *dev, phys_addr_t *cpu,
 	/* switch to that node */
 	parent = of_get_parent(dev);
 	if (!parent) {
-		printf("Found dma-ranges in root node, shoudln't happen\n");
+		printf("Found dma-ranges in root node, shouldn't happen\n");
 		ret = -EINVAL;
 		goto out;
 	}

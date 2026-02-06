@@ -127,7 +127,7 @@ int dram_init(void)
 	return 0;
 }
 
-unsigned long board_get_usable_ram_top(unsigned long total_size)
+phys_addr_t board_get_usable_ram_top(phys_addr_t total_size)
 {
 	unsigned long top;
 	unsigned long reserved_mem;

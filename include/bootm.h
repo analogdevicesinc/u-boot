@@ -9,6 +9,7 @@
 
 #include <image.h>
 
+struct boot_params;
 struct cmd_tbl;
 
 #define BOOTM_ERR_RESET		(-1)
@@ -29,17 +30,16 @@ struct cmd_tbl;
  *	 argc is adjusted accordingly. This avoids confusion as to how
  *	 many arguments are available for the OS.
  * @images: Pointers to os/initrd/fdt
- * @return 1 on error. On success the OS boots so this function does
+ * Return: 1 on error. On success the OS boots so this function does
  * not return.
  */
 typedef int boot_os_fn(int flag, int argc, char *const argv[],
-			bootm_headers_t *images);
+			struct bootm_headers *images);
 
 extern boot_os_fn do_bootm_linux;
 extern boot_os_fn do_bootm_vxworks;
 
 int do_bootelf(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[]);
-void lynxkdi_boot(image_header_t *hdr);
 
 boot_os_fn *bootm_os_get_boot_func(int os);
 
@@ -48,7 +48,7 @@ int bootm_host_load_images(const void *fit, int cfg_noffset);
 #endif
 
 int boot_selected_os(int argc, char *const argv[], int state,
-		     bootm_headers_t *images, boot_os_fn *boot_fn);
+		     struct bootm_headers *images, boot_os_fn *boot_fn);
 
 ulong bootm_disable_interrupts(void);
 
@@ -56,8 +56,19 @@ ulong bootm_disable_interrupts(void);
 int bootm_find_images(int flag, int argc, char *const argv[], ulong start,
 		      ulong size);
 
+/*
+ * Measure the boot images. Measurement is the process of hashing some binary
+ * data and storing it into secure memory, i.e. TPM PCRs. In addition, each
+ * measurement is logged into the platform event log such that the operating
+ * system can access it and perform attestation of the boot.
+ *
+ * @images:	The structure containing the various images to boot (linux,
+ *		initrd, dts, etc.)
+ */
+int bootm_measure(struct bootm_headers *images);
+
 int do_bootm_states(struct cmd_tbl *cmdtp, int flag, int argc,
-		    char *const argv[], int states, bootm_headers_t *images,
+		    char *const argv[], int states, struct bootm_headers *images,
 		    int boot_progress);
 
 void arch_preboot_os(void);
@@ -107,7 +118,7 @@ void board_preboot_os(void);
  * @buf: buffer holding commandline string to adjust
  * @maxlen: Maximum length of buffer at @buf (including \0)
  * @flags: Flags to control what happens (see bootm_cmdline_t)
- * @return 0 if OK, -ENOMEM if out of memory, -ENOSPC if the commandline is too
+ * Return: 0 if OK, -ENOMEM if out of memory, -ENOSPC if the commandline is too
  *	long
  */
 int bootm_process_cmdline(char *buf, int maxlen, int flags);
@@ -121,8 +132,54 @@ int bootm_process_cmdline(char *buf, int maxlen, int flags);
  *  - performing substitutions in the command line ('bootargs_subst' envvar)
  *
  * @flags: Flags to control what happens (see bootm_cmdline_t)
- * @return 0 if OK, -ENOMEM if out of memory
+ * Return: 0 if OK, -ENOMEM if out of memory
  */
 int bootm_process_cmdline_env(int flags);
+
+/**
+ * zboot_start() - Boot a zimage
+ *
+ * Boot a zimage, given the component parts
+ *
+ * @addr: Address where the bzImage is moved before booting, either
+ *	BZIMAGE_LOAD_ADDR or ZIMAGE_LOAD_ADDR
+ * @base: Pointer to the boot parameters, typically at address
+ *	DEFAULT_SETUP_BASE
+ * @initrd: Address of the initial ramdisk, or 0 if none
+ * @initrd_size: Size of the initial ramdisk, or 0 if none
+ * @cmdline: Command line to use for booting
+ * Return: -EFAULT on error (normally it does not return)
+ */
+int zboot_start(ulong addr, ulong size, ulong initrd, ulong initrd_size,
+		ulong base, char *cmdline);
+
+/*
+ * zimage_get_kernel_version() - Get the version string from a kernel
+ *
+ * @params: boot_params pointer
+ * @kernel_base: base address of kernel
+ * Return: Kernel version as a NUL-terminated string
+ */
+const char *zimage_get_kernel_version(struct boot_params *params,
+				      void *kernel_base);
+
+/**
+ * zimage_dump() - Dump the metadata of a zimage
+ *
+ * This shows all available information in a zimage that has been loaded.
+ *
+ * @base_ptr: Pointer to the boot parameters, typically at address
+ *	DEFAULT_SETUP_BASE
+ * @show_cmdline: true to show the full command line
+ */
+void zimage_dump(struct boot_params *base_ptr, bool show_cmdline);
+
+/*
+ * bootm_boot_start() - Boot an image at the given address
+ *
+ * @addr: Image address
+ * @cmdline: Command line to set
+ */
+int bootm_boot_start(ulong addr, const char *cmdline);
 
 #endif

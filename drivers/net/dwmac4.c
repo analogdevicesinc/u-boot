@@ -847,7 +847,7 @@ static int designware_eth_of_to_plat(struct udevice *dev)
 
 	pdata->iobase = dev_read_addr(dev);
 	pdata->phy_interface = dev_read_phy_mode(dev);
-	if (pdata->phy_interface == PHY_INTERFACE_MODE_NONE) {
+	if (pdata->phy_interface == PHY_INTERFACE_MODE_NA) {
 		printf("error: phy-mode is not set\n");
 		return -EINVAL;
 	}

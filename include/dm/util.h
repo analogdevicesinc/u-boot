@@ -6,12 +6,12 @@
 #ifndef __DM_UTIL_H
 #define __DM_UTIL_H
 
+struct dm_stats;
+
 #if CONFIG_IS_ENABLED(DM_WARN)
 #define dm_warn(fmt...) log(LOGC_DM, LOGL_WARNING, ##fmt)
 #else
-static inline void dm_warn(const char *fmt, ...)
-{
-}
+#define dm_warn(fmt...) log(LOGC_DM, LOGL_DEBUG, ##fmt)
 #endif
 
 struct list_head;
@@ -20,15 +20,26 @@ struct list_head;
  * list_count_items() - Count number of items in a list
  *
  * @param head:		Head of list
- * @return number of items, or 0 if empty
+ * Return: number of items, or 0 if empty
  */
 int list_count_items(struct list_head *head);
 
-/* Dump out a tree of all devices */
-void dm_dump_all(void);
+/**
+ * Dump out a tree of all devices starting @uclass
+ *
+ * @dev_name: udevice name
+ * @extended: true if forword-matching expected
+ * @sort: Sort by uclass name
+ */
+void dm_dump_tree(char *dev_name, bool extended, bool sort);
 
-/* Dump out a list of uclasses and their devices */
-void dm_dump_uclass(void);
+/*
+ * Dump out a list of uclasses and their devices
+ *
+ * @uclass: uclass name
+ * @extended: true if forword-matching expected
+ */
+void dm_dump_uclass(char *uclass, bool extended);
 
 #ifdef CONFIG_DEBUG_DEVRES
 /* Dump out a list of device resources */
@@ -48,7 +59,12 @@ void dm_dump_driver_compat(void);
 /* Dump out a list of drivers with static platform data */
 void dm_dump_static_driver_info(void);
 
-#endif
+/**
+ * dm_dump_mem() - Dump stats on memory usage in driver model
+ *
+ * @mem: Stats to dump
+ */
+void dm_dump_mem(struct dm_stats *stats);
 
 #if CONFIG_IS_ENABLED(OF_PLATDATA_INST) && CONFIG_IS_ENABLED(READ_ONLY)
 void *dm_priv_to_rw(void *priv);
@@ -57,4 +73,6 @@ static inline void *dm_priv_to_rw(void *priv)
 {
 	return priv;
 }
+#endif
+
 #endif

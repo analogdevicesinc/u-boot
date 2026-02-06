@@ -14,7 +14,7 @@ struct serial_device {
 	int	(*tstc)(void);
 	void	(*putc)(const char c);
 	void	(*puts)(const char *s);
-#if CONFIG_POST & CONFIG_SYS_POST_UART
+#if CFG_POST & CFG_SYS_POST_UART
 	void	(*loop)(int);
 #endif
 	struct serial_device	*next;
@@ -23,6 +23,7 @@ struct serial_device {
 void default_serial_puts(const char *s);
 
 extern struct serial_device serial_smc_device;
+extern struct serial_device serial_smh_device;
 extern struct serial_device serial_scc_device;
 extern struct serial_device *default_serial_console(void);
 
@@ -136,6 +137,7 @@ enum adr_space_type {
  * @type:	type of the UART chip
  * @addr_space:	address space to access the registers
  * @addr:	physical address of the registers
+ * @size:	size of the register area in bytes
  * @reg_width:	size (in bytes) of the IO accesses to the registers
  * @reg_offset:	offset to apply to the @addr from the start of the registers
  * @reg_shift:	quantity to shift the register offsets by
@@ -146,6 +148,7 @@ struct serial_device_info {
 	enum serial_chip_type type;
 	enum adr_space_type addr_space;
 	ulong addr;
+	ulong size;
 	u8 reg_width;
 	u8 reg_offset;
 	u8 reg_shift;
@@ -195,6 +198,24 @@ struct dm_serial_ops {
 	 */
 	int (*putc)(struct udevice *dev, const char ch);
 	/**
+	 * puts() - Write a string
+	 *
+	 * This writes a string. This function should be implemented only if
+	 * writing multiple characters at once is more performant than just
+	 * calling putc() in a loop.
+	 *
+	 * If the whole string cannot be written at once, then this function
+	 * should return the number of characters written. Returning a negative
+	 * error code implies that no characters were written. If this function
+	 * returns 0, then it will be called again with the same arguments.
+	 *
+	 * @dev: Device pointer
+	 * @s: The string to write
+	 * @len: The length of the string to write.
+	 * @return The number of characters written on success, or -ve on error
+	 */
+	ssize_t (*puts)(struct udevice *dev, const char *s, size_t len);
+	/**
 	 * pending() - Check if input/output characters are waiting
 	 *
 	 * This can be used to return an indication of the number of waiting
@@ -223,7 +244,7 @@ struct dm_serial_ops {
 	 * @return 0 if OK, -ve on error
 	 */
 	int (*clear)(struct udevice *dev);
-#if CONFIG_POST & CONFIG_SYS_POST_UART
+#if CFG_POST & CFG_SYS_POST_UART
 	/**
 	 * loop() - Control serial device loopback mode
 	 *
@@ -293,7 +314,7 @@ struct serial_dev_priv {
  *
  * @dev: Device pointer
  * @serial_config: Returns config information (see SERIAL_... above)
- * @return 0 if OK, -ve on error
+ * Return: 0 if OK, -ve on error
  */
 int serial_getconfig(struct udevice *dev, uint *config);
 
@@ -305,7 +326,7 @@ int serial_getconfig(struct udevice *dev, uint *config);
  *
  * @dev: Device pointer
  * @serial_config: number of bits, parity and number of stopbits to use
- * @return 0 if OK, -ve on error
+ * Return: 0 if OK, -ve on error
  */
 int serial_setconfig(struct udevice *dev, uint config);
 
@@ -314,9 +335,16 @@ int serial_setconfig(struct udevice *dev, uint config);
  *
  * @dev: Device pointer
  * @info: struct serial_device_info to fill
- * @return 0 if OK, -ve on error
+ * Return: 0 if OK, -ve on error
  */
 int serial_getinfo(struct udevice *dev, struct serial_device_info *info);
+
+/**
+ * fetch_baud_from_dtb() - Fetch the baudrate value from DT
+ *
+ * Return: baudrate if OK, -ve on error
+ */
+int fetch_baud_from_dtb(void);
 
 void atmel_serial_initialize(void);
 void mcf_serial_initialize(void);
@@ -333,7 +361,7 @@ void sh_serial_initialize(void);
  * The total size of the output must be less than CONFIG_SYS_PBSIZE.
  *
  * @fmt: Printf format string, followed by format arguments
- * @return number of characters written
+ * Return: number of characters written
  */
 int serial_printf(const char *fmt, ...)
 		__attribute__ ((format (__printf__, 1, 2)));
@@ -343,6 +371,11 @@ void serial_setbrg(void);
 void serial_putc(const char ch);
 void serial_putc_raw(const char ch);
 void serial_puts(const char *str);
+#if defined(CONFIG_CONSOLE_FLUSH_SUPPORT) && CONFIG_IS_ENABLED(DM_SERIAL)
+void serial_flush(void);
+#else
+static inline void serial_flush(void) {}
+#endif
 int serial_getc(void);
 int serial_tstc(void);
 

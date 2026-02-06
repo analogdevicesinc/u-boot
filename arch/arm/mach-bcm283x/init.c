@@ -146,13 +146,21 @@ int mach_cpu_init(void)
 	return 0;
 }
 
+#if defined(CONFIG_DISPLAY_CPUINFO)
+int print_cpuinfo(void)
+{
+	printf("CPU: BCM283x\n");
+	return 0;
+}
+#endif
+
 #ifdef CONFIG_ARMV7_LPAE
 #ifdef CONFIG_TARGET_RPI_4_32B
 #define BCM2711_RPI4_PCIE_XHCI_MMIO_VIRT	0xffc00000UL
 #include <addr_map.h>
 #include <asm/system.h>
 
-void init_addr_map(void)
+int init_addr_map(void)
 {
 	mmu_set_region_dcache_behaviour_phys(BCM2711_RPI4_PCIE_XHCI_MMIO_VIRT,
 					     BCM2711_RPI4_PCIE_XHCI_MMIO_PHYS,
@@ -165,6 +173,8 @@ void init_addr_map(void)
 	addrmap_set_entry(BCM2711_RPI4_PCIE_XHCI_MMIO_VIRT,
 			  BCM2711_RPI4_PCIE_XHCI_MMIO_PHYS,
 			  BCM2711_RPI4_PCIE_XHCI_MMIO_SIZE, 1);
+
+	return 0;
 }
 #endif
 

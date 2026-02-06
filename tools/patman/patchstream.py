@@ -14,10 +14,10 @@ import queue
 import shutil
 import tempfile
 
-from patman import command
 from patman import commit
 from patman import gitutil
 from patman.series import Series
+from u_boot_pylib import command
 
 # Tags that we detect and remove
 RE_REMOVE = re.compile(r'^BUG=|^TEST=|^BRANCH=|^Review URL:'
@@ -68,6 +68,7 @@ STATE_PATCH_SUBJECT = 1     # In patch subject (first line of log for a commit)
 STATE_PATCH_HEADER = 2      # In patch header (after the subject)
 STATE_DIFFS = 3             # In the diff part (past --- line)
 
+
 class PatchStream:
     """Class for detecting/injecting tags in a patch or series of patches
 
@@ -76,7 +77,7 @@ class PatchStream:
     unwanted tags or inject additional ones. These correspond to the two
     phases of processing.
     """
-    def __init__(self, series, is_log=False):
+    def __init__(self, series, is_log=False, keep_change_id=False):
         self.skip_blank = False          # True to skip a single blank line
         self.found_test = False          # Found a TEST= line
         self.lines_after_test = 0        # Number of lines found after TEST=
@@ -86,6 +87,7 @@ class PatchStream:
         self.section = []                # The current section...END section
         self.series = series             # Info about the patch series
         self.is_log = is_log             # True if indent like git log
+        self.keep_change_id = keep_change_id  # True to keep Change-Id tags
         self.in_change = None            # Name of the change list we are in
         self.change_version = 0          # Non-zero if we are in a change list
         self.change_lines = []           # Lines of the current change
@@ -180,7 +182,7 @@ class PatchStream:
             who (str): Person who gave that rtag, e.g.
                  'Fred Bloggs <fred@bloggs.org>'
         """
-        self.commit.AddRtag(rtag_type, who)
+        self.commit.add_rtag(rtag_type, who)
 
     def _close_commit(self):
         """Save the current commit into our commit list, and reset our state"""
@@ -230,7 +232,7 @@ class PatchStream:
         elif self.in_change == 'Cover':
             self.series.AddChange(self.change_version, None, change)
         elif self.in_change == 'Commit':
-            self.commit.AddChange(self.change_version, change)
+            self.commit.add_change(self.change_version, change)
         self.change_lines = []
 
     def _finalise_snippet(self):
@@ -452,6 +454,8 @@ class PatchStream:
 
         # Detect Change-Id tags
         elif change_id_match:
+            if self.keep_change_id:
+                out = [line]
             value = change_id_match.group(1)
             if self.is_log:
                 if self.commit.change_id:
@@ -494,14 +498,14 @@ class PatchStream:
                     who.find(os.getenv('USER') + '@') != -1):
                 self._add_warn("Ignoring '%s'" % line)
             elif rtag_type == 'Patch-cc':
-                self.commit.AddCc(who.split(','))
+                self.commit.add_cc(who.split(','))
             else:
                 out = [line]
 
         # Suppress duplicate signoffs
         elif signoff_match:
             if (self.is_log or not self.commit or
-                    self.commit.CheckDuplicateSignoff(signoff_match.group(1))):
+                    self.commit.check_duplicate_signoff(signoff_match.group(1))):
                 out = [line]
 
         # Well that means this is an ordinary line
@@ -596,6 +600,8 @@ class PatchStream:
         # These seem like they would be nice to include.
         if 'prefix' in self.series:
             parts.append(self.series['prefix'])
+        if 'postfix' in self.series:
+            parts.append(self.series['postfix'])
         if 'version' in self.series:
             parts.append("v%s" % self.series['version'])
 
@@ -696,9 +702,9 @@ def get_list(commit_range, git_dir=None, count=None):
     Returns
         str: String containing the contents of the git log
     """
-    params = gitutil.LogCmd(commit_range, reverse=True, count=count,
+    params = gitutil.log_cmd(commit_range, reverse=True, count=count,
                             git_dir=git_dir)
-    return command.RunPipe([params], capture=True).stdout
+    return command.run_pipe([params], capture=True).stdout
 
 def get_metadata_for_list(commit_range, git_dir=None, count=None,
                           series=None, allow_overwrite=False):
@@ -761,7 +767,7 @@ def get_metadata_for_test(text):
     pst.finalise()
     return series
 
-def fix_patch(backup_dir, fname, series, cmt):
+def fix_patch(backup_dir, fname, series, cmt, keep_change_id=False):
     """Fix up a patch file, by adding/removing as required.
 
     We remove our tags from the patch file, insert changes lists, etc.
@@ -774,6 +780,7 @@ def fix_patch(backup_dir, fname, series, cmt):
         fname (str): Filename to patch file to process
         series (Series): Series information about this patch set
         cmt (Commit): Commit object for this patch file
+        keep_change_id (bool): Keep the Change-Id tag.
 
     Return:
         list: A list of errors, each str, or [] if all ok.
@@ -781,7 +788,7 @@ def fix_patch(backup_dir, fname, series, cmt):
     handle, tmpname = tempfile.mkstemp()
     outfd = os.fdopen(handle, 'w', encoding='utf-8')
     infd = open(fname, 'r', encoding='utf-8')
-    pst = PatchStream(series)
+    pst = PatchStream(series, keep_change_id=keep_change_id)
     pst.commit = cmt
     pst.process_stream(infd, outfd)
     infd.close()
@@ -793,7 +800,7 @@ def fix_patch(backup_dir, fname, series, cmt):
     shutil.move(tmpname, fname)
     return cmt.warn
 
-def fix_patches(series, fnames):
+def fix_patches(series, fnames, keep_change_id=False):
     """Fix up a list of patches identified by filenames
 
     The patch files are processed in place, and overwritten.
@@ -801,6 +808,7 @@ def fix_patches(series, fnames):
     Args:
         series (Series): The Series object
         fnames (:type: list of str): List of patch files to process
+        keep_change_id (bool): Keep the Change-Id tag.
     """
     # Current workflow creates patches, so we shouldn't need a backup
     backup_dir = None  #tempfile.mkdtemp('clean-patch')
@@ -809,7 +817,8 @@ def fix_patches(series, fnames):
         cmt = series.commits[count]
         cmt.patch = fname
         cmt.count = count
-        result = fix_patch(backup_dir, fname, series, cmt)
+        result = fix_patch(backup_dir, fname, series, cmt,
+                           keep_change_id=keep_change_id)
         if result:
             print('%d warning%s for %s:' %
                   (len(result), 's' if len(result) > 1 else '', fname))

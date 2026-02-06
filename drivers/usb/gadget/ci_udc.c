@@ -13,6 +13,7 @@
 #include <cpu_func.h>
 #include <net.h>
 #include <malloc.h>
+#include <wait_bit.h>
 #include <asm/byteorder.h>
 #include <asm/cache.h>
 #include <linux/delay.h>
@@ -94,11 +95,11 @@ static struct usb_request *
 ci_ep_alloc_request(struct usb_ep *ep, unsigned int gfp_flags);
 static void ci_ep_free_request(struct usb_ep *ep, struct usb_request *_req);
 
-static struct usb_gadget_ops ci_udc_ops = {
+static const struct usb_gadget_ops ci_udc_ops = {
 	.pullup = ci_pullup,
 };
 
-static struct usb_ep_ops ci_ep_ops = {
+static const struct usb_ep_ops ci_ep_ops = {
 	.enable         = ci_ep_enable,
 	.disable        = ci_ep_disable,
 	.queue          = ci_ep_queue,
@@ -322,7 +323,7 @@ static void ep_enable(int num, int in, int maxpacket)
 	if (num != 0) {
 		struct ept_queue_head *head = ci_get_qh(num, in);
 
-		head->config = CONFIG_MAX_PKT(maxpacket) | CONFIG_ZLT;
+		head->config = CFG_MAX_PKT(maxpacket) | CFG_ZLT;
 		ci_flush_qh(num);
 	}
 	writel(n, &udc->epctrl[num]);
@@ -354,12 +355,49 @@ static int ci_ep_enable(struct usb_ep *ep,
 	return 0;
 }
 
+static int ep_disable(int num, int in)
+{
+	struct ci_udc *udc = (struct ci_udc *)controller.ctrl->hcor;
+	unsigned int ep_bit, enable_bit;
+	int err;
+
+	if (in) {
+		ep_bit = EPT_TX(num);
+		enable_bit = CTRL_TXE;
+	} else {
+		ep_bit = EPT_RX(num);
+		enable_bit = CTRL_RXE;
+	}
+
+	/* clear primed buffers */
+	do {
+		writel(ep_bit, &udc->epflush);
+		err = wait_for_bit_le32(&udc->epflush, ep_bit, false, 1000, false);
+		if (err)
+			return err;
+	} while (readl(&udc->epstat) & ep_bit);
+
+	/* clear enable bit */
+	clrbits_le32(&udc->epctrl[num], enable_bit);
+
+	return 0;
+}
+
 static int ci_ep_disable(struct usb_ep *ep)
 {
 	struct ci_ep *ci_ep = container_of(ep, struct ci_ep, ep);
+	int num, in, err;
+
+	num = ci_ep->desc->bEndpointAddress & USB_ENDPOINT_NUMBER_MASK;
+	in = (ci_ep->desc->bEndpointAddress & USB_DIR_IN) != 0;
+
+	err = ep_disable(num, in);
+	if (err)
+		return err;
 
 	ci_ep->desc = NULL;
 	ep->desc = NULL;
+	ci_ep->req_primed = false;
 	return 0;
 }
 
@@ -402,6 +440,9 @@ align:
 
 flush:
 	hwaddr = (unsigned long)ci_req->hw_buf;
+	if (!hwaddr)
+		return 0;
+
 	aligned_used_len = roundup(req->length, ARCH_DMA_MINALIGN);
 	flush_dcache_range(hwaddr, hwaddr + aligned_used_len);
 
@@ -415,7 +456,7 @@ static void ci_debounce(struct ci_req *ci_req, int in)
 	unsigned long hwaddr = (unsigned long)ci_req->hw_buf;
 	uint32_t aligned_used_len;
 
-	if (in)
+	if (in || !hwaddr)
 		return;
 
 	aligned_used_len = roundup(req->actual, ARCH_DMA_MINALIGN);
@@ -866,10 +907,10 @@ void udc_irq(void)
 	}
 }
 
-int usb_gadget_handle_interrupts(int index)
+int dm_usb_gadget_handle_interrupts(struct udevice *dev)
 {
-	u32 value;
 	struct ci_udc *udc = (struct ci_udc *)controller.ctrl->hcor;
+	u32 value;
 
 	value = readl(&udc->usbsts);
 	if (value)
@@ -956,11 +997,11 @@ static int ci_udc_probe(void)
 		 */
 		head = controller.epts + i;
 		if (i < 2)
-			head->config = CONFIG_MAX_PKT(EP0_MAX_PACKET_SIZE)
-				| CONFIG_ZLT | CONFIG_IOS;
+			head->config = CFG_MAX_PKT(EP0_MAX_PACKET_SIZE)
+				| CFG_ZLT | CFG_IOS;
 		else
-			head->config = CONFIG_MAX_PKT(EP_MAX_PACKET_SIZE)
-				| CONFIG_ZLT;
+			head->config = CFG_MAX_PKT(EP_MAX_PACKET_SIZE)
+				| CFG_ZLT;
 		head->next = TERMINATE;
 		head->info = 0;
 

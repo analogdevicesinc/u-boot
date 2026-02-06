@@ -4,9 +4,9 @@
  * Purna Chandra Mandal <purna.mandal@microchip.com>
  *
  */
-#include <common.h>
 #include <clk.h>
 #include <dm.h>
+#include <event.h>
 #include <init.h>
 #include <malloc.h>
 #include <asm/global_data.h>
@@ -56,7 +56,7 @@ static ulong clk_get_cpu_rate(void)
 }
 
 /* initialize prefetch module related to cpu_clk */
-static void prefetch_init(void)
+static int prefetch_init(void)
 {
 	struct pic32_reg_atomic *regs;
 	const void __iomem *base;
@@ -92,15 +92,12 @@ static void prefetch_init(void)
 	/* Enable prefetch for all */
 	writel(0x30, &regs->set);
 	iounmap(regs);
-}
 
-/* arch specific CPU init after DM */
-int arch_cpu_init_dm(void)
-{
-	/* flash prefetch */
-	prefetch_init();
 	return 0;
 }
+
+/* arch-specific CPU init after DM: flash prefetch */
+EVENT_SPY_SIMPLE(EVT_DM_POST_INIT_F, prefetch_init);
 
 /* Un-gate DDR2 modules (gated by default) */
 static void ddr2_pmd_ungate(void)

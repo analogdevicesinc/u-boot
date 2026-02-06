@@ -4,14 +4,17 @@
  * Copyright 2019 NXP
  */
 
+#define LOG_CATEGORY UCLASS_CLK
+
 #include <common.h>
-#include <asm/io.h>
-#include <malloc.h>
+#include <clk.h>
 #include <clk-uclass.h>
+#include <log.h>
+#include <malloc.h>
+#include <asm/io.h>
 #include <dm/device.h>
 #include <dm/devres.h>
 #include <linux/clk-provider.h>
-#include <clk.h>
 #include <linux/err.h>
 
 #include "clk.h"
@@ -63,7 +66,7 @@ static ulong clk_composite_set_rate(struct clk *clk, unsigned long rate)
 	const struct clk_ops *rate_ops = composite->rate_ops;
 	struct clk *clk_rate = composite->rate;
 
-	if (rate && rate_ops)
+	if (rate && rate_ops && rate_ops->set_rate)
 		return rate_ops->set_rate(clk_rate, rate);
 	else
 		return clk_get_rate(clk);

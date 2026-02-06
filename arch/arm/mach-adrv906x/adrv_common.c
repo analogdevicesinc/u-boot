@@ -107,7 +107,7 @@ void save_boot_params(unsigned long r0, unsigned long r1, unsigned long r2,
 /*
  * Gets the address of the device tree passed by TF-A, if it is valid
  */
-void *board_fdt_blob_setup(void)
+void *board_fdt_blob_setup(int *err)
 {
 	if (device_tree != 0)
 		if (fdt_magic(device_tree) == FDT_MAGIC)
@@ -556,7 +556,9 @@ int get_te_boot_slot(const char **boot_slot)
 int get_kaslr_seed(uint64_t *kaslr_seed)
 {
 	int len = 0;
+	fdt64_t kaslr;
 	const fdt64_t *kaslr_node;
+	uint32_t *tmp1, *tmp2;
 	int node;
 	int ret;
 
@@ -567,7 +569,15 @@ int get_kaslr_seed(uint64_t *kaslr_seed)
 	kaslr_node = fdt_getprop((void *)gd->fdt_blob, node, "kaslr-seed", &len);
 	if (!kaslr_node || len != sizeof(fdt64_t))
 		return -1;
-	*kaslr_seed = fdt64_to_cpu(*kaslr_node);
+
+	/* the address may not be on 64 bit boundary, have to use 32 bit access
+	 * to avoid exception */
+	tmp1 = (uint32_t *)kaslr_node;
+	kaslr = *tmp1;
+	kaslr = kaslr << 32;
+	tmp2 = tmp1 + 4;
+	kaslr += (fdt64_t)*tmp2;
+	*kaslr_seed = fdt64_to_cpu(kaslr);
 
 	/* Wipe the kaslr-seed entry after reading, like the kernel does */
 	ret = fdt_setprop_u64((void *)gd->fdt_blob, node, "kaslr-seed", 0);

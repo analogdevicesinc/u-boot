@@ -11,8 +11,11 @@
 #include <dm.h>
 #include <pci.h>
 #include <asm/global_data.h>
+#include <linux/printk.h>
 
 #include <asm/io.h>
+
+#define TYPE_PCI 0x1
 
 /**
  * struct generic_ecam_pcie - generic_ecam PCIe controller state
@@ -46,10 +49,14 @@ static int pci_generic_ecam_conf_address(const struct udevice *bus,
 	void *addr;
 
 	addr = pcie->cfg_base;
-	addr += (PCI_BUS(bdf) - pcie->first_busno) << 20;
-	addr += PCI_DEV(bdf) << 15;
-	addr += PCI_FUNC(bdf) << 12;
-	addr += offset;
+
+	if (dev_get_driver_data(bus) == TYPE_PCI) {
+		addr += ((PCI_BUS(bdf) - pcie->first_busno) << 16) |
+			 (PCI_DEV(bdf) << 11) | (PCI_FUNC(bdf) << 8) | offset;
+	} else {
+		addr += PCIE_ECAM_OFFSET(PCI_BUS(bdf) - pcie->first_busno,
+					 PCI_DEV(bdf), PCI_FUNC(bdf), offset);
+	}
 	*paddress = addr;
 
 	return 0;
@@ -158,7 +165,8 @@ static const struct dm_pci_ops pci_generic_ecam_ops = {
 };
 
 static const struct udevice_id pci_generic_ecam_ids[] = {
-	{ .compatible = "pci-host-ecam-generic" },
+	{ .compatible = "pci-host-ecam-generic" /* PCI-E */ },
+	{ .compatible = "pci-host-cam-generic", .data = TYPE_PCI },
 	{ }
 };
 

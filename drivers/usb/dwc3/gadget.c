@@ -2,7 +2,7 @@
 /**
  * gadget.c - DesignWare USB3 DRD Controller Gadget Framework Link
  *
- * Copyright (C) 2015 Texas Instruments Incorporated - http://www.ti.com
+ * Copyright (C) 2015 Texas Instruments Incorporated - https://www.ti.com
  *
  * Authors: Felipe Balbi <balbi@ti.com>,
  *	    Sebastian Andrzej Siewior <bigeasy@linutronix.de>
@@ -24,6 +24,7 @@
 #include <linux/delay.h>
 #include <linux/dma-mapping.h>
 #include <linux/list.h>
+#include <linux/printk.h>
 
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
@@ -2209,7 +2210,7 @@ static void dwc3_gadget_conndone_interrupt(struct dwc3 *dwc)
 		 * BESL value in the LPM token is less than or equal to LPM
 		 * NYET threshold.
 		 */
-		if (dwc->revision < DWC3_REVISION_240A 	&& dwc->has_lpm_erratum)
+		if (dwc->revision < DWC3_REVISION_240A	&& dwc->has_lpm_erratum)
 			WARN(true, "LPM Erratum not available on dwc3 revisisions < 2.40a\n");
 
 		if (dwc->has_lpm_erratum && dwc->revision >= DWC3_REVISION_240A)

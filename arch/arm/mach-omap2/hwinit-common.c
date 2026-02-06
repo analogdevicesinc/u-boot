@@ -12,6 +12,7 @@
  */
 #include <common.h>
 #include <debug_uart.h>
+#include <event.h>
 #include <fdtdec.h>
 #include <init.h>
 #include <spl.h>
@@ -173,7 +174,7 @@ void __weak init_package_revision(void)
  * done in each of these cases
  * This function is called with SRAM stack.
  */
-void early_system_init(void)
+int early_system_init(void)
 {
 #if defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_MULTI_DTB_FIT)
 	int ret;
@@ -224,6 +225,8 @@ void early_system_init(void)
 	debug_uart_init();
 #endif
 	prcm_init();
+
+	return 0;
 }
 
 #ifdef CONFIG_SPL_BUILD
@@ -239,11 +242,7 @@ void board_init_f(ulong dummy)
 }
 #endif
 
-int arch_cpu_init_dm(void)
-{
-	early_system_init();
-	return 0;
-}
+EVENT_SPY_SIMPLE(EVT_DM_POST_INIT_F, early_system_init);
 
 /*
  * Routine: wait_for_command_complete

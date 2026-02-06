@@ -5,9 +5,11 @@
  */
 
 #include <common.h>
+#include <mapmem.h>
 #include <dm.h>
 #include <dm/device_compat.h>
 #include <dm/devres.h>
+#include <dm/of_access.h>
 #include <dm/pinctrl.h>
 #include <linux/libfdt.h>
 #include <linux/list.h>
@@ -23,10 +25,11 @@
  * @bits_per_mux: true if one register controls more than one pin
  */
 struct single_pdata {
-	fdt_addr_t base;
+	void *base;
 	int offset;
 	u32 mask;
 	u32 width;
+	u32 args_count;
 	bool bits_per_mux;
 };
 
@@ -45,10 +48,26 @@ struct single_func {
 };
 
 /**
+ * struct single_gpiofunc_range - pin ranges with same mux value of gpio fun
+ * @offset: offset base of pins
+ * @npins: number pins with the same mux value of gpio function
+ * @gpiofunc: mux value of gpio function
+ * @node: list node
+ */
+struct single_gpiofunc_range {
+	u32 offset;
+	u32 npins;
+	u32 gpiofunc;
+	struct list_head node;
+};
+
+/**
  * struct single_priv - private data
  * @bits_per_pin: number of bits per pin
  * @npins: number of selectable pins
  * @pin_name: temporary buffer to store the pin name
+ * @functions: list pin functions
+ * @gpiofuncs: list gpio functions
  */
 struct single_priv {
 #if (IS_ENABLED(CONFIG_SANDBOX))
@@ -58,20 +77,7 @@ struct single_priv {
 	unsigned int npins;
 	char pin_name[PINNAME_SIZE];
 	struct list_head functions;
-};
-
-/**
- * struct single_fdt_pin_cfg - pin configuration
- *
- * This structure is used for the pin configuration parameters in case
- * the register controls only one pin.
- *
- * @reg: configuration register offset
- * @val: configuration register value
- */
-struct single_fdt_pin_cfg {
-	fdt32_t reg;
-	fdt32_t val;
+	struct list_head gpiofuncs;
 };
 
 /**
@@ -92,7 +98,7 @@ struct single_fdt_bits_cfg {
 
 #if (!IS_ENABLED(CONFIG_SANDBOX))
 
-static unsigned int single_read(struct udevice *dev, fdt_addr_t reg)
+static unsigned int single_read(struct udevice *dev, void *reg)
 {
 	struct single_pdata *pdata = dev_get_plat(dev);
 
@@ -108,7 +114,7 @@ static unsigned int single_read(struct udevice *dev, fdt_addr_t reg)
 	return readb(reg);
 }
 
-static void single_write(struct udevice *dev, unsigned int val, fdt_addr_t reg)
+static void single_write(struct udevice *dev, unsigned int val, void *reg)
 {
 	struct single_pdata *pdata = dev_get_plat(dev);
 
@@ -126,18 +132,18 @@ static void single_write(struct udevice *dev, unsigned int val, fdt_addr_t reg)
 
 #else /* CONFIG_SANDBOX  */
 
-static unsigned int single_read(struct udevice *dev, fdt_addr_t reg)
+static unsigned int single_read(struct udevice *dev, void *reg)
 {
 	struct single_priv *priv = dev_get_priv(dev);
 
-	return priv->sandbox_regs[reg];
+	return priv->sandbox_regs[map_to_sysmem(reg)];
 }
 
-static void single_write(struct udevice *dev, unsigned int val, fdt_addr_t reg)
+static void single_write(struct udevice *dev, unsigned int val, void *reg)
 {
 	struct single_priv *priv = dev_get_priv(dev);
 
-	priv->sandbox_regs[reg] = val;
+	priv->sandbox_regs[map_to_sysmem(reg)] = val;
 }
 
 #endif /* CONFIG_SANDBOX  */
@@ -209,7 +215,8 @@ static int single_get_pin_muxing(struct udevice *dev, unsigned int pin,
 {
 	struct single_pdata *pdata = dev_get_plat(dev);
 	struct single_priv *priv = dev_get_priv(dev);
-	fdt_addr_t reg;
+	phys_addr_t phys_reg;
+	void *reg;
 	const char *fname;
 	unsigned int val;
 	int offset, pin_shift = 0;
@@ -221,14 +228,49 @@ static int single_get_pin_muxing(struct udevice *dev, unsigned int pin,
 	reg = pdata->base + offset;
 	val = single_read(dev, reg);
 
+	phys_reg = map_to_sysmem(reg);
+
 	if (pdata->bits_per_mux)
 		pin_shift = pin % (pdata->width / priv->bits_per_pin) *
 			priv->bits_per_pin;
 
 	val &= (pdata->mask << pin_shift);
 	fname = single_get_pin_function(dev, pin);
-	snprintf(buf, size, "%pa 0x%08x %s", &reg, val,
+	snprintf(buf, size, "%pa 0x%08x %s", &phys_reg, val,
 		 fname ? fname : "UNCLAIMED");
+	return 0;
+}
+
+static int single_request(struct udevice *dev, int pin, int flags)
+{
+	struct single_priv *priv = dev_get_priv(dev);
+	struct single_pdata *pdata = dev_get_plat(dev);
+	struct single_gpiofunc_range *frange = NULL;
+	struct list_head *pos, *tmp;
+	void *reg;
+	int mux_bytes = 0;
+	u32 data;
+
+	/* If function mask is null, needn't enable it. */
+	if (!pdata->mask)
+		return -ENOTSUPP;
+
+	list_for_each_safe(pos, tmp, &priv->gpiofuncs) {
+		frange = list_entry(pos, struct single_gpiofunc_range, node);
+		if ((pin >= frange->offset + frange->npins) ||
+		    pin < frange->offset)
+			continue;
+
+		mux_bytes = pdata->width / BITS_PER_BYTE;
+		reg = pdata->base + pin * mux_bytes;
+
+		data = single_read(dev, reg);
+		data &= ~pdata->mask;
+		data |= frange->gpiofunc;
+		single_write(dev, data, reg);
+		break;
+	}
+
 	return 0;
 }
 
@@ -263,25 +305,28 @@ static int single_pin_compare(const void *s1, const void *s2)
  * @dev: Pointer to single pin configuration device which is the parent of
  *       the pins node holding the pin configuration data.
  * @pins: Pointer to the first element of an array of register/value pairs
- *        of type 'struct single_fdt_pin_cfg'. Each such pair describes the
- *        the pin to be configured and the value to be used for configuration.
+ *        of type 'u32'. Each such pair describes the pin to be configured 
+ *        and the value to be used for configuration.
+ *        The value can either be a simple value if #pinctrl-cells = 1
+ *        or a configuration value and a pin mux mode value if it is 2
  *        This pointer points to a 'pinctrl-single,pins' property in the
  *        device-tree.
  * @size: Size of the 'pins' array in bytes.
- *        The number of register/value pairs in the 'pins' array therefore
- *        equals to 'size / sizeof(struct single_fdt_pin_cfg)'.
+ *        The number of cells in the array therefore equals to
+ *        'size / sizeof(u32)'.
  * @fname: Function name.
  */
 static int single_configure_pins(struct udevice *dev,
-				 const struct single_fdt_pin_cfg *pins,
+				 const u32 *pins,
 				 int size, const char *fname)
 {
 	struct single_pdata *pdata = dev_get_plat(dev);
 	struct single_priv *priv = dev_get_priv(dev);
-	int n, pin, count = size / sizeof(struct single_fdt_pin_cfg);
+	int stride = pdata->args_count + 1;
+	int n, pin, count = size / sizeof(u32);
 	struct single_func *func;
-	phys_addr_t reg;
-	u32 offset, val;
+	void *reg;
+	u32 offset, val, mux;
 
 	/* If function mask is null, needn't enable it. */
 	if (!pdata->mask)
@@ -293,16 +338,22 @@ static int single_configure_pins(struct udevice *dev,
 
 	func->name = fname;
 	func->npins = 0;
-	for (n = 0; n < count; n++, pins++) {
-		offset = fdt32_to_cpu(pins->reg);
+	for (n = 0; n < count; n += stride) {
+		offset = fdt32_to_cpu(pins[n]);
 		if (offset > pdata->offset) {
 			dev_err(dev, "  invalid register offset 0x%x\n",
 				offset);
 			continue;
 		}
 
+		/* if the pinctrl-cells is 2 then the second cell contains the mux */
+		if (stride == 3)
+			mux = fdt32_to_cpu(pins[n + 2]);
+		else
+			mux = 0;
+
 		reg = pdata->base + offset;
-		val = fdt32_to_cpu(pins->val) & pdata->mask;
+		val = (fdt32_to_cpu(pins[n + 1]) | mux) & pdata->mask;
 		pin = single_get_pin_by_offset(dev, offset);
 		if (pin < 0) {
 			dev_err(dev, "  failed to get pin by offset %x\n",
@@ -332,7 +383,7 @@ static int single_configure_bits(struct udevice *dev,
 	int n, pin, count = size / sizeof(struct single_fdt_bits_cfg);
 	int npins_in_reg, pin_num_from_lsb;
 	struct single_func *func;
-	phys_addr_t reg;
+	void *reg;
 	u32 offset, val, mask, bit_pos, val_pos, mask_pos, submask;
 
 	/* If function mask is null, needn't enable it. */
@@ -402,7 +453,7 @@ static int single_configure_bits(struct udevice *dev,
 static int single_set_state(struct udevice *dev,
 			    struct udevice *config)
 {
-	const struct single_fdt_pin_cfg *prop;
+	const u32 *prop;
 	const struct single_fdt_bits_cfg *prop_bits;
 	int len;
 
@@ -410,7 +461,7 @@ static int single_set_state(struct udevice *dev,
 
 	if (prop) {
 		dev_dbg(dev, "configuring pins for %s\n", config->name);
-		if (len % sizeof(struct single_fdt_pin_cfg)) {
+		if (len % sizeof(u32)) {
 			dev_dbg(dev, "  invalid pin configuration in fdt\n");
 			return -FDT_ERR_BADSTRUCTURE;
 		}
@@ -454,6 +505,36 @@ static int single_get_pins_count(struct udevice *dev)
 	return priv->npins;
 }
 
+static int single_add_gpio_func(struct udevice *dev)
+{
+	struct single_priv *priv = dev_get_priv(dev);
+	const char *propname = "pinctrl-single,gpio-range";
+	const char *cellname = "#pinctrl-single,gpio-range-cells";
+	struct single_gpiofunc_range *range;
+	struct ofnode_phandle_args gpiospec;
+	int ret, i;
+
+	for (i = 0; ; i++) {
+		ret = ofnode_parse_phandle_with_args(dev_ofnode(dev), propname,
+						     cellname, 0, i, &gpiospec);
+		/* Do not treat it as error. Only treat it as end condition. */
+		if (ret) {
+			ret = 0;
+			break;
+		}
+		range = devm_kzalloc(dev, sizeof(*range), GFP_KERNEL);
+		if (!range) {
+			ret = -ENOMEM;
+			break;
+		}
+		range->offset = gpiospec.args[0];
+		range->npins = gpiospec.args[1];
+		range->gpiofunc = gpiospec.args[2];
+		list_add_tail(&range->node, &priv->gpiofuncs);
+	}
+	return ret;
+}
+
 static int single_probe(struct udevice *dev)
 {
 	struct single_pdata *pdata = dev_get_plat(dev);
@@ -461,9 +542,10 @@ static int single_probe(struct udevice *dev)
 	u32 size;
 
 	INIT_LIST_HEAD(&priv->functions);
+	INIT_LIST_HEAD(&priv->gpiofuncs);
 
 	size = pdata->offset + pdata->width / BITS_PER_BYTE;
-	#if (CONFIG_IS_ENABLED(SANDBOX))
+	#if (IS_ENABLED(CONFIG_SANDBOX))
 	priv->sandbox_regs =
 		devm_kzalloc(dev, size * sizeof(*priv->sandbox_regs),
 			     GFP_KERNEL);
@@ -483,13 +565,16 @@ static int single_probe(struct udevice *dev)
 		priv->npins *= (pdata->width / priv->bits_per_pin);
 	}
 
+	if (single_add_gpio_func(dev))
+		dev_dbg(dev, "gpio functions are not added\n");
+
 	dev_dbg(dev, "%d pins\n", priv->npins);
 	return 0;
 }
 
 static int single_of_to_plat(struct udevice *dev)
 {
-	fdt_addr_t addr;
+	void *addr;
 	fdt_size_t size;
 	struct single_pdata *pdata = dev_get_plat(dev);
 	int ret;
@@ -510,8 +595,8 @@ static int single_of_to_plat(struct udevice *dev)
 		return -EINVAL;
 	}
 
-	addr = dev_read_addr_size_index(dev, 0, &size);
-	if (addr == FDT_ADDR_T_NONE) {
+	addr = dev_read_addr_size_index_ptr(dev, 0, &size);
+	if (!addr) {
 		dev_err(dev, "failed to get base register address\n");
 		return -EINVAL;
 	}
@@ -527,6 +612,13 @@ static int single_of_to_plat(struct udevice *dev)
 
 	pdata->bits_per_mux = dev_read_bool(dev, "pinctrl-single,bit-per-mux");
 
+	/* If no pinctrl-cells is present, default to old style of 2 cells with
+	 * bits per mux and 1 cell otherwise.
+	 */
+	ret = dev_read_u32(dev, "#pinctrl-cells", &pdata->args_count);
+	if (ret)
+		pdata->args_count = pdata->bits_per_mux ? 2 : 1;
+
 	return 0;
 }
 
@@ -535,6 +627,7 @@ const struct pinctrl_ops single_pinctrl_ops = {
 	.get_pin_name = single_get_pin_name,
 	.set_state = single_set_state,
 	.get_pin_muxing	= single_get_pin_muxing,
+	.request = single_request,
 };
 
 static const struct udevice_id single_pinctrl_match[] = {

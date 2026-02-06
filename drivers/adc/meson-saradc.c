@@ -18,6 +18,7 @@
 #include <linux/delay.h>
 #include <linux/math64.h>
 #include <linux/bitfield.h>
+#include <linux/printk.h>
 #include <power/regulator.h>
 
 #define MESON_SAR_ADC_REG0					0x00
@@ -736,6 +737,8 @@ static const struct udevice_id meson_saradc_ids[] = {
 	{ .compatible = "amlogic,meson-gxm-saradc",
 	  .data = (ulong)&gxl_saradc_data },
 	{ .compatible = "amlogic,meson-g12a-saradc",
+	  .data = (ulong)&gxl_saradc_data },
+	{ .compatible = "amlogic,meson-axg-saradc",
 	  .data = (ulong)&gxl_saradc_data },
 	{ }
 };

@@ -140,7 +140,7 @@ static char *memstr(const char *s1, int l1, const char *s2, int l2)
  * @olen: Length of @old excluding terminator
  * @new: New string to replace @old with
  * @nlen: Length of @new excluding terminator
- * @return pointer to immediately after the copied @new in @string, or NULL if
+ * Return: pointer to immediately after the copied @new in @string, or NULL if
  *	no replacement took place
  */
 static char *substitute(char *string, int *slen, int ssize,
@@ -215,7 +215,7 @@ int setexpr_regex_sub(char *data, uint data_size, char *nbuf, uint nbuf_size,
 
 		if (res == 0) {
 			if (loop == 0) {
-				printf("%s: No match\n", data);
+				debug("%s: No match\n", data);
 				return 1;
 			} else {
 				break;
@@ -359,7 +359,7 @@ static int regex_sub_var(const char *name, const char *r, const char *s,
 	if (ret)
 		return 1;
 
-	printf("%s=%s\n", name, data);
+	debug("%s=%s\n", name, data);
 
 	return env_set(name, data);
 }

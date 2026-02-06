@@ -19,6 +19,7 @@
 #include <part.h>
 #include <linux/bitops.h>
 #include <linux/delay.h>
+#include <linux/printk.h>
 #include <power/regulator.h>
 #include <malloc.h>
 #include <memalign.h>
@@ -445,7 +446,7 @@ static int mmc_read_blocks(struct mmc *mmc, void *dst, lbaint_t start,
 		return 0;
 
 	if (blkcnt > 1) {
-	        if (mmc_send_stop_transmission(mmc, false)) {
+		if (mmc_send_stop_transmission(mmc, false)) {
 #if !defined(CONFIG_SPL_BUILD) || defined(CONFIG_SPL_LIBCOMMON_SUPPORT)
 			pr_err("mmc fail to send stop cmd\n");
 #endif
@@ -719,7 +720,7 @@ static int mmc_send_op_cond(struct mmc *mmc)
 	mmc_go_idle(mmc);
 
 	start = get_timer(0);
- 	/* Asking to the card its capabilities */
+	/* Asking to the card its capabilities */
 	for (i = 0; ; i++) {
 		err = mmc_send_op_cond_iter(mmc, i != 0);
 		if (err)
@@ -2240,6 +2241,7 @@ error:
 			mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL,
 				   EXT_CSD_BUS_WIDTH, EXT_CSD_BUS_WIDTH_1);
 			mmc_select_mode(mmc, MMC_LEGACY);
+			mmc_set_clock(mmc, mmc->legacy_speed, MMC_CLK_ENABLE);
 			mmc_set_bus_width(mmc, 1);
 		}
 	}
@@ -2279,7 +2281,7 @@ static int mmc_startup_v4(struct mmc *mmc)
 		return 0;
 
 	if (!mmc->ext_csd)
-		memset(ext_csd_bkup, 0, sizeof(ext_csd_bkup));
+		memset(ext_csd_bkup, 0, MMC_MAX_BLOCK_LEN);
 
 	err = mmc_send_ext_csd(mmc, ext_csd);
 	if (err)
@@ -2448,6 +2450,9 @@ static int mmc_startup_v4(struct mmc *mmc)
 #endif
 
 	mmc->wr_rel_set = ext_csd[EXT_CSD_WR_REL_SET];
+
+	mmc->can_trim =
+		!!(ext_csd[EXT_CSD_SEC_FEATURE] & EXT_CSD_SEC_FEATURE_TRIM_EN);
 
 	return 0;
 error:
@@ -2772,9 +2777,10 @@ static int mmc_power_on(struct mmc *mmc)
 {
 #if CONFIG_IS_ENABLED(DM_MMC) && CONFIG_IS_ENABLED(DM_REGULATOR)
 	if (mmc->vmmc_supply) {
-		int ret = regulator_set_enable(mmc->vmmc_supply, true);
+		int ret = regulator_set_enable_if_allowed(mmc->vmmc_supply,
+							  true);
 
-		if (ret && ret != -EACCES) {
+		if (ret && ret != -ENOSYS) {
 			printf("Error enabling VMMC supply : %d\n", ret);
 			return ret;
 		}
@@ -2788,9 +2794,10 @@ static int mmc_power_off(struct mmc *mmc)
 	mmc_set_clock(mmc, 0, MMC_CLK_DISABLE);
 #if CONFIG_IS_ENABLED(DM_MMC) && CONFIG_IS_ENABLED(DM_REGULATOR)
 	if (mmc->vmmc_supply) {
-		int ret = regulator_set_enable(mmc->vmmc_supply, false);
+		int ret = regulator_set_enable_if_allowed(mmc->vmmc_supply,
+							  false);
 
-		if (ret && ret != -EACCES) {
+		if (ret && ret != -ENOSYS) {
 			pr_debug("Error disabling VMMC supply : %d\n", ret);
 			return ret;
 		}

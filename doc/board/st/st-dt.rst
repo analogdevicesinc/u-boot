@@ -1,8 +1,8 @@
 .. SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
-.. sectionauthor:: Patrick Delaunay <patrick.delaunay@st.com>
+.. sectionauthor:: Patrick Delaunay <patrick.delaunay@foss.st.com>
 
 U-Boot device tree bindings
-----------------------------
+---------------------------
 
 The U-Boot specific bindings are defined in the U-Boot directory:
 doc/device-tree-bindings

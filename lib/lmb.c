@@ -7,10 +7,17 @@
  */
 
 #include <common.h>
+#include <efi_loader.h>
 #include <image.h>
+#include <mapmem.h>
 #include <lmb.h>
 #include <log.h>
 #include <malloc.h>
+
+#include <asm/global_data.h>
+#include <asm/sections.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 #define LMB_ALLOC_ANYWHERE	0
 
@@ -20,7 +27,7 @@ static void lmb_dump_region(struct lmb_region *rgn, char *name)
 	enum lmb_flags flags;
 	int i;
 
-	printf(" %s.cnt  = 0x%lx\n", name, rgn->cnt);
+	printf(" %s.cnt = 0x%lx / max = 0x%lx\n", name, rgn->cnt, rgn->max);
 
 	for (i = 0; i < rgn->cnt; i++) {
 		base = rgn->region[i].base;
@@ -67,6 +74,16 @@ static long lmb_addrs_adjacent(phys_addr_t base1, phys_size_t size1,
 	return 0;
 }
 
+static long lmb_regions_overlap(struct lmb_region *rgn, unsigned long r1,
+				unsigned long r2)
+{
+	phys_addr_t base1 = rgn->region[r1].base;
+	phys_size_t size1 = rgn->region[r1].size;
+	phys_addr_t base2 = rgn->region[r2].base;
+	phys_size_t size2 = rgn->region[r2].size;
+
+	return lmb_addrs_overlap(base1, size1, base2, size2);
+}
 static long lmb_regions_adjacent(struct lmb_region *rgn, unsigned long r1,
 				 unsigned long r2)
 {
@@ -74,7 +91,6 @@ static long lmb_regions_adjacent(struct lmb_region *rgn, unsigned long r1,
 	phys_size_t size1 = rgn->region[r1].size;
 	phys_addr_t base2 = rgn->region[r2].base;
 	phys_size_t size2 = rgn->region[r2].size;
-
 	return lmb_addrs_adjacent(base1, size1, base2, size2);
 }
 
@@ -98,6 +114,23 @@ static void lmb_coalesce_regions(struct lmb_region *rgn, unsigned long r1,
 	lmb_remove_region(rgn, r2);
 }
 
+/*Assumption : base addr of region 1 < base addr of region 2*/
+static void lmb_fix_over_lap_regions(struct lmb_region *rgn, unsigned long r1,
+				     unsigned long r2)
+{
+	phys_addr_t base1 = rgn->region[r1].base;
+	phys_size_t size1 = rgn->region[r1].size;
+	phys_addr_t base2 = rgn->region[r2].base;
+	phys_size_t size2 = rgn->region[r2].size;
+
+	if (base1 + size1 > base2 + size2) {
+		printf("This will not be a case any time\n");
+		return;
+	}
+	rgn->region[r1].size = base2 + size2 - base1;
+	lmb_remove_region(rgn, r2);
+}
+
 void lmb_init(struct lmb *lmb)
 {
 #if IS_ENABLED(CONFIG_LMB_USE_MAX_REGIONS)
@@ -113,13 +146,85 @@ void lmb_init(struct lmb *lmb)
 	lmb->reserved.cnt = 0;
 }
 
+void arch_lmb_reserve_generic(struct lmb *lmb, ulong sp, ulong end, ulong align)
+{
+	ulong bank_end;
+	int bank;
+
+	/*
+	 * Reserve memory from aligned address below the bottom of U-Boot stack
+	 * until end of U-Boot area using LMB to prevent U-Boot from overwriting
+	 * that memory.
+	 */
+	debug("## Current stack ends at 0x%08lx ", sp);
+
+	/* adjust sp by 4K to be safe */
+	sp -= align;
+	for (bank = 0; bank < CONFIG_NR_DRAM_BANKS; bank++) {
+		if (!gd->bd->bi_dram[bank].size ||
+		    sp < gd->bd->bi_dram[bank].start)
+			continue;
+		/* Watch out for RAM at end of address space! */
+		bank_end = gd->bd->bi_dram[bank].start +
+			gd->bd->bi_dram[bank].size - 1;
+		if (sp > bank_end)
+			continue;
+		if (bank_end > end)
+			bank_end = end - 1;
+
+		lmb_reserve(lmb, sp, bank_end - sp + 1);
+
+		if (gd->flags & GD_FLG_SKIP_RELOC)
+			lmb_reserve(lmb, (phys_addr_t)(uintptr_t)_start, gd->mon_len);
+
+		break;
+	}
+}
+
+/**
+ * efi_lmb_reserve() - add reservations for EFI memory
+ *
+ * Add reservations for all EFI memory areas that are not
+ * EFI_CONVENTIONAL_MEMORY.
+ *
+ * @lmb:	lmb environment
+ * Return:	0 on success, 1 on failure
+ */
+static __maybe_unused int efi_lmb_reserve(struct lmb *lmb)
+{
+	struct efi_mem_desc *memmap = NULL, *map;
+	efi_uintn_t i, map_size = 0;
+	efi_status_t ret;
+
+	ret = efi_get_memory_map_alloc(&map_size, &memmap);
+	if (ret != EFI_SUCCESS)
+		return 1;
+
+	for (i = 0, map = memmap; i < map_size / sizeof(*map); ++map, ++i) {
+		if (map->type != EFI_CONVENTIONAL_MEMORY) {
+			lmb_reserve_flags(lmb,
+					  map_to_sysmem((void *)(uintptr_t)
+							map->physical_start),
+					  map->num_pages * EFI_PAGE_SIZE,
+					  map->type == EFI_RESERVED_MEMORY_TYPE
+					      ? LMB_NOMAP : LMB_NONE);
+		}
+	}
+	efi_free_pool(memmap);
+
+	return 0;
+}
+
 static void lmb_reserve_common(struct lmb *lmb, void *fdt_blob)
 {
 	arch_lmb_reserve(lmb);
 	board_lmb_reserve(lmb);
 
-	if (IMAGE_ENABLE_OF_LIBFDT && fdt_blob)
+	if (CONFIG_IS_ENABLED(OF_LIBFDT) && fdt_blob)
 		boot_fdt_add_mem_rsv_regions(lmb, fdt_blob);
+
+	if (CONFIG_IS_ENABLED(EFI_LOADER))
+		efi_lmb_reserve(lmb);
 }
 
 /* Initialize the struct, add memory and call arch/board reserve functions */
@@ -168,8 +273,9 @@ static long lmb_add_region_flags(struct lmb_region *rgn, phys_addr_t base,
 		phys_addr_t rgnbase = rgn->region[i].base;
 		phys_size_t rgnsize = rgn->region[i].size;
 		phys_size_t rgnflags = rgn->region[i].flags;
-
-		if (rgnbase == base && rgnsize == size) {
+		phys_addr_t end = base + size - 1;
+		phys_addr_t rgnend = rgnbase + rgnsize - 1;
+		if (rgnbase <= base && end <= rgnend) {
 			if (flags == rgnflags)
 				/* Already have this region, so we're done */
 				return 0;
@@ -197,9 +303,13 @@ static long lmb_add_region_flags(struct lmb_region *rgn, phys_addr_t base,
 		}
 	}
 
-	if ((i < rgn->cnt - 1) && lmb_regions_adjacent(rgn, i, i + 1)) {
-		if (rgn->region[i].flags == rgn->region[i + 1].flags) {
+	if (i < rgn->cnt - 1 && rgn->region[i].flags == rgn->region[i + 1].flags)  {
+		if (lmb_regions_adjacent(rgn, i, i + 1)) {
 			lmb_coalesce_regions(rgn, i, i + 1);
+			coalesced++;
+		} else if (lmb_regions_overlap(rgn, i, i + 1)) {
+			/* fix overlapping area */
+			lmb_fix_over_lap_regions(rgn, i, i + 1);
 			coalesced++;
 		}
 	}

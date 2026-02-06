@@ -16,6 +16,7 @@
 #include <dm/device_compat.h>
 #include <linux/bitops.h>
 #include <linux/delay.h>
+#include <linux/printk.h>
 
 #define MEM_MODE_MASK	GENMASK(2, 0)
 #define SWP_FMC_OFFSET 10
@@ -286,7 +287,7 @@ static int stm32_fmc_of_to_plat(struct udevice *dev)
 		} else {
 			dev_dbg(dev, "cannot find st,mem_remap property\n");
 		}
-		
+
 		swp_fmc = dev_read_u32_default(dev, "st,swp_fmc", NOT_FOUND);
 		if (swp_fmc != NOT_FOUND) {
 			/* set fmc swapping selection */
