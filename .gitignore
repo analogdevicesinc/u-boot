@@ -95,3 +95,8 @@ GTAGS
 
 # Python cache
 __pycache__
+
+# Yocto symlinks
+oe-logs
+oe-workdir
+
