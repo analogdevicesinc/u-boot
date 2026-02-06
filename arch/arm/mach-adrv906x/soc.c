@@ -264,8 +264,8 @@ static int arch_misc_init_adrv906x(void)
 			"setenv dst ${sec_initrd_dst_addr}; " \
 			"if test $? -ne 0; then setenv sec_loadcmd_fail 1; fi; " \
 			"test ${sec_loadcmd_fail} -eq 0 && while test ${numbytes} -ge 0x100000; " \
-			"do cp.b ${src} ${dst} 0x100000 && setexpr numbytes ${numbytes} \- 0x100000 && " \
-			"setexpr src ${src} \+ 0x100000 && setexpr dst ${dst} \+ 0x100000 && " \
+			"do cp.b ${src} ${dst} 0x100000 && setexpr numbytes ${numbytes} - 0x100000 && " \
+			"setexpr src ${src} + 0x100000 && setexpr dst ${dst} + 0x100000 && " \
 			"setenv numbytes 0x${numbytes}; " \
 			"if test $? -ne 0; then setenv sec_loadcmd_fail 1; setenv numbytes 0; fi; done; " \
 			"test ${sec_loadcmd_fail} -eq 0 && cp.b ${src} ${dst} ${numbytes} && " \
@@ -278,7 +278,7 @@ static int arch_misc_init_adrv906x(void)
 			"fdt resize && " \
 			"fdt set /chosen/boot/lifecycle-state description \"${lifecycle_desc}\" && " \
 			"fdt set /chosen/boot/lifecycle-state deployed <${lifecycle_deployed}> && " \
-			"setexpr sec_initrd_dst_end_addr ${sec_initrd_dst_addr} \+ ${sec_initrd_size} && " \
+			"setexpr sec_initrd_dst_end_addr ${sec_initrd_dst_addr} + ${sec_initrd_size} && " \
 			"fdt chosen ${sec_initrd_dst_addr} ${sec_initrd_dst_end_addr} && " \
 			"fdt memory ${sec_memory_base} ${sec_memory_size} && " \
 			"fdt get value regval /reserved-memory/ddr-reserved@0 reg && " \
@@ -294,9 +294,9 @@ static int arch_misc_init_adrv906x(void)
 			"fdt set /sysclk clock-frequency <${sec_sysclk_freq}> && " \
 			"fdt set /uart@${sec_uart4_addr} status ${sec_uart4_status} && " \
 			"fdt set /chosen/boot plat ${sec_platform} && " \
-			"setexpr addr ${sec_memory_base} \+ 0x10 && " \
+			"setexpr addr ${sec_memory_base} + 0x10 && " \
 			"mw.q ${addr} ${sec_fdt_dst_addr} && " \
-			"setexpr addr ${sec_memory_base} \+ 0x8 && " \
+			"setexpr addr ${sec_memory_base} + 0x8 && " \
 			"mw.q ${addr} ${sec_kernel_dst_addr} && " \
 			"mw.q ${sec_memory_base} 0xAD12B007 && " \
 			"dcache flush; " \
@@ -309,6 +309,14 @@ static int arch_misc_init_adrv906x(void)
 			"run adrv906x_fit_loadcmd;" \
 			"run adrv906x_secondary_loadcmd;");
 	}
+
+	/* Set RAM load addresses for initial programming command */
+	snprintf(addr, 11, "0x%08llX", adrv906x_mem_map[0].virt + 0x01000000);
+	env_set("tftploadaddr", addr);
+	snprintf(addr, 11, "0x%08llX", adrv906x_mem_map[0].virt);
+	env_set("crc1addr", addr);
+	snprintf(addr, 11, "0x%08llX", adrv906x_mem_map[0].virt + 0x4);
+	env_set("crc2addr", addr);
 
 	return 0;
 }

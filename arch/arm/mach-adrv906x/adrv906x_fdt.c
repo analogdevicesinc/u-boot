@@ -7,13 +7,16 @@
 #include <asm/armv8/mmu.h>
 #include <fdtdec.h>
 #include <log.h>
+#include <net.h>
 #include <stdio.h>
 
 #include <adrv906x_def.h>
 #include <adrv906x_fdt.h>
 #include <adrv_common.h>
 
-#define MAX_BOOT_DEV_NAME_LENGTH 16
+#define MAX_BOOT_DEV_NAME_LENGTH    16
+#define MAX_NUM_MACS                6
+#define ETH_ADDR_LEN                6
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -159,6 +162,35 @@ static int plat_set_prop_disabled(void *blob, char *node_name)
 	return 0;
 }
 
+static int get_mac_address(uint8_t index, uint8_t **mac)
+{
+	int node;
+	char name[MAX_NODE_NAME_LENGTH];
+	char *node_name;
+
+	if (index >= MAX_NUM_MACS)
+		return -1;
+
+	/* Get U-Boot eth node name (emacx) */
+	if (index == 0) snprintf(name, MAX_NODE_NAME_LENGTH, "/ethernet@%08x", EMAC_1G_BASE);
+	else snprintf(name, MAX_NODE_NAME_LENGTH, "/emac@%d", index + 1);
+	node_name = name;
+
+	/* There is a separate node for SystemC 1G ethernet (different IP and driver) */
+	if (is_sysc() == true)
+		if (index == 0) node_name = "/ethernet@2";
+
+	node = fdt_path_offset(gd->fdt_blob, node_name);
+	if (node < 0)
+		return -1;
+
+	*mac = (u8 *)fdt_getprop(gd->fdt_blob, node, "mac-address", NULL);
+	if (*mac == NULL)
+		return -1;
+
+	return 0;
+}
+
 static int plat_get_reserved_region_size(void *blob, char *name, uint64_t *size)
 {
 	char node_name[MAX_NODE_NAME_LENGTH];
@@ -267,15 +299,13 @@ static int plat_populate_reserved_region(void *blob, char *name, uint64_t addres
  * Reserved memory regions are intended to be exclusively used by User space
  *
  * This is configured through device tree by including these nodes:
- * - /reserved-memory/sram-reserved@0 to prevent Linux kernel using this L4 region
- * - /reserved-memory/ddr-reserved@0 to prevent Linux kernel using this DDR region
- * - /sram-mmap@0 to Link reserved L4 region to User space
- * - /ddr-mmap@0 to Link reserved DDR region to User space
+ * - /reserved-memory/sram-reserved@x to prevent Linux kernel using this L4 region
+ * - /reserved-memory/ddr-reserved@x to prevent Linux kernel using this DDR region
+ * - /sram-mmap@x to Link reserved L4 region to User space
+ * - /ddr-mmap@x to Link reserved DDR region to User space
  *
  * Note: If the secondary is not running Linux (dual-tile), primary will take
- *       over the secondary memories: L4 and optionally DDR (if available). This
- *       will require a new set of nodes ending in '1' instead of '0'
- *
+ *       over the secondary memories.
  * Note: In addtion to /memory node (dedicated to DDR), there must be a
  *       /sram_memory node (dedicated to L4) to indicate Linux the available
  *       memory in the system
@@ -283,37 +313,37 @@ static int plat_populate_reserved_region(void *blob, char *name, uint64_t addres
  * Design:
  * - Device tree (DTS) is common for all use cases and must include all
  *   potentially required memory regions:
- *   - Primary: nodes ending with 0 and 1
- *   - Secondary: only nodes ending with 0
+ *   - Primary: nodes for primary and secondary L4 and DDR memories
+ *   - Secondary: only nodes for secondary L4 and DDR
  * - Device tree must use the above node names
  * - U-boot will fix up device tree (DTB) on the fly according to the use case
  *   (ie. populate DDR base address, disable secondary nodes when appropriate,
  *   ...)
- *   - Resulting primary DTB will still contain all nodes ending with 1, but
+ *   - Resulting primary DTB will still contain all nodes ending with 2, but
  *     they will be enabled or disabled (status property) according to the use
  *     case
  *
  * Use cases (and how the final DTB should look like):
  *   Single-tile:
- *        Primary DTB: reserve one L4 and one DDR regions from primary tile
+ *        Primary DTB: reserve two L4 and one DDR regions from primary tile
  *
  *   Dual-tile, Linux secondary, DDR secondary
- *        Primary DTB:   reserve one L4 and one DDR regions from primary tile
+ *        Primary DTB:   reserve two L4 and one DDR regions from primary tile
  *        Secondary DTB: reserve one L4 and one DDR regions from secondary tile
  *
  *   Dual-tile, Linux secondary, NO DDR secondary
- *        Primary DTB:   reserve one L4 and one DDR regions from primary tile
+ *        Primary DTB:   reserve two L4 and one DDR regions from primary tile
  *        Secondary DTB: reserve one L4 region from secondary tile and one DDR
  *                       region from primary tile (via C2C)
  *
  *   Dual-tile, NO Linux secondary, DDR secondary
- *        Primary DTB:   reserve one L4 and one DDR regions from primary tile
+ *        Primary DTB:   reserve two L4 and one DDR regions from primary tile
  *                       reserve one L4 and one DDR regions from secondary tile
  *                       (via C2C)
  *        Secondary DTB: N/A
  *
  *   Dual-tile, NO Linux secondary, NO DDR secondary
- *        Primary DTB:   reserve one L4 and one DDR regions from primary tile
+ *        Primary DTB:   reserve two L4 and one DDR regions from primary tile
  *                       reserve one L4 region from secondary tile (via C2C)
  *        Secondary DTB: N/A
  *
@@ -359,12 +389,12 @@ static int plat_memory_regions_fixup(void *blob)
 	 */
 	if (is_dual_tile && !is_secondary_linux_enabled) {
 		/* Enable secondary L4 reserved region */
-		ret = plat_set_prop_okay(blob, "/reserved-memory/sram-reserved@1");
+		ret = plat_set_prop_okay(blob, "/reserved-memory/sram-reserved@2");
 		if (ret < 0)
 			return -1;
 
 		/* and make it available to user space */
-		ret = plat_set_prop_okay(blob, "/sram-mmap@1");
+		ret = plat_set_prop_okay(blob, "/sram-mmap@2");
 		if (ret < 0)
 			return -1;
 
@@ -425,6 +455,57 @@ static int plat_memory_regions_fixup(void *blob)
 	}
 
 	return 0;
+}
+
+static int plat_eth_fixup(void *blob)
+{
+	int ret;
+	uint32_t is_dual_tile;
+	uint8_t *mac;
+	int node;
+	char name[MAX_NODE_NAME_LENGTH];
+	char *node_name;
+
+	ret = get_dual_tile(&is_dual_tile);
+	if (ret < 0)
+		return ret;
+
+	for (int i = 0; i < MAX_NUM_MACS; i++) {
+		if ((!is_dual_tile) && (i >= (MAX_NUM_MACS / 2)))
+			/* Skip secondary MACs in single-tile */
+			break;
+
+		/* Get Linux eth node name */
+
+		/* 1G eth */
+		if ((i == 0) || (i == 3))
+			snprintf(name, MAX_NODE_NAME_LENGTH, "/ethernet@%08X", (i == 0) ? EMAC_1G_BASE : SEC_EMAC_1G_BASE);
+		/* 10/25G eth */
+		else
+			snprintf(name, MAX_NODE_NAME_LENGTH, "/adi_eth_node@%08X/ethernet-ports/port@%d",
+				 (i < (MAX_NUM_MACS / 2)) ? 0x2B300000 : 0x2F300000,
+				 ((i == 1) || (i == 4)) ? 0 : 1);
+
+		node_name = name;
+
+		/* There is a separate node for SystemC 1G ethernet (different IP and driver) */
+		if (is_sysc() == true)
+			if (i == 0) node_name = "/ethernet@2";
+
+		/* MAC should be propagated only if the corresponding Linux eth
+		 * node is present, and its MAC value is undefined
+		 */
+		node = fdt_path_offset(blob, node_name);
+		if ((node < 0) ||
+		    (NULL != fdt_getprop(blob, node, "mac-address", NULL)))
+			continue;
+
+		/* Propagate mac information, if available, from u-boot to Linux dtb */
+		if ((0 == get_mac_address(i, &mac)) && !is_zero_ethaddr(mac))
+			ret = fdt_setprop(blob, node, "mac-address", mac, ETH_ADDR_LEN);
+	}
+
+	return ret;
 }
 
 static int plat_uio_fixup(void *blob)
@@ -617,6 +698,12 @@ int adrv906x_kernel_fdt_fixup(void *blob)
 	ret = plat_uio_fixup(blob);
 	if (ret < 0) {
 		log_err("Unable to fix up secondary uio nodes\n");
+		return -1;
+	}
+
+	ret = plat_eth_fixup(blob);
+	if (ret < 0) {
+		log_err("Unable to fix up ethernet mac addresses\n");
 		return -1;
 	}
 

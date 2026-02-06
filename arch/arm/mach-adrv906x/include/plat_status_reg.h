@@ -15,6 +15,7 @@ typedef enum {
 	RESET_VALUE,
 	IMG_VERIFY_FAIL,
 	WATCHDOG_RESET,
+	ECC_ERROR,
 	OTHER_RESET_CAUSE
 } reset_cause_t;
 
@@ -24,8 +25,7 @@ typedef enum {
 	RESET_CAUSE,
 	BOOT_CNT,
 	STARTING_SLOT,
-	LAST_SLOT,
-	RECOVERY_BOOT_ACTIVE
+	LAST_SLOT
 } status_reg_id_t;
 
 unsigned int rd_status_reg(status_reg_id_t reg);
