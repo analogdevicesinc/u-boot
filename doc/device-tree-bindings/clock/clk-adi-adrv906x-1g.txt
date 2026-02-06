@@ -1,0 +1,55 @@
+Binding for ADRV906X 1G ethernet input clock divider
+
+This binding uses the common clock binding[1].
+
+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+
+Required properties:
+- compatible : shall be "adi,adrv906x-1g-clock"
+- reg : base address shall be EMAC_1G_YODA (register to set the clock divider
+        and enable/disable the clock)
+- #clock-cells : shall be set to 1 (argument: phy interface 
+                 (PHY_INTERFACE_MODE_RMII | PHY_INTERFACE_MODE_RGMII))
+- clocks: parent clock. (fixed-clock type)
+- clocks-names: Arbitrary name
+
+Optional properties:
+- clock-output-names : From common clock binding.
+
+Example:
+	dwmac_clkin: dwmac_clkin {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <250000000>;
+		u-boot,dm-pre-reloc;
+	};
+
+	dwmac_clk: dwmac_clk {
+		compatible = "adi,adrv906x-1g-clock";
+		reg = <EMAC_1G_YODA 0x04>;
+		reg-names = "emac1gyoda";
+		#clock-cells = <1>;
+		clocks = <&dwmac_clkin>;
+		clock-names = "dwmac_clkin";
+		status = "okay";
+		u-boot,dm-pre-reloc;
+	};	
+
+	adi_dwmac_dev: adi_dwmac_node@EMAC_1G_BASE_UADDR {
+		compatible = "snps,dwmac-5.20";
+		reg = <EMAC_1G_BASE 0x1168>;
+		phy-mode = "rgmii";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_emac>;
+		mac-address = [ 00 48 00 48 00 48 ];
+		snps,reset-gpio = <&gpio ADI_ADRV906X_PIN_88 GPIO_ACTIVE_LOW>;
+		snps,reset-active-low;
+		snps,reset-delays-us = <1000 1000 1000>;
+		status = "disabled";
+		clocks = <&dwmac_clk PHY_INTERFACE_MODE_RGMII>;
+		clock-names = "dwmac_clk";
+		fixed-link {
+			speed = <1000>;
+			full-duplex;
+		};
+	};

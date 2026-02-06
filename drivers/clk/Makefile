@@ -21,6 +21,7 @@ obj-$(CONFIG_ARCH_MTMIPS) += mtmips/
 obj-$(CONFIG_ARCH_MESON) += meson/
 obj-$(CONFIG_ARCH_ROCKCHIP) += rockchip/
 obj-$(CONFIG_ARCH_SOCFPGA) += altera/
+obj-$(CONFIG_CLK_ADI_ADRV906X_1G) += clk-adi-adrv906x-1g.o
 obj-$(CONFIG_CLK_AT91) += at91/
 obj-$(CONFIG_CLK_MVEBU) += mvebu/
 obj-$(CONFIG_CLK_BCM6345) += clk_bcm6345.o

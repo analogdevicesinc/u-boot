@@ -183,6 +183,7 @@ config CLK_K210_SET_RATE
 	  Add functionality to calculate new rates for K210 PLLs. Enabling this
 	  feature adds around 1K to U-Boot's final size.
 
+
 source "drivers/clk/analogbits/Kconfig"
 source "drivers/clk/at91/Kconfig"
 source "drivers/clk/exynos/Kconfig"
@@ -228,5 +229,11 @@ config CLK_VERSACLOCK
 	help
 	  This driver supports the IDT VersaClock 5 and VersaClock 6
 	  programmable clock generators.
+
+config CLK_ADI_ADRV906X_1G
+	bool "Clock divider support for ADRV906X 1G Ethernet"
+	depends on CLK && ARCH_ADRV906X
+	help
+	  Support ADRV906X clock divider configuration for 1G ethernet (Synopsys IP)
 
 endmenu
