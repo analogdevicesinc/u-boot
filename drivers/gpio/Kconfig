@@ -513,4 +513,10 @@ config NOMADIK_GPIO
 	  into a number of banks each with 32 GPIOs. The GPIOs for a device are
 	  defined in the device tree with one node for each bank.
 
+config ADI_ADRV906X_GPIO
+	bool "Analog Devices Inc, ADRV906X SoC GPIO support"
+	depends on DM_GPIO && ARCH_ADRV906X
+	help
+	  Say yes here to add support for ADI's ADRV906X SoC GPIO controller.
+
 endmenu
