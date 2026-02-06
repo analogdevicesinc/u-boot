@@ -13,6 +13,7 @@ obj-$(CONFIG_PINCTRL_INTEL) += intel/
 obj-$(CONFIG_ARCH_MTMIPS) += mtmips/
 obj-$(CONFIG_ARCH_RMOBILE) += renesas/
 obj-$(CONFIG_PINCTRL_SANDBOX)	+= pinctrl-sandbox.o
+obj-$(CONFIG_ARCH_ADRV906X) += pinctrl-adi-adrv906x.o
 
 obj-$(CONFIG_PINCTRL_UNIPHIER)	+= uniphier/
 obj-$(CONFIG_PINCTRL_PIC32)	+= pinctrl_pic32.o
