@@ -62,7 +62,7 @@ static int do_spi_xfer(int bus, int cs)
 	if (ret)
 		goto done;
 	ret = spi_xfer(slave, bitlen, dout, din,
-		       SPI_XFER_BEGIN | SPI_XFER_END);
+		       SPI_XFER_BEGIN | SPI_XFER_END | SPI_XFER_QUAD);
 #if !CONFIG_IS_ENABLED(DM_SPI)
 	/* We don't get an error code in this case */
 	if (ret)
