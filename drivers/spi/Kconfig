@@ -42,6 +42,11 @@ config SPI_MEM
 
 if DM_SPI
 
+config ADI_SPI3_DM
+	bool "Enable ADI SPI Driver (using DM)"
+	help
+	  Enable ADI SPI Driver (using DM)
+
 config ALTERA_SPI
 	bool "Altera SPI driver"
 	help
