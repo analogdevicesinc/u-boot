@@ -81,7 +81,7 @@ int adi_spi_cs_valid(unsigned int bus, unsigned int cs)
 {
 	if (bus > MAX_SPI_NUM)
 		return 0;
-	return cs >= 1 && cs <= MAX_CTRL_CS;
+	return cs < MAX_CTRL_CS;
 }
 /* TODO: gpio cs is not currently supported */
 int cs_is_valid(unsigned int bus, unsigned int cs)
@@ -192,7 +192,7 @@ static int adi_spi_claim_bus(struct udevice *dev)
 	/* SPI_CTL_MSTR bit can only be changed when SPI is disabled */
 	writel((priv->control & ~SPI_CTL_EN), &priv->regs->control);
 	writel(((priv->control & ~SPI_CTL_EN) | SPI_CTL_MSTR), &priv->regs->control);
-	writel(priv->control, &priv->regs->control);
+	writel(priv->control | (SPI_CTL_EN | SPI_CTL_MSTR), &priv->regs->control);
 
 	writel(priv->clock, &priv->regs->clock);
 	writel(0x0, &priv->regs->delay);
@@ -488,7 +488,7 @@ static int adi_spi_pio_xfer(struct adi_spi_priv *priv, const u8 *tx, u8 *rx,
 	else
 		miom = SPI_CTL_MIO_DIS;
 
-	writel((priv->control & ~SPI_CTL_SOSI) | miom, &priv->regs->control);
+	writel((priv->control & ~(SPI_CTL_SOSI | SPI_CTL_MIOM)) | miom, &priv->regs->control);
 
 	/* Do transfer */
 	buf = (uint8_t *)((dir == SPI_MEM_DATA_IN) ? rx : tx);
@@ -602,6 +602,9 @@ static int adi_spi_set_mode(struct udevice *bus, uint mode)
 		reg |= SPI_CTL_LSBF;
 	reg &= ~SPI_CTL_ASSEL;
 
+	/* Fast Mode */
+	reg |= SPI_CTL_FMODE;
+
 	priv->control = reg;
 	priv->cs_pol = mode & SPI_CS_HIGH ? 1 : 0;
 
@@ -610,12 +613,121 @@ static int adi_spi_set_mode(struct udevice *bus, uint mode)
 	return 0;
 }
 
+/* General SPI framework (spi_meme_exec_op) only supports 1-1-1 transfers
+ * (one line per cmd, address, and data).
+ * This implementation splits the transfer in four blocks: cmd, address, dummy
+ * and data. Supported 1 and 4 lines independently for each block (higher layers
+ * determine the format (x-x-x) according to the memory flash command issued.
+ */
+int adi_spi_mem_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
+{
+	unsigned int pos;
+	const u8 *tx_buf = NULL;
+	u8 *rx_buf = NULL;
+	int op_len = op_len = op->cmd.nbytes + op->addr.nbytes + op->dummy.nbytes;
+	u8 op_buf[op_len];
+	u32 flag;
+	int ret;
+	int i;
+
+	if (!spi_mem_supports_op(slave, op))
+		return -ENOTSUPP;
+
+	/* Prepare 'opcode-addr-dummy' (op_buf) buffer */
+	pos = 0;
+	op_buf[pos++] = op->cmd.opcode;
+
+	if (op->addr.nbytes) {
+		for (i = 0; i < op->addr.nbytes; i++)
+			op_buf[pos + i] = op->addr.val >>
+					  (8 * (op->addr.nbytes - i - 1));
+
+		pos += op->addr.nbytes;
+	}
+
+	if (op->dummy.nbytes)
+		memset(op_buf + pos, 0xff, op->dummy.nbytes);
+
+	/* Prepare data (tx_buf or rx_buf) buffer */
+	if (op->data.nbytes) {
+		if (op->data.dir == SPI_MEM_DATA_IN)
+			rx_buf = op->data.buf.in;
+		else
+			tx_buf = op->data.buf.out;
+	}
+
+	/* Do transfer */
+
+	ret = spi_claim_bus(slave);
+	if (ret < 0)
+		return ret;
+
+	/* Send opcode */
+	flag = SPI_XFER_BEGIN;
+	if ((op->addr.nbytes == 0) && (op->dummy.nbytes == 0) &&
+	    !tx_buf && !rx_buf)
+		flag |= SPI_XFER_END;
+	if (op->cmd.buswidth == 4)
+		flag |= SPI_XFER_QUAD;
+
+	ret = spi_xfer(slave, 1 * 8, op_buf, NULL, flag);
+	if (ret)
+		return ret;
+
+	/* Send address */
+	if (op->addr.nbytes) {
+		flag = 0;
+		if ((op->dummy.nbytes == 0) && !tx_buf && !rx_buf)
+			flag |= SPI_XFER_END;
+		if (op->addr.buswidth == 4)
+			flag |= SPI_XFER_QUAD;
+
+		ret = spi_xfer(slave, op->addr.nbytes * 8, op_buf + 1, NULL, flag);
+		if (ret)
+			return ret;
+	}
+
+	/* Send dummy bytes */
+	if (op->dummy.nbytes) {
+		flag = 0;
+		if (!tx_buf && !rx_buf)
+			flag |= SPI_XFER_END;
+		if (op->dummy.buswidth == 4)
+			flag |= SPI_XFER_QUAD;
+
+		ret = spi_xfer(slave, op->dummy.nbytes * 8, op_buf + 1 + op->addr.nbytes, NULL, flag);
+		if (ret)
+			return ret;
+	}
+
+	/* Send or receive data */
+	if (tx_buf || rx_buf) {
+		flag = SPI_XFER_END;
+		if (op->data.buswidth == 4)
+			flag |= SPI_XFER_QUAD;
+
+		ret = spi_xfer(slave, op->data.nbytes * 8, tx_buf,
+			       rx_buf, flag);
+		if (ret)
+			return ret;
+	}
+
+	spi_release_bus(slave);
+
+	return 0;
+}
+
+static const struct spi_controller_mem_ops adi_spi_mem_ops = {
+	.exec_op	= adi_spi_mem_exec_op,
+};
+
 static const struct dm_spi_ops adi_spi_ops = {
 	.claim_bus	= adi_spi_claim_bus,
 	.release_bus	= adi_spi_release_bus,
 	.xfer		= adi_spi_xfer,
 	.set_speed	= adi_spi_set_speed,
 	.set_mode	= adi_spi_set_mode,
+	.mem_ops	= &adi_spi_mem_ops,
 };
 
 static const struct udevice_id adi_spi_ids[] = {

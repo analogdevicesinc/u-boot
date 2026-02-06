@@ -69,6 +69,24 @@
 #define EMAC_1G_YODA_PHY_INTF_SEL_I_RMII        4
 #define EMAC_1G_YODA_PHY_INTF_SEL_I_RGMII       1
 
+#define ETH1G_DEVCLK_MASK                       GENMASK(13, 6)
+#define ETH1G_DEVCLK_DIV_FUND                   BIT(6)
+#define ETH1G_DEVCLK_DIV_KILLCLK                0       /* BIT(7) */
+#define ETH1G_DEVCLK_DIV_MCS_RESET              0       /* BIT(8) */
+#define ETH1G_DEVCLK_DIV_RATIO                  0       /* Bits 9-10 */
+#define ETH1G_DEVCLK_DIV_RB                     BIT(11)
+#define ETH1G_DEVCLK_BUFFER_ENABLE              BIT(12)
+#define ETH1G_DEVCLK_BUFFER_TERM_ENABLE         BIT(13)
+#define ETH1G_DEVCLK_DEFAULT_VAL                ETH1G_DEVCLK_DIV_FUND |         \
+	ETH1G_DEVCLK_DIV_KILLCLK |      \
+	ETH1G_DEVCLK_DIV_MCS_RESET |    \
+	ETH1G_DEVCLK_DIV_RATIO |        \
+	ETH1G_DEVCLK_DIV_RB |           \
+	ETH1G_DEVCLK_BUFFER_ENABLE
+
+#define ETH1G_REFCLK_MASK                       BIT(17)
+#define ETH1G_REFCLK_REFPATH_PD                 0 /* BIT(17) */
+#define ETH1G_REFCLK_DEFAULT_VAL                ETH1G_REFCLK_REFPATH_PD
 
 struct adrv906x_priv_data {
 	uint32_t base_clk_speed;
@@ -178,11 +196,35 @@ const struct clk_ops adi_clk_ops = {
 	.set_rate	= adi_clk_set_rate,
 };
 
+static void adrv906x_clk_buffer_enable(void __iomem *clk_ctrl_base, bool term_en)
+{
+	uint32_t val;
+
+	clk_ctrl_base = (void __iomem *)0x20190000;
+	/* eth1_devclk: enable buffer and divide by 1 (buffered input clock) */
+	val = readl(clk_ctrl_base);
+	val &= ~ETH1G_DEVCLK_MASK;
+	val |= ETH1G_DEVCLK_DEFAULT_VAL;
+	if (term_en)
+		/* Enable internal terminator resistor */
+		val |= ETH1G_DEVCLK_BUFFER_TERM_ENABLE;
+	writel(val, clk_ctrl_base);
+
+	/* eth1_refclk: enable clock long-route driver */
+	val = readl(clk_ctrl_base + 0x04);
+	val &= ~ETH1G_REFCLK_MASK;
+	val |= ETH1G_REFCLK_DEFAULT_VAL;
+	iowrite32(val, clk_ctrl_base + 0x04);
+}
+
 static int adrv906x_1g_clock_probe(struct udevice *dev)
 {
 	int ret;
 	const char *clk_name;
 	struct clk clkin;
+	void __iomem *clk_ctrl_base;
+	bool term_en;
+	uint32_t adi_ctrl_reg[2];
 
 	/* ADRV906X ethernet 1g input clock  */
 	clk_name = dev_read_string(dev, "clock-names");
@@ -200,6 +242,18 @@ static int adrv906x_1g_clock_probe(struct udevice *dev)
 	/* Fill clk info */
 	sam_priv.clk_div_base = dev_remap_addr(dev);
 	sam_priv.base_clk_speed = clk_get_rate(&clkin);
+
+	/* ADRV906x ethernet 1g Buffer input clock */
+	ret = dev_read_u32_array(dev, "adi,ctrl-reg", adi_ctrl_reg, sizeof(adi_ctrl_reg) / sizeof(adi_ctrl_reg[0]));
+	if (ret < 0) {
+		pr_err("failed to get clock control base address\n");
+		return ret;
+	}
+	clk_ctrl_base = map_physmem(adi_ctrl_reg[0], adi_ctrl_reg[1], MAP_NOCACHE);
+	term_en = dev_read_bool(dev, "adi,term_en");
+
+	/* Enable input clock buffer */
+	adrv906x_clk_buffer_enable(clk_ctrl_base, term_en);
 
 	return ret;
 }

@@ -135,10 +135,17 @@ static int adi_adrv906x_gpio_direction_output(struct udevice *dev, unsigned gpio
 	uint64_t gpio_mode_base_addr = plat->base_addr;
 	ulong base_addr;
 	uint32_t offset, data, cleared_data;
+	int ret;
 
 	if (gpio > plat->gpio_count)
 		return -EINVAL;
 
+	/* Set pin level */
+	ret = adi_adrv906x_gpio_set_value(dev, gpio, val);
+	if (ret != 0)
+		return ret;
+
+	/* Set pin output direction */
 	base_addr = gpio_mode_base_addr + GPIO_DIR_CONTROL_OFFSET;
 	offset = gpio * GPIO_DIR_CONTROL_SIZE;
 	data = readl(base_addr + offset);

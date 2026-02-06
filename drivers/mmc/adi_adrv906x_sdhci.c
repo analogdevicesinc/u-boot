@@ -111,13 +111,66 @@ static int adi_sdhci_setup_phy(struct udevice *dev)
 	return 0;
 }
 
+static int adi_sdhci_set_clock(struct sdhci_host *host, u32 clock)
+{
+	unsigned int div, clk = 0, timeout;
+
+	/* Workaround: ADRV906X does not use SDHCI_DIVIDER as specified
+	 * in the SDHCI spec. Instead of 1/(2N), it is 1/(N+1). This function
+	 * is basically a copy of sdhci_set_clock(), but with the updated
+	 * divider calculation.
+	 */
+	sdhci_writew(host, 0, SDHCI_CLOCK_CONTROL);
+
+	if (host->max_clk <= clock) {
+		div = 0;
+	} else {
+		div = (host->max_clk / clock) - 1U;
+		if ((host->max_clk % clock) != 0)
+			div++;
+	}
+
+	clk |= (div & SDHCI_DIV_MASK) << SDHCI_DIVIDER_SHIFT;
+	clk |= ((div & SDHCI_DIV_HI_MASK) >> SDHCI_DIV_MASK_LEN)
+		<< SDHCI_DIVIDER_HI_SHIFT;
+	clk |= SDHCI_CLOCK_INT_EN;
+	sdhci_writew(host, clk, SDHCI_CLOCK_CONTROL);
+
+	/* Wait max 20 ms */
+	timeout = 20;
+	while (!((clk = sdhci_readw(host, SDHCI_CLOCK_CONTROL))
+		 & SDHCI_CLOCK_INT_STABLE)) {
+		if (timeout == 0) {
+			printf("%s: Internal clock never stabilised.\n",
+			       __func__);
+			return -EBUSY;
+		}
+		timeout--;
+		udelay(1000);
+	}
+
+	clk |= SDHCI_CLOCK_CARD_EN;
+	sdhci_writew(host, clk, SDHCI_CLOCK_CONTROL);
+
+	return 0;
+}
+
 #if CONFIG_IS_ENABLED(MMC_HS400_SUPPORT)
 static int adi_sdhci_config_dll(struct sdhci_host *host, u32 clock, bool enable)
 {
 	struct adi_sdhc *priv = dev_get_priv(host->mmc->dev);
 	struct adi_phy_opts phy_opts;
+	int ret = 0;
 
-	(void)clock;
+	/* Workaround: ADRV906X has a custom SDHCI_DIVIDER. Setting this in
+	 * config_dll() allows us to override the divider logic in
+	 * sdhci_set_clock().
+	 */
+	if (enable) {
+		ret = adi_sdhci_set_clock(host, clock);
+		if (ret != 0)
+			return ret;
+	}
 
 	/* DLL configured only for HS400 and HS400ES modes */
 	if (host->mmc->selected_mode != MMC_HS_400 &&
@@ -142,6 +195,20 @@ static int adi_sdhci_set_enhanced_strobe(struct sdhci_host *host)
 	sdhci_writew(host, emmc_ctrl, SDHCI_VENDOR1_EMMC_CTRL_R_OFF);
 
 	return 0;
+}
+#else
+static int adi_sdhci_config_dll(struct sdhci_host *host, u32 clock, bool enable)
+{
+	int ret = 0;
+
+	/* Workaround: ADRV906X has a custom SDHCI_DIVIDER. Setting this in
+	 * config_dll() allows us to override the divider logic in
+	 * sdhci_set_clock().
+	 */
+	if (enable)
+		ret = adi_sdhci_set_clock(host, clock);
+
+	return ret;
 }
 #endif
 
@@ -332,7 +399,7 @@ static int adi_sdhci_platform_execute_tuning(struct mmc *mmc, u8 opcode)
 }
 #endif
 
-static const struct sdhci_ops adi_sdhci_ops = {
+static const struct sdhci_ops adi_sdhci_emmc_ops = {
 	.set_control_reg		= adi_sdhci_set_control_reg,
 	.set_delay			= adi_sdhci_set_delay,
 #if CONFIG_IS_ENABLED(MMC_HS200_SUPPORT)
@@ -346,6 +413,10 @@ static const struct sdhci_ops adi_sdhci_ops = {
 #endif
 };
 
+static const struct sdhci_ops adi_sdhci_sd_ops = {
+	.config_dll	= adi_sdhci_config_dll
+};
+
 static int adi_sdhci_probe(struct udevice *dev)
 {
 	struct mmc_uclass_priv *upriv = dev_get_uclass_priv(dev);
@@ -356,6 +427,7 @@ static int adi_sdhci_probe(struct udevice *dev)
 	bool init_phy;
 	bool is_emmc;
 	struct clk clk;
+	unsigned long clock;
 
 #if CONFIG_IS_ENABLED(OF_PLATDATA)
 	struct dtd_adi_sdhci *dtplat = &plat->dtplat;
@@ -373,8 +445,11 @@ static int adi_sdhci_probe(struct udevice *dev)
 	ret = clk_get_by_index(dev, 0, &clk);
 #endif
 
+	clock = clk_get_rate(&clk);
 	host->quirks = 0;
-	host->max_clk = max_frequency;
+	host->max_clk = clock;
+	plat->cfg.f_max = max_frequency;
+
 	/*
 	 * The sdhci-driver only supports 4bit and 8bit, as sdhci_setup_cfg
 	 * doesn't allow us to clear MMC_MODE_4BIT.  Consequently, we don't
@@ -393,7 +468,7 @@ static int adi_sdhci_probe(struct udevice *dev)
 	upriv->mmc = host->mmc;
 
 	if (is_emmc) {
-		host->ops = &adi_sdhci_ops;
+		host->ops = &adi_sdhci_emmc_ops;
 	} else {
 		/* As per Spec, Host System should set Voltage support to 3.3V
 		 * or 3.0V for SD card. But, ADI drives 1.8V and level shifter
@@ -401,9 +476,11 @@ static int adi_sdhci_probe(struct udevice *dev)
 		host->voltages = MMC_VDD_32_33 | MMC_VDD_33_34;
 
 		host->quirks |= SDHCI_QUIRK_BROKEN_VOLTAGE;
+
+		host->ops = &adi_sdhci_sd_ops;
 	}
 
-	ret = sdhci_setup_cfg(&plat->cfg, host, 0, SDHCI_BOOT_CLK_RATE_HZ);
+	ret = sdhci_setup_cfg(&plat->cfg, host, plat->cfg.f_max, SDHCI_BOOT_CLK_RATE_HZ);
 	if (ret)
 		return ret;
 
