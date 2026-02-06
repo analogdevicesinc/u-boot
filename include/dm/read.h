@@ -15,6 +15,7 @@
 #include <dm/fdtaddr.h>
 #include <dm/ofnode.h>
 #include <dm/uclass.h>
+#include <phy_interface.h>
 
 struct resource;
 
@@ -1043,6 +1044,11 @@ static inline int dev_decode_display_timing(const struct udevice *dev,
 					    struct display_timing *config)
 {
 	return ofnode_decode_display_timing(dev_ofnode(dev), index, config);
+}
+
+static inline phy_interface_t dev_read_phy_mode(const struct udevice *dev)
+{
+	return ofnode_read_phy_mode(dev_ofnode(dev));
 }
 
 #endif /* CONFIG_DM_DEV_READ_INLINE */
