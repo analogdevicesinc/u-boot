@@ -1,0 +1,9 @@
+#
+# Phy drivers for ADI platforms
+#
+
+config PHY_ADI_SDHCI
+	tristate "ADI SDHCI PHY driver"
+	select PHY
+	help
+	  Enable this to support the ADI SDHCI PHY.
