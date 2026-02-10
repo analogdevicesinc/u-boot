@@ -19,7 +19,7 @@
 	#define RCU0_CRSTAT             0x3108B00C
 	#define RCU0_SIDIS              0x3108B010
 	#define RCU0_MSG_SET            0x3108B064
-#elif defined(CONFIG_SC57X) || defined(CONFIG_SC59X) || defined(CONFIG_SC59X_64)
+#elif defined(CONFIG_SC57X) || defined(CONFIG_SC59X) || defined(CONFIG_SC59X_64) || defined(CONFIG_SC846)
 	#define RCU0_CTL                0x3108C000
 	#define RCU0_STAT               0x3108C004
 	#define RCU0_CRCTL              0x3108C008
@@ -69,7 +69,7 @@ void sc5xx_disable_spu0(uintptr_t spu0_start, uintptr_t spu0_end)
  */
 void sc5xx_enable_pmu(void)
 {
-	if (!IS_ENABLED(CONFIG_SC59X_64)) {
+	if (!IS_ENABLED(CONFIG_ARM64)) {
 		writel(readl(REG_ARMPMU0_PMUSERENR) | 0x01, REG_ARMPMU0_PMUSERENR);
 		writel(0xc5acce55, REG_ARMPMU0_PMLAR);
 		writel(readl(REG_ARMPMU0_PMCR) | (1 << 1), REG_ARMPMU0_PMCR);
