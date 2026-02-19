@@ -10,7 +10,10 @@
 #include <asm/arch/sc5xx.h>
 #include <asm/arch/spl.h>
 #include "init/clkinit.h"
+
+#if (IS_ENABLED(CONFIG_SC5XX_DMC_INIT))
 #include "init/dmcinit.h"
+#endif
 
 static bool adi_start_uboot_proper;
 
@@ -67,7 +70,7 @@ int32_t __weak adi_rom_boot_hook(struct ADI_ROM_BOOT_CONFIG *config, int32_t cau
 int board_return_to_bootrom(struct spl_image_info *spl_image,
 			    struct spl_boot_device *bootdev)
 {
-#if CONFIG_ADI_SPL_FORCE_BMODE != 0
+#if !(IS_ENABLED(CONFIG_ADI_SPL_FORCE_BMODE))
 	// see above
 	if (bmode != 0 && bmode != 3)
 		bmode = CONFIG_ADI_SPL_FORCE_BMODE;
@@ -88,7 +91,9 @@ void board_init_f(ulong dummy)
 	int ret;
 
 	clks_init();
+#if (IS_ENABLED(CONFIG_SC5XX_DMC_INIT))
 	DMC_Config();
+#endif
 	sc5xx_soc_init();
 
 	ret = spl_early_init();

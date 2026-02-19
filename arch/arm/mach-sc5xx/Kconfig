@@ -26,17 +26,20 @@ config SC57X
 	select COMMON_CLK_ADI_SC57X
 	select CPU_V7A
 	select TARGET_SC573_EZLITE
+	select SC5XX_DMC_INIT
 
 config SC58X
 	bool "SC58x series"
 	select COMMON_CLK_ADI_SC58X
 	select CPU_V7A
+	select SC5XX_DMC_INIT
 
 config SC59X
 	bool "SC59x 32-bit series"
 	select COMMON_CLK_ADI_SC594
 	select CPU_V7A
 	select NOP_PHY if PHY
+	select SC5XX_DMC_INIT
 
 config SC59X_64
 	bool "SC59x 64-bit series"
@@ -46,7 +49,17 @@ config SC59X_64
 	select GICV3_SUPPORT_GIC600
 	select MMC_SDHCI_ADMA_FORCE_32BIT
 	select NOP_PHY if PHY
+	select SC5XX_DMC_INIT
 
+config SC846
+	bool "SC846 64-bit series"
+	select ARM64
+	select COMMON_CLK_ADI_SC846
+	select GICV3
+	select GICV3_SUPPORT_GIC600
+	select GIC_600_CLEAR_RDPD
+	select MMC_SDHCI_ADMA_FORCE_32BIT
+	select NOP_PHY if PHY
 endchoice
 
 if SC57X
@@ -115,6 +128,81 @@ config TARGET_SC598_SOM_EZKIT
 endchoice
 
 endif
+
+if SC846
+
+choice
+	prompt "SC846 64-bit board select"
+
+config TARGET_SC846_SOM
+	bool
+	prompt "SC846-SOM (no carrier board)"
+
+endchoice
+endif
+
+config SC5XX_UBOOT_SPL_OFFSET
+	hex "SPL offset"
+	default 0x0
+	help
+	  The default offset where the SPL is located.
+
+config SC5XX_UBOOT_OFFSET
+	hex "U-Boot offset"
+	default 0x40000
+	help
+	  The default offset where u-boot is located.
+
+config SC5XX_FITIMAGE_OFFSET
+	hex "FitImage offset"
+	default 0x1a0000
+	help
+	  The default offset where the fitImage is located.
+
+config SC5XX_ROOTFS_OFFSET
+	hex "RootFS offset"
+	default 0x102000
+	help
+	  The default offset where the rootfs is located.
+
+config SC5XX_LOADADDR
+	hex "Load address"
+	default 0x90000000
+	help
+	  The default load address for u-boot.
+
+menu "Binman configuration"
+config SC5XX_USE_BINMAN
+	bool "Use binman for final image"
+	select BINMAN
+	help
+	  If you wish to use binman to assemble an image, say 'Y' here.
+	  This will enable binman-specific sections in the device tree.
+
+config SC5XX_BINMAN_FILENAME
+	string "Image name"
+	default "sc5xx-image.img"
+	depends on SC5XX_USE_BINMAN
+	help
+	  The name of the image that will be created by binman.
+	  This is used to create the final image.
+
+config SC5XX_FITIMAGE_NAME
+	string "FitImage name"
+	default "fitImage"
+	depends on SC5XX_USE_BINMAN
+	help
+	  The name of the fitImage to be packed by binman.
+	  This is used to create the final image.
+
+config SC5XX_ROOTFS_NAME
+	string "RootFS name"
+	default "rootfs"
+	depends on SC5XX_USE_BINMAN
+	help
+	  The name of the rootfs to be packed by binman.
+	  This is used to create the final image.
+endmenu
 
 config ADI_IMAGE
 	string "ADI fitImage type"
@@ -269,6 +357,14 @@ config ADI_USE_DDR2
 	  the SoC that you are using to determine if DDR2 mode is supported.
 	  This also requires that DDR2 memory is present on the board or it
 	  will probably cause strange failure.
+
+config SC5XX_DMC_INIT
+	bool "Initialize the DMC"
+	default y
+	help
+	  Initialize the DMC during hardware initialization. This is
+	  required if you are using external DDR memory and is limited to
+	  ADSP-SC5XX architecture
 
 menu "Clock configuration"
 
@@ -563,6 +659,7 @@ config PINCTRL_ADI
 	bool
 	default y
 
+source "board/adi/sc846-som/Kconfig"
 source "board/adi/sc598-som-ezkit/Kconfig"
 source "board/adi/sc598-som-ezlite/Kconfig"
 source "board/adi/sc594-som-ezkit/Kconfig"
