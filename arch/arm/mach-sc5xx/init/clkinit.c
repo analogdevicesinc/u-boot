@@ -10,7 +10,14 @@
 #include <asm/io.h>
 #include <linux/types.h>
 #include "clkinit.h"
+
+#ifdef CONFIG_SC5XX_DMC_INIT
 #include "dmcinit.h"
+#endif
+
+#ifdef CONFIG_SC846
+#include "EHP2_LP4_1D_2000/EHP2_LPDDR4_1D_2000_Core1.h"
+#endif
 
 #ifdef CONFIG_CGU0_SCLK0_DIV
 	#define VAL_CGU0_SCLK0_DIV CONFIG_CGU0_SCLK0_DIV
@@ -225,10 +232,10 @@ struct CGU_Settings {
 	(defined(CONFIG_SC57X) || defined(CONFIG_SC58X))
 	#define ARMCLK_IN	0
 	#define ARMCLK_RATIO	SYSCLK_n_RATIO(0)
-#elif (5 == CONFIG_CDU0_CLKO2) && defined(CONFIG_SC59X_64)
+#elif (5 == CONFIG_CDU0_CLKO2) && defined(CONFIG_ARM64)
 	#define ARMCLK_IN	0
 	#define ARMCLK_RATIO	CCLK2_n_RATIO(0)
-#elif (7 == CONFIG_CDU0_CLKO2) && defined(CONFIG_SC59X_64)
+#elif (7 == CONFIG_CDU0_CLKO2) && defined(CONFIG_ARM64)
 	#define ARMCLK_IN	CDU0_CGU1_CLKIN
 	#define ARMCLK_RATIO	CCLK2_n_RATIO(1)
 #endif
@@ -456,7 +463,7 @@ static void CGU_Init(const struct CGU_Settings *pCGU)
 {
 	const uintptr_t b = pCGU->rbase;
 
-#if defined(CONFIG_SC59X) || defined(CONFIG_SC59X_64)
+#if defined(CONFIG_SC59X) || defined(CONFIG_SC59X_64) || defined(CONFIG_SC846)
 	if (readl(b + CGU_STAT) & BITM_CGU_STAT_PLLEN)
 		writel(BITM_CGU_PLLCTL_PLLEN, b + CGU_PLLCTL);
 
@@ -467,14 +474,14 @@ static void CGU_Init(const struct CGU_Settings *pCGU)
 	if (readl(b + CGU_STAT) & BITM_CGU_STAT_PLLBP)
 		Active_To_Fullon(pCGU);
 
-#if defined(CONFIG_SC59X) || defined(CONFIG_SC59X_64)
+#if defined(CONFIG_SC59X) || defined(CONFIG_SC59X_64) || defined(CONFIG_SC846)
 	dmcdelay(1000);
 #endif
 
 	program_cgu(pCGU);
 }
 
-void cgu_init(void)
+__attribute__((optimize("O0"))) void cgu_init(void)
 {
 	const struct CGU_Settings dividers0 = {
 		.rbase =		CGU0_REGBASE,
@@ -529,28 +536,38 @@ void cdu_init(void)
 	CONFIGURE_CDU0(CONFIG_CDU0_CLKO7, REG_CDU0_CFG7, 7);
 	CONFIGURE_CDU0(CONFIG_CDU0_CLKO8, REG_CDU0_CFG8, 8);
 	CONFIGURE_CDU0(CONFIG_CDU0_CLKO9, REG_CDU0_CFG9, 9);
-#ifdef CONFIG_CDU0_CLKO10
+#if (IS_ENABLED(CONFIG_CDU0_CLKO10))
 	CONFIGURE_CDU0(CONFIG_CDU0_CLKO10, REG_CDU0_CFG10, 10);
 #endif
-#ifdef CONFIG_CDU0_CLKO12
+#if (IS_ENABLED(CONFIG_CDU0_CLKO12))
 	CONFIGURE_CDU0(CONFIG_CDU0_CLKO12, REG_CDU0_CFG12, 12);
 #endif
-#ifdef CONFIG_CDU0_CLKO13
+#if (IS_ENABLED(CONFIG_CDU0_CLKO13))
 	CONFIGURE_CDU0(CONFIG_CDU0_CLKO13, REG_CDU0_CFG13, 13);
 #endif
-#ifdef CONFIG_CDU0_CLKO14
+#if (IS_ENABLED(CONFIG_CDU0_CLKO14))
 	CONFIGURE_CDU0(CONFIG_CDU0_CLKO14, REG_CDU0_CFG14, 14);
 #endif
 }
 
 void clks_init(void)
 {
+#if (IS_ENABLED(CONFIG_SC5XX_DMC_INIT))
 	adi_dmc_reset_lanes(true);
+#endif
 
 	cdu_init();
 	cgu_init();
 
 	adi_config_third_pll();
 
+#if (IS_ENABLED(CONFIG_SC5XX_DMC_INIT))
 	adi_dmc_reset_lanes(false);
+#endif
+
+#if (IS_ENABLED(CONFIG_SC846))
+	pre_reset_init_lpddr4();
+	NOP();
+	post_reset_init_lpddr4();
+#endif
 }
