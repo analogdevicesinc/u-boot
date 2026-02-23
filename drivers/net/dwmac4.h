@@ -492,7 +492,7 @@ struct dwmac4_dev {
 #if CONFIG_IS_ENABLED(DM_GPIO)
 	struct gpio_desc reset_gpio;
 #endif
-#ifdef DWMAC4_CLK
+#ifdef CONFIG_CLK_ADI_ADRV906X_1G
 	struct clk *clocks;     /* clock list */
 	int clock_count;        /* number of clock in clock list */
 #endif

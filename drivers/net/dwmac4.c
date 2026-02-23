@@ -233,7 +233,7 @@ static int _dw_write_hwaddr(struct dwmac4_dev *priv, u8 *mac_id)
 	return 0;
 }
 
-#ifdef DWMAC4_CLK
+#ifdef CONFIG_CLK_ADI_ADRV906X_1G
 static int _dw_set_tx_clk_speed(struct dwmac4_dev *priv, struct phy_device *phydev)
 {
 	ulong rate;
@@ -268,7 +268,7 @@ static int dw_adjust_link(struct dwmac4_dev *priv, struct phy_device *phydev)
 {
 	u32 conf = readl(priv->ioaddr + GMAC_CONFIG);
 
-#ifdef DWMAC4_CLK
+#ifdef CONFIG_CLK_ADI_ADRV906X_1G
 	int ret;
 #endif
 
@@ -294,7 +294,7 @@ static int dw_adjust_link(struct dwmac4_dev *priv, struct phy_device *phydev)
 
 	writel(conf, priv->ioaddr + GMAC_CONFIG);
 
-#ifdef DWMAC4_CLK
+#ifdef CONFIG_CLK_ADI_ADRV906X_1G
 	ret = _dw_set_tx_clk_speed(priv, phydev);
 	if (ret < 0)
 		return ret;
@@ -731,7 +731,7 @@ int designware_eth_probe(struct udevice *dev)
 	struct dwmac4_dev *priv = dev_get_priv(dev);
 	int ret, err;
 
-#ifdef DWMAC4_CLK
+#ifdef CONFIG_CLK_ADI_ADRV906X_1G
 	int i, clock_nb;
 
 	priv->clock_count = 0;
@@ -799,7 +799,7 @@ int designware_eth_probe(struct udevice *dev)
 	mdio_free(priv->bus);
 mdio_err:
 
-#ifdef DWMAC4_CLK
+#ifdef CONFIG_CLK_ADI_ADRV906X_1G
 clk_err:
 	ret = clk_release_all(priv->clocks, priv->clock_count);
 	if (ret)
@@ -817,7 +817,7 @@ static int designware_eth_remove(struct udevice *dev)
 	mdio_unregister(priv->bus);
 	mdio_free(priv->bus);
 
-#ifdef DWMAC4_CLK
+#ifdef CONFIG_CLK_ADI_ADRV906X_1G
 	return clk_release_all(priv->clocks, priv->clock_count);
 #else
 	return 0;
