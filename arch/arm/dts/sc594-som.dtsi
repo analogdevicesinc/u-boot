@@ -164,7 +164,7 @@
 		compatible = "jedec,spi-nor", "is25lx256";
 		reg = <0>;
 
-		spi-max-frequency = <100000000>;
+		spi-max-frequency = <112000000>;
 		cdns,spi-calib-frequency = <10000000>;
 
 		spi-tx-bus-width = <8>;

@@ -37,7 +37,7 @@
 		};
 
 		ospi: ospi {
-			compatible = "adi,sc59x-ospi";
+			compatible = "cdns,qspi-nor";
 			#address-cells = <1>;
 			#size-cells = <0>;
 			reg = <0x31027000 0x1000>,
