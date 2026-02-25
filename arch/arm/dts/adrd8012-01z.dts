@@ -1,0 +1,15 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * ADRD8012-01z evaluation kit (uses K26 SoM)
+ * https://www.analog.com/en/resources/evaluation-hardware-and-software/evaluation-boards-kits/adrd8012-01z.html
+ *
+ * Copyright (C) 2026 Analog Devices, Inc.
+ */
+
+/dts-v1/;
+
+#include "zynqmp-smk-k26-revA.dts"
+
+&sdhci1 {
+	status = "okay";
+};
