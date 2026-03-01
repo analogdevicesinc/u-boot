@@ -36,7 +36,7 @@ jobs:
         run: |
           echo ${PATH}
           export CROSS_COMPILE="aarch64-linux-gnu-"
-          sudo apt-get install -y uuid-dev
+          sudo apt-get install -y device-tree-compiler uuid-dev
           make ${{ inputs.defconfig }}
           make -j$(nproc)
 
