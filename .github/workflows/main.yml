@@ -25,6 +25,7 @@ jobs:
       matrix:
         defconfig:
           - 'sc598-som-ezkit-spl_defconfig'
+          - 'xilinx_zynqmp_virt_defconfig'
 
   check:
     uses: analogdevicesinc/u-boot/.github/workflows/checks.yml@ci
