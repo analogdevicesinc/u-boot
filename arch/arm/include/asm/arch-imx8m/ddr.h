@@ -10,9 +10,9 @@
 #include <asm/types.h>
 #include <asm/arch/imx-regs.h>
 
+#define DDR_PHY_BASE			0x3c000000
 #define DDRC_DDR_SS_GPR0		0x3d000000
 #define DDRC_IPS_BASE_ADDR_0		0x3f400000
-#define IP2APB_DDRPHY_IPS_BASE_ADDR(X)	(0x3c000000 + (X * 0x2000000))
 
 struct ddrc_freq {
 	u32 res0[8];
@@ -635,7 +635,7 @@ enum msg_response {
 #define DDRC_DFITMG3_SHADOW(X)         (DDRC_IPS_BASE_ADDR(X) + 0x21b8)
 #define DDRC_ODTCFG_SHADOW(X)          (DDRC_IPS_BASE_ADDR(X) + 0x2240)
 
-#define DDRPHY_CalBusy(X) (IP2APB_DDRPHY_IPS_BASE_ADDR(X) + 4 * 0x020097)
+#define DDRPHY_CalBusy (DDR_PHY_BASE + 4 * 0x020097)
 
 #define DRC_PERF_MON_BASE_ADDR(X)            (0x3d800000 + ((X) * 0x2000000))
 #define DRC_PERF_MON_CNT0_CTL(X)             (DRC_PERF_MON_BASE_ADDR(X) + 0x0)
@@ -741,8 +741,8 @@ static inline void reg32setbit(unsigned long addr, u32 bit)
 }
 
 #define dwc_ddrphy_apb_wr(addr, data) \
-	reg32_write(IP2APB_DDRPHY_IPS_BASE_ADDR(0) + ddrphy_addr_remap(addr), data)
+	reg32_write(DDR_PHY_BASE + ddrphy_addr_remap(addr), data)
 #define dwc_ddrphy_apb_rd(addr) \
-	reg32_read(IP2APB_DDRPHY_IPS_BASE_ADDR(0) + ddrphy_addr_remap(addr))
+	reg32_read(DDR_PHY_BASE + ddrphy_addr_remap(addr))
 
 #endif

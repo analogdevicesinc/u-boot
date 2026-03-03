@@ -34,8 +34,6 @@
 #define REG_SRC_DPHY_SW_CTRL		(SRC_DPHY_BASE_ADDR + 0x20)
 #define REG_SRC_DPHY_SINGLE_RESET_SW_CTRL	(SRC_DPHY_BASE_ADDR + 0x24)
 
-#define IP2APB_DDRPHY_IPS_BASE_ADDR(X)	(DDR_PHY_BASE + ((X) * 0x2000000))
-
 /* PHY State */
 enum pstate {
 	PS0,
@@ -136,8 +134,8 @@ static inline void reg32setbit(unsigned long addr, u32 bit)
 }
 
 #define dwc_ddrphy_apb_wr(addr, data) \
-	reg32_write(IP2APB_DDRPHY_IPS_BASE_ADDR(0) + ddrphy_addr_remap(addr), data)
+	reg32_write(DDR_PHY_BASE + ddrphy_addr_remap(addr), data)
 #define dwc_ddrphy_apb_rd(addr) \
-	reg32_read(IP2APB_DDRPHY_IPS_BASE_ADDR(0) + ddrphy_addr_remap(addr))
+	reg32_read(DDR_PHY_BASE + ddrphy_addr_remap(addr))
 
 #endif
