@@ -7,9 +7,11 @@
 
 
 /* Add your custom header content here */
+#include "../ddrinit.h"
 
 void pre_reset_init_lpddr4(void);
-void post_reset_init_lpddr4(void);
+int post_reset_init_lpddr4(void);
+int32_t REG_READ(uintptr_t REG_NAME);
 void NOP(void);
 
 /*  Manually added */
@@ -21,5 +23,7 @@ void NOP(void);
 
 #define MEM_START 	0x80000000
 #define BYTE_COUNT	0x400000         /* Testing 8Mbit */
+
+#define REG_WRITE(REG_NAME,  REG_VALUE)		(*(volatile int32_t *)(uintptr_t)REG_NAME= REG_VALUE)
 
 #endif /* __EHP2_LPDDR4_1D_2000_CORE1_H__ */

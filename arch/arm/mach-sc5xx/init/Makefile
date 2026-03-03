@@ -7,5 +7,5 @@
 
 obj-y = clkinit.o
 
-obj-$(CONFIG_SC846) += EHP2_LP4_1D_2000/
+obj-$(CONFIG_SC846) += ddrinit.o EHP2_LP4_1D_2000/
 obj-$(CONFIG_SC5XX_DMC_INIT) += dmcinit.o

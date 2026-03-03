@@ -10,13 +10,11 @@
 #include <asm/arch-adi/sc5xx/sc5xx.h>
 
 void pre_reset_init_lpddr4(void);
-void post_reset_init_lpddr4(void);
+int post_reset_init_lpddr4(void);
 
 void imem_load_1D_0(void);
 void imem_load_1D_1(void);
 void dmem_load_1D(void);
-
-#define REG_WRITE(REG_NAME,  REG_VALUE)		(*(volatile int32_t *)(uintptr_t)REG_NAME= REG_VALUE)
 
 int32_t REG_READ(uintptr_t REG_NAME) {
 	int32_t value = *(volatile int32_t *)REG_NAME;
@@ -249,7 +247,8 @@ void pre_reset_init_lpddr4(void) {
 }
 
 
-void post_reset_init_lpddr4(void) {
+int post_reset_init_lpddr4(void) {
+	int ret;
 	REG_WRITE(MISCREG_MISC_REG_LPDDR4_RSTCTL,0x37); \
 	NOP(); \
 	NOP(); \
@@ -381,7 +380,7 @@ void post_reset_init_lpddr4(void) {
 	REG_WRITE(REG_LPDDR4_PHY_APB_MICRORESET,0x9);\
 	REG_WRITE(REG_LPDDR4_PHY_APB_MICRORESET,0x1);\
 	REG_WRITE(REG_LPDDR4_PHY_APB_MICRORESET,0x0);\
-	waitFWDone();\
+	ret = wait_ddrphy_training_complete();\
 	REG_WRITE(REG_LPDDR4_PHY_APB_MICRORESET,0x1);\
 	REG_WRITE(MOD_DPHY_APBONLY0_BASE,0x0);\
 	REG_WRITE(MOD_DPHY_APBONLY0_BASE,0x1);\
@@ -960,7 +959,8 @@ void post_reset_init_lpddr4(void) {
 	while(REG_READ(REG_LPDDR4_SWSTAT)!=0x00000001) { asm("NOP"); }\
 	while(REG_READ(REG_LPDDR4_STAT)!=0x00000001) { asm("NOP"); }\
 	REG_WRITE(REG_LPDDR4_DBG1,0x00000000);\
-	return;
+
+	return 0;
 }
 
 
@@ -18188,5 +18188,3 @@ void dmem_load_1D(void) {
 	REG_WRITE(REG_LPDDRMEM_DCCM_829,0x0);\
 	return;
 }
-
-
