@@ -565,9 +565,4 @@ void clks_init(void)
 	adi_dmc_reset_lanes(false);
 #endif
 
-#if (IS_ENABLED(CONFIG_SC846))
-	pre_reset_init_lpddr4();
-	NOP();
-	post_reset_init_lpddr4();
-#endif
 }

@@ -109,7 +109,11 @@ void board_init_f(ulong dummy)
 	printf("clks_init: Starting LPDDR4 initialization\n");
 	pre_reset_init_lpddr4();
 	printf("clks_init: Between pre and post reset\n");
-	post_reset_init_lpddr4();
+	ret = post_reset_init_lpddr4();
+	if (ret) {
+		printf("clks_init: FATAL - LPDDR4 initialization failed!\n");
+		panic("DDR initialization failed, cannot boot\n");
+	}
 	printf("clks_init: LPDDR4 initialization complete\n");
 #endif
 }

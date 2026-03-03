@@ -3,4 +3,4 @@
 # (C) Copyright 2026 - Analog Devices, Inc.
 #
 
-obj-y += EHP2_LPDDR4_1D_2000_Core1.o
+obj-y += EHP2_LPDDR4_1D_2000_Core1.o ddr_messages.o
