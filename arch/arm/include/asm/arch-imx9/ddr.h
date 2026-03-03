@@ -35,7 +35,6 @@
 #define REG_SRC_DPHY_SINGLE_RESET_SW_CTRL	(SRC_DPHY_BASE_ADDR + 0x24)
 
 #define IP2APB_DDRPHY_IPS_BASE_ADDR(X)	(DDR_PHY_BASE + ((X) * 0x2000000))
-#define DDRPHY_MEM(X)			(DDR_PHY_BASE + ((X) * 0x2000000) + 0x50000)
 
 /* PHY State */
 enum pstate {
