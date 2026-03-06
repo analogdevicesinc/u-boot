@@ -3,37 +3,36 @@
  *****************************************************************************/
 
 #include "EHP2_LPDDR4_1D_2000_Core1.h"
+#include "../ADSP-SC84xW.h"
 
-#include <sys/platform.h>
-#include <stdio.h>
-#include "ddr_sweep.h"
-/* Managed drivers and/or services include */
-#include "../system/adi_initialize.h"
+#include <linux/types.h>
+#include <asm/io.h>
+#include <asm/arch-adi/sc5xx/sc5xx.h>
 
-void pre_reset_init_lpddr4();
-void post_reset_init_lpddr4();
+void pre_reset_init_lpddr4(void);
+void post_reset_init_lpddr4(void);
 
-void imem_load_1D_0();
-void imem_load_1D_1();
-void dmem_load_1D();
+void imem_load_1D_0(void);
+void imem_load_1D_1(void);
+void dmem_load_1D(void);
 
-#define REG_WRITE(REG_NAME,  REG_VALUE)		(*(volatile int32_t *)REG_NAME= REG_VALUE)
+#define REG_WRITE(REG_NAME,  REG_VALUE)		(*(volatile int32_t *)(uintptr_t)REG_NAME= REG_VALUE)
 
-int32_t REG_READ(uint32_t REG_NAME) {
+int32_t REG_READ(uintptr_t REG_NAME) {
 	int32_t value = *(volatile int32_t *)REG_NAME;
 	return value;
 }
 
-void NOP()
+void NOP(void)
 {
 	asm volatile("nop;");
 }
 
 //#define SSYNC asm ("sync;")
 
-void SSYNC()
+void SSYNC(void)
 {
-	asm("isync;");
+	asm("isb;");
 }
 
 void _delay (uint32_t value)
@@ -72,7 +71,7 @@ int32_t get_mail(uint8_t mode) {
 
 //-------------------Streaming Messages-------------------
 
-void get_streaming_msg()
+void get_streaming_msg(void)
 {
 	int32_t string_index,arg;
 	int i = 1;
@@ -85,7 +84,7 @@ void get_streaming_msg()
 	}
 }
 
-void waitFWDone()
+void waitFWDone(void)
 {
 	int32_t maj_msg;
 	do
@@ -98,24 +97,7 @@ void waitFWDone()
 	while ((maj_msg != 0x07) && (maj_msg != 0xFF));
 }
 
-int main()
-{
-	/* Initialize managed drivers and/or services */
-	adi_initComponents();
-
-	/* Begin adding your custom code here */
-	adi_pwr_cfg0_init();
-
-	pre_reset_init_lpddr4();
-	NOP();
-	post_reset_init_lpddr4();
-
-	Memory_Sweep_Test(MEM_START,BYTE_COUNT);
-
-	return 0;
-}
-
-void pre_reset_init_lpddr4() {
+void pre_reset_init_lpddr4(void) {
 	REG_WRITE(MISCREG_MISC_REG_LPDDR4_RSTCTL,0x8); \
 	_delay(1000); \
 	NOP(); \
@@ -267,7 +249,7 @@ void pre_reset_init_lpddr4() {
 }
 
 
-void post_reset_init_lpddr4() {
+void post_reset_init_lpddr4(void) {
 	REG_WRITE(MISCREG_MISC_REG_LPDDR4_RSTCTL,0x37); \
 	NOP(); \
 	NOP(); \
@@ -982,7 +964,7 @@ void post_reset_init_lpddr4() {
 }
 
 
-void imem_load_1D_0() {
+void imem_load_1D_0(void) {
 	REG_WRITE(REG_LPDDRMEM_ICCM_0,0x114);\
 	REG_WRITE(REG_LPDDRMEM_ICCM_1,0x0);\
 	REG_WRITE(REG_LPDDRMEM_ICCM_2,0x50);\
@@ -9178,7 +9160,7 @@ void imem_load_1D_0() {
 	return;
 }
 //void imem_load_1D_1() __attribute__((section(".sram_1_0.text")));
-void imem_load_1D_1() {REG_WRITE(REG_LPDDRMEM_ICCM_8192,0x86a0);\
+void imem_load_1D_1(void) {REG_WRITE(REG_LPDDRMEM_ICCM_8192,0x86a0);\
 REG_WRITE(REG_LPDDRMEM_ICCM_8193,0xf20b);\
 REG_WRITE(REG_LPDDRMEM_ICCM_8194,0x233c);\
 REG_WRITE(REG_LPDDRMEM_ICCM_8195,0x3f80);\
@@ -17373,7 +17355,7 @@ REG_WRITE(REG_LPDDRMEM_ICCM_16383,0x0);\
 return;
 }
 
-void dmem_load_1D() {
+void dmem_load_1D(void) {
 	REG_WRITE(REG_LPDDRMEM_DCCM_0,0x20);\
 	REG_WRITE(REG_LPDDRMEM_DCCM_1,0x0);\
 	REG_WRITE(REG_LPDDRMEM_DCCM_2,0x0);\
