@@ -49,11 +49,11 @@ config CGU0_VCO_MULT
 
 # Core Clock divider
 config CGU0_CCLK_DIV
-	default 2
+	default 1
 
 # System Clock divider
 config CGU0_SCLK_DIV
-	default 4
+	default 2
 
 config CGU0_SCLK0_DIV
 	default 4
@@ -63,15 +63,15 @@ config CGU0_SCLK1_DIV
 
 # DDR Clock divider
 config CGU0_DCLK_DIV
-	default 3
+	default 2
 
 # Output Clock divider
 config CGU0_OCLK_DIV
-	default 20
+	default 10
 
 # SCLK1 extended divisor
 config CGU0_DIV_S1SELEX
-	default 6
+	default 3
 
 # CGU1 MSEL
 config CGU1_VCO_MULT
@@ -82,11 +82,11 @@ config CGU1_DF_DIV
 
 # Core Clock divider
 config CGU1_CCLK_DIV
-	default 16
+	default 2
 
 # System Clock divider
 config CGU1_SCLK_DIV
-	default 8
+	default 5
 
 config CGU1_SCLK0_DIV
 	default 4
@@ -94,21 +94,21 @@ config CGU1_SCLK0_DIV
 config CGU1_SCLK1_DIV
 	default 2
 
-# DDR Clock divider
+# Linkport Clock divider
 config CGU1_DCLK_DIV
-	default 18
+	default 3
 
 # Output Clock divider
 config CGU1_OCLK_DIV
-	default 16
+	default 8
 
 # SCLK1 extended divisor
 config CGU1_DIV_S0SELEX
-	default 36
+	default 8
 
 # SCLK1 extended divisor
 config CGU1_DIV_S1SELEX
-	default 90
+	default 5
 
 # SHARC-FX
 
