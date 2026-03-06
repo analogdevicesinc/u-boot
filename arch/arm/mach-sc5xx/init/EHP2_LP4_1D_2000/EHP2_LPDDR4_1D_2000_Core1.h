@@ -8,6 +8,10 @@
 
 /* Add your custom header content here */
 
+void pre_reset_init_lpddr4(void);
+void post_reset_init_lpddr4(void);
+void NOP(void);
+
 /*  Manually added */
 #define MISCREG_MISC_REG_LPDDR4_RSTCTL       0x310A9400
 #define REG_LPDDRMISC_DBG_CTL0               0x3115C008            /*  LPDDRMISC Debug Control 0 */

@@ -10,6 +10,9 @@
 #include <asm/arch/sc5xx.h>
 #include <asm/arch/spl.h>
 #include "init/clkinit.h"
+#ifdef CONFIG_SC846
+#include "init/EHP2_LP4_1D_2000/EHP2_LPDDR4_1D_2000_Core1.h"
+#endif
 
 #if (IS_ENABLED(CONFIG_SC5XX_DMC_INIT))
 #include "init/dmcinit.h"
@@ -101,5 +104,13 @@ void board_init_f(ulong dummy)
 		panic("spl_early_init() failed\n");
 
 	preloader_console_init();
+
+#if (IS_ENABLED(CONFIG_SC846))
+	printf("clks_init: Starting LPDDR4 initialization\n");
+	pre_reset_init_lpddr4();
+	printf("clks_init: Between pre and post reset\n");
+	post_reset_init_lpddr4();
+	printf("clks_init: LPDDR4 initialization complete\n");
+#endif
 }
 
