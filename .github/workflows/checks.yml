@@ -10,6 +10,10 @@ on:
       checkpatch_extraignores:
         type: string
         default: ""
+      defconfigs:
+        required: false
+        type: string
+        default: ""
     outputs:
       fatal:
         value: ${{ jobs.checks.outputs.fatal}}
@@ -74,15 +78,30 @@ jobs:
         [ $status -eq 124 ] && echo "step_fail_coccicheck_timeout=true" >> "$GITHUB_ENV"
         exit $status
 
-    - name: Check defconfigs
+    - name: Configure buildman toolchains
       if: ${{ !cancelled() && env.fatal != 'true' }}
       run: |
-        # Collect all defconfigs mentioned in the top-level and look for changes
-        configs=($(awk '/ARCH:/{arch=$2} /DEFCONFIG:/{print arch "/" $2}' \
-                   .github/workflows/top-level.yml | \
-                 sed 's/"//g'))
+        arm_gcc=$(basename "$(find /opt/gcc/armv7-eabihf/bin -maxdepth 1 -name '*gcc' | head -n 1)")
+        aarch64_gcc=$(basename "$(find /opt/gcc/aarch64/bin -maxdepth 1 -name '*gcc' | head -n 1)")
+
+        arm_prefix="/opt/gcc/armv7-eabihf/bin/${arm_gcc%gcc}"
+        aarch64_prefix="/opt/gcc/aarch64/bin/${aarch64_gcc%gcc}"
+
+        cat > "$HOME/.buildman" <<EOF
+        [toolchain-prefix]
+        arm = $arm_prefix
+        aarch64 = $aarch64_prefix
+        EOF
+
+    - name: Check qconfig
+      if: ${{ !cancelled() && env.fatal != 'true' }}
+      run: |
         source ./ci/build.sh
-        check_assert_defconfigs ${configs[@]}
+        list=$(mktemp)
+        cat > "$list" <<'EOF'
+        ${{ inputs.defconfigs }}
+        EOF
+        check_qconfig "$list"
 
     - name: Export labels
       if: ${{ !cancelled() }}

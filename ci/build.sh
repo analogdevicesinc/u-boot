@@ -275,40 +275,49 @@ check_license() {
 	return $fail
 }
 
-check_assert_defconfigs() {
-	export step_name="check_assert_defconfigs"
+check_qconfig() {
+	export step_name="check_qconfig"
 	local fail=0
-	local arch
-	local defconfig
-	local file
+	local list="$1"
+	local out
+	local changed=0
 	local message="
-	Verify if the changes are coherent, for example, the changes were not
-	caused by a mistakenly set Kconfig, and if so, run 'make savedefconfig',
-	overwrite the defconfig and commit it.
+	Verify if the Kconfig/defconfig state is coherent for the selected CI defconfigs.
+	If qconfig.py updates files, run it locally for the affected configs,
+	inspect the result, and commit the necessary changes.
 	"
 
 	echo "$step_name"
-	for arg in "$@"; do
-		arch=$(cut -d "/" -f1 <<< "$arg")
-		[[ "$arch" == "arm64" ]] && arch_=aarch64 || arch_=$arch
-		defconfig=$(cut -d "/" -f2 <<< "$arg")
-		file=arch/$arch/configs/$defconfig
 
-		if [[ -f $file ]]; then
-			echo $file
-			set_arch gcc_$arch_ 1>/dev/null
-			make $defconfig savedefconfig 1>/dev/null
-			rm .config
+	python3 tools/qconfig.py -s -d "$list"
 
-			mv defconfig $file
-			out=$(git diff $_color --exit-code $file) || {
-				_fmt "::error file=$file::$step_name: Defconfig '$file' changed. $message
-				      $out"
-				fail=1
-			}
-			git restore $file
-		fi
-	done
+	out=$(git diff $_color --name-only)
+	if [[ -n "$out" ]]; then
+		while read -r file; do
+			[[ -z "$file" ]] && continue
+			_fmt "::error file=$(_file "$file")::$step_name: qconfig.py modified this file. $message"
+			changed=1
+		done <<< "$out"
+		fail=1
+	fi
+
+	out=$(git ls-files --others --exclude-standard)
+	if [[ -n "$out" ]]; then
+		while read -r file; do
+			[[ -z "$file" ]] && continue
+			[[ "$file" == "qconfig.failed" ]] && continue
+			[[ "$file" == "ci/build.sh" ]] && continue
+			[[ "$file" == "ci/runner_env.sh" ]] && continue
+			_fmt "::error file=$(_file "$file")::$step_name: qconfig.py created this untracked file. $message"
+			changed=1
+		done <<< "$out"
+		[[ "$changed" == "1" ]] && fail=1
+	fi
+
+	[[ "$changed" == "0" ]] && echo "qconfig.py produced no tree changes"
+
+	git restore .
+	git clean -fd -e ci/
 
 	return $fail
 }
