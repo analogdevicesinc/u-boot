@@ -141,3 +141,7 @@
 &clk {
 	compatible = "adi,sc846-clocks";
 };
+
+&gpio0 {
+	adi,ngpios = <122>;
+};
