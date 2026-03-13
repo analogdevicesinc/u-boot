@@ -128,27 +128,35 @@ config CDU0_CLKO3
 	default 1
 
 # CAN
+# 1 sets the input as OCLK_0
+# OCLK_0 = CGU0_VCO / 40 = 100MHz
 config CDU0_CLKO4
-	default 3
+	default 1
 
 # SPDIF
+# 1 sets the input as SCLK1_0
+# SCLK1_0 = CGU0_VCO / 12 = 333MHz
 config CDU0_CLKO5
 	default 1
 
 # SPI
 config CDU0_CLKO6
-	default 3
+	default 1
 
 # GIGE
 config CDU0_CLKO7
 	default 1
 
 # xSPI2
+# 5 sets the input as SCLK1_1
+# SCLK1_0 = CGU1_VCO / 20 = 180MHz
 config CDU0_CLKO8
-	default 3
+	default 5
 
 # LINKPORT
+# 5 sets the input as SCLK1_0
+# SCLK1_0 = CGU1_VCO / 12 = 300MHz
 config CDU0_CLKO9
-	default 1
+	default 5
 
 endif
