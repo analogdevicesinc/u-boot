@@ -3,6 +3,10 @@ name: U-Boot CI
 on:
   workflow_dispatch:
   pull_request:
+  push:
+    branches: [ "adi-u-boot-2025.10.y" ]
+  release:
+    types: [published]
 
 permissions:
   contents: read
