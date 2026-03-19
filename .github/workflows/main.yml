@@ -19,7 +19,12 @@ jobs:
     strategy:
       matrix:
         defconfig:
+          - 'sc573-ezlite_defconfig'
+          - 'sc584-ezkit_defconfig'
+          - 'sc589-ezkit_defconfig'
+          - 'sc589-mini_defconfig'
           - 'sc594-som-ezkit-spl_defconfig'
+          - 'sc594-som-ezlite-spl_defconfig'
 
   build_aarch64:
     uses: analogdevicesinc/u-boot/.github/workflows/build-aarch64.yml@ci
@@ -28,8 +33,9 @@ jobs:
     strategy:
       matrix:
         defconfig:
-          - 'sc598-som-ezkit-spl_defconfig'
           - 'sc598-htol-spl_defconfig'
+          - 'sc598-som-ezkit-spl_defconfig'
+          - 'sc598-som-ezlite-spl_defconfig'
           - 'xilinx_zynqmp_virt_defconfig'
 
   check:
