@@ -1425,6 +1425,17 @@ static int stm_lock(struct spi_nor *nor, loff_t ofs, uint64_t len)
 	if (status_old < 0)
 		return status_old;
 
+#ifdef CONFIG_SPI_FLASH_LOCK_ADI
+	/* PlutoSDR/M2K/SidekiqZ2: protect bottom 1MB of flash */
+	if (ofs == 0 && len == SZ_1M) {
+		status_new = status_old & ~(SR_BP3 | SR_BP2 | SR_BP1 | SR_BP0 | SR_TB);
+		status_new |= SR_BP2 | SR_BP0 | SR_TB;
+		write_enable(nor);
+		write_sr(nor, status_new);
+		return 0;
+	}
+#endif
+
 	/* If nothing in our range is unlocked, we don't need to do anything */
 	if (stm_is_locked_sr(nor, ofs, len, status_old))
 		return 0;
@@ -1504,6 +1515,16 @@ static int stm_unlock(struct spi_nor *nor, loff_t ofs, uint64_t len)
 	status_old = read_sr(nor);
 	if (status_old < 0)
 		return status_old;
+
+#ifdef CONFIG_CMD_ADI_HWREF
+	/* PlutoSDR/M2K/SidekiqZ2: unprotect bottom 1MB of flash */
+	if (ofs == 0 && len == SZ_1M) {
+		status_new = status_old & ~(SR_BP3 | SR_BP2 | SR_BP1 | SR_BP0 | SR_TB);
+		write_enable(nor);
+		write_sr(nor, status_new);
+		return 0;
+	}
+#endif
 
 	/* If nothing in our range is locked, we don't need to do anything */
 	if (stm_is_unlocked_sr(nor, ofs, len, status_old))
@@ -6437,7 +6458,7 @@ int spi_nor_scan(struct spi_nor *nor)
 	}
 #endif
 
-#if defined(CONFIG_SPI_FLASH_STMICRO)
+#if defined(CONFIG_SPI_FLASH_STMICRO) && !defined(CONFIG_SPI_FLASH_LOCK_ADI)
 	if (JEDEC_MFR(info) == SNOR_MFR_ST || JEDEC_MFR(info) == SNOR_MFR_MICRON) {
 		nor->flash_lock = micron_flash_lock;
 		nor->flash_unlock = micron_flash_unlock;
