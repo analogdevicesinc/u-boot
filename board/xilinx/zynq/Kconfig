@@ -30,4 +30,22 @@ config CMD_ZYNQ_RSA
 	  and authentication feature enabled while generating
 	  BOOT.BIN using Xilinx bootgen tool.
 
+config CMD_ADI_HWREF
+	bool "ADI hardware reference detection commands"
+	depends on ARCH_ZYNQ
+	help
+	  Enables adi_hwref, xadc, and envversion commands for
+	  Analog Devices PlutoSDR, M2K, and SidekiqZ2 boards.
+	  Provides XADC voltage reading and board revision detection.
+
+config SPI_FLASH_LOCK_ADI
+	bool "ADI PlutoSDR/M2K bottom 1MB flash protection"
+	depends on SPI_FLASH_LOCK
+	help
+	  Override SPI flash lock/unlock for Analog Devices PlutoSDR,
+	  M2K, and SidekiqZ2 boards. Protects the bottom 1MB (boot
+	  partition) by writing SR with BP2|BP0|TB directly, bypassing
+	  the generic Micron lock which does not handle bottom protect
+	  correctly on N25Q256.
+
 endif
