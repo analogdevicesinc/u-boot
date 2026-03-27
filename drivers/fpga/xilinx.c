@@ -33,8 +33,12 @@ int fpga_is_partial_data(int devnum, size_t img_len)
 	if (img_len >= desc_xilinx->size)
 		return 0;
 
-	/* datasize is smaller, must be partial data */
-	return 1;
+	/*
+	 * Compressed bitstreams are smaller than the FPGA size but are
+	 * still full bitstreams. The size check alone is unreliable,
+	 * so always treat as full to ensure ps7_post_config runs.
+	 */
+	return 0;
 }
 
 int fpga_loadbitstream(int devnum, char *fpgadata, size_t size,
