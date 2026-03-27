@@ -1270,6 +1270,18 @@ U_BOOT_CMD_COMPLETE(
 	var_complete
 );
 
+#ifdef CONFIG_CMD_ADI_HWREF
+/* Backward compatibility: old PlutoSDR/M2K env scripts use 'set' */
+U_BOOT_CMD_COMPLETE(
+	set, CONFIG_SYS_MAXARGS, 0, do_env_set,
+	"set environment variables (alias for setenv)",
+	"name [value ...]\n"
+	"    - set environment variable 'name' to 'value ...'\n"
+	"    - delete environment variable 'name' if 'value' not specified",
+	var_complete
+);
+#endif
+
 #if defined(CONFIG_CMD_ASKENV)
 
 U_BOOT_CMD(
