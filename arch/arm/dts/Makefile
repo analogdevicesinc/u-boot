@@ -236,6 +236,8 @@ dtb-$(CONFIG_ARCH_ZYNQ) += \
 	zynq-microzed.dtb \
 	zynq-minized.dtb \
 	zynq-picozed.dtb \
+	zynq-pluto-sdr.dtb \
+	zynq-sidekiqz2.dtb \
 	zynq-syzygy-hub.dtb \
 	zynq-topic-miami.dtb \
 	zynq-topic-miamilite.dtb \
