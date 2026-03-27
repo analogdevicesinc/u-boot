@@ -45,6 +45,43 @@ int board_init(void)
 	return 0;
 }
 
+#ifdef CONFIG_CMD_ADI_HWREF
+#include <asm/gpio.h>
+#include <configs/zynq_pluto_sdr.h>
+
+#define ADI_FACTORY_RESET_GPIO	14
+
+static void adi_check_env_version(void)
+{
+	const char *ver = env_get("env_version");
+
+	if (ver && !strcmp(ver, PLUTO_ENV_VERSION))
+		return;
+
+	printf("Environment version mismatch (%s vs %s), resetting to defaults\n",
+	       ver ? ver : "none", PLUTO_ENV_VERSION);
+	env_set_default("env version mismatch", 0);
+	env_save();
+}
+
+int misc_init_r(void)
+{
+	gpio_request(ADI_FACTORY_RESET_GPIO, "factory_reset");
+	gpio_direction_input(ADI_FACTORY_RESET_GPIO);
+
+	if (!gpio_get_value(ADI_FACTORY_RESET_GPIO)) {
+		printf("Factory reset button pressed: loading default environment\n");
+		env_set_default("Button pressed", 0);
+		env_save();
+	}
+
+	adi_check_env_version();
+
+	gpio_free(ADI_FACTORY_RESET_GPIO);
+	return 0;
+}
+#endif
+
 int board_late_init(void)
 {
 	int env_targets_len = 0;
@@ -140,6 +177,13 @@ enum env_location env_get_location(enum env_operation op, int prio)
 
 	if (prio)
 		return ENVL_UNKNOWN;
+
+#ifdef CONFIG_CMD_ADI_HWREF
+	/* PlutoSDR/M2K/SidekiqZ2: always use SPI flash for env */
+	if (IS_ENABLED(CONFIG_ENV_IS_IN_SPI_FLASH))
+		return ENVL_SPI_FLASH;
+	return ENVL_NOWHERE;
+#endif
 
 	switch (bootmode) {
 	case ZYNQ_BM_SD:
