@@ -28,6 +28,8 @@ jobs:
       matrix:
         defconfig:
           - 'adi_zynqmp_adrv9009_zu11eg_adrv2crr_fmc_defconfig'
+          - 'zynqmp_jupiter_sdr_defconfig'
+          - 'zynqmp_kv260_defconfig'
 
   check:
     uses: analogdevicesinc/u-boot/.github/workflows/checks.yml@ci
