@@ -236,6 +236,9 @@ dtb-$(CONFIG_ARCH_ZYNQ) += \
 	zynq-microzed.dtb \
 	zynq-minized.dtb \
 	zynq-picozed.dtb \
+	zynq-adrv9361.dtb \
+	zynq-adrv9364.dtb \
+	zynq-coraz7s.dtb \
 	zynq-m2k.dtb \
 	zynq-pluto-sdr.dtb \
 	zynq-sidekiqz2.dtb \
@@ -257,6 +260,7 @@ dtb-$(CONFIG_ARCH_ZYNQ) += \
 	zynq-zybo-z7.dtb
 dtb-$(CONFIG_ARCH_ZYNQMP) += \
 	avnet-ultra96-rev1.dtb			\
+	zynqmp-adrv9009-zu11eg-adrv2crr-fmc.dtb	\
 	zynqmp-a2197-revA.dtb			\
 	zynqmp-dlc21-revA.dtb			\
 	zynqmp-e-a2197-00-revA.dtb		\
