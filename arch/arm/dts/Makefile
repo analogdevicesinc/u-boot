@@ -261,6 +261,8 @@ dtb-$(CONFIG_ARCH_ZYNQ) += \
 dtb-$(CONFIG_ARCH_ZYNQMP) += \
 	avnet-ultra96-rev1.dtb			\
 	zynqmp-adrv9009-zu11eg-adrv2crr-fmc.dtb	\
+	zynqmp-jupiter-sdr.dtb			\
+	zynqmp-kv260.dtb			\
 	zynqmp-a2197-revA.dtb			\
 	zynqmp-dlc21-revA.dtb			\
 	zynqmp-e-a2197-00-revA.dtb		\
