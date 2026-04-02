@@ -29,6 +29,7 @@ jobs:
       matrix:
         defconfig:
           - 'sc598-som-ezkit-spl_defconfig'
+          - 'sc598-htol-spl_defconfig'
           - 'xilinx_zynqmp_virt_defconfig'
 
   check:
