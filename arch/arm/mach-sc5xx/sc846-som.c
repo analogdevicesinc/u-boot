@@ -20,6 +20,8 @@
 #define REG_SPU0_WP_START 0x3108B400
 #define REG_SPU0_SECUREC0 0x3108B980
 
+#define REG_CSTSGENWR0_CNTCR 0x3110E000  /* or 0x31149000 */
+
 static struct mm_region sc846_mem_map[] = {
 	{
 		/* Peripherals */
@@ -73,6 +75,9 @@ void sc5xx_soc_init(void)
 		0x31012800, //SMPU12
 	};
 	size_t i;
+
+	// Enable coresight timer
+	writel(1, REG_CSTSGENWR0_CNTCR);
 
 	// Disable SPU and SPU WP registers
 	sc5xx_disable_spu0(REG_SPU0_SECUREP_START, REG_SPU0_SECUREP_START + 4 * 213);
