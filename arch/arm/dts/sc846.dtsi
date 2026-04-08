@@ -6,7 +6,7 @@
 #include "sc5xx.dtsi"
 
 / {
-	gic: interrupt-controller@1200000 {
+	gic: interrupt-controller@31200000 {
 		compatible = "arm,gic-v3";
 		#interrupt-cells = <3>;
 		interrupt-controller;
