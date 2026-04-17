@@ -48,7 +48,7 @@ static int sc846_clock_probe(struct udevice *dev)
 	struct resource res;
 
 	struct clk *clks[ADSP_SC846_CLK_END];
-	struct clk dummy, clkin0, clkin1;
+	struct clk dummy, clkin0;
 
 	ret = dev_read_resource_byname(dev, "cgu0", &res);
 	if (ret)
@@ -68,11 +68,9 @@ static int sc846_clock_probe(struct udevice *dev)
 	/* Input clock configuration */
 	clk_get_by_name(dev, "dummy", &dummy);
 	clk_get_by_name(dev, "sys_clkin0", &clkin0);
-	clk_get_by_name(dev, "sys_clkin1", &clkin1);
 
 	clks[ADSP_SC846_CLK_DUMMY] = &dummy;
 	clks[ADSP_SC846_CLK_SYS_CLKIN0] = &clkin0;
-	clks[ADSP_SC846_CLK_SYS_CLKIN1] = &clkin1;
 
 	/* CGU configuration and internal clocks */
 	clks[ADSP_SC846_CLK_CGU0_PLL_IN] = clk_register_divider(NULL, "cgu0_df",
