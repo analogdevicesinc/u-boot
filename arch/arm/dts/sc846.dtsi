@@ -57,6 +57,18 @@
 	};
 };
 
+&clk {
+	reg = <0x3108d000 0x1000>,
+		<0x3108e000 0x1000>,
+		<0x3108f000 0x1000>;
+	reg-names = "cgu0", "cgu1", "cdu";
+	#clock-cells = <1>;
+	clocks = <&dummy>, <&sys_clkin0>;
+	clock-names = "dummy", "sys_clkin0";
+	status = "okay";
+	bootph-pre-ram;
+};
+
 &pinctrl0 {
 	adi,npins = <135>;
 
