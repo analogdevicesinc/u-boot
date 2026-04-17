@@ -76,7 +76,7 @@
 					<ADI_ADSP_PIN('G', 2) ADI_ADSP_PINFUNC_ALT0>,	/* Recv Data */
 					<ADI_ADSP_PIN('G', 3) ADI_ADSP_PINFUNC_ALT0>,	/* Recv Data */
 					<ADI_ADSP_PIN('G', 4) ADI_ADSP_PINFUNC_ALT0>,	/* RXCLK(GigE)/Refclk(10/100) */
-					<ADI_ADSP_PIN('G', 10) ADI_ADSP_PINFUNC_ALT0>,	/* RX control signal */
+					<ADI_ADSP_PIN('G', 5) ADI_ADSP_PINFUNC_ALT0>,	/* RX control signal */
 					<ADI_ADSP_PIN('G', 6) ADI_ADSP_PINFUNC_ALT0>,	/* Transmit Data */
 					<ADI_ADSP_PIN('G', 7) ADI_ADSP_PINFUNC_ALT0>,	/* Transmit Data */
 					<ADI_ADSP_PIN('G', 8) ADI_ADSP_PINFUNC_ALT0>,	/* Recv Data */
