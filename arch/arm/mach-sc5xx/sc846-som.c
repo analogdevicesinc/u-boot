@@ -50,6 +50,11 @@ adi_rom_boot_fn adi_rom_boot = (adi_rom_boot_fn)0x000000e4;
 
 void sc5xx_enable_rgmii(void)
 {
+	// Select RGMII interface (bit 3) and deassert RGMII reset (bit 2)
+	writel((readl(REG_PADS0_PCFG0) | 0xc), REG_PADS0_PCFG0);
+
+	// Set little-endian DMA transfer format (clear bit 19)
+	writel(readl(REG_PADS0_PCFG0) & ~(1 << 19), REG_PADS0_PCFG0);
 }
 
 /**
