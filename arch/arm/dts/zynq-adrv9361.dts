@@ -39,8 +39,9 @@
 	phy-mode = "rgmii-id";
 	phy-handle = <&ethernet_phy>;
 
-	ethernet_phy: ethernet-phy@7 {
-		reg = <7>;
+	ethernet_phy: ethernet-phy@0 {
+		reg = <0>;
+		marvell,reg-init = <3 16 0xff00 0x1e 3 17 0xfff0 0x00>;
 	};
 };
 
