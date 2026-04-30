@@ -766,11 +766,17 @@ int spi_nor_set_4byte(struct spi_nor *nor, const struct flash_info *info, int en
 			write_disable(nor);
 
 		if (!status && !enable &&
-		    JEDEC_MFR(info) == SNOR_MFR_WINBOND) {
+		    (JEDEC_MFR(info) == SNOR_MFR_WINBOND ||
+		     JEDEC_MFR(info) == SNOR_MFR_ISSI)) {
 			/*
 			 * On Winbond W25Q256FV, leaving 4byte mode causes
 			 * the Extended Address Register to be set to 1, so all
 			 * 3-byte-address reads come from the second 16M.
+			 *
+			 * On IS25LP01G (and similar ISSI parts), EX4B alone does
+			 * not reliably exit 4-byte address mode; the Extended
+			 * Address Register EXTADD bit (bit 7) stays set.
+			 *
 			 * We must clear the register to enable normal behavior.
 			 */
 			write_enable(nor);
