@@ -4,5 +4,4 @@
 #
 
 obj-y	:= sc846-som.o
-#obj-y	:= ../common-sc598-som/sc598-som.o
-#obj-y += ../carriers/
+obj-y += ../carriers/
