@@ -41,6 +41,19 @@
 
 &i2c2 {
 	clocks = <&clk ADSP_SC846_CLK_CGU0_SCLK0>;
+};
+
+&i2c3 {
+	clocks = <&clk ADSP_SC846_CLK_CGU0_SCLK0>;
+};
+
+&i2c4 {
+	clocks = <&clk ADSP_SC846_CLK_CGU0_SCLK0>;
+};
+
+&i2c5 {
+	clocks = <&clk ADSP_SC846_CLK_CGU0_SCLK0>;
+	status = "okay";
 
 	gpio_expander1: adp5587@34 {
 		compatible = "adi,adp5587";
@@ -115,23 +128,6 @@
 		spi-rx-bus-width = <4>;
 		spi-max-frequency = <50000000>;
 		bootph-pre-ram;
-	};
-};
-
-&eth0 {
-	compatible = "adi,sc59x-dwmac-eqos";
-	phy-handle = <&dp83867>;
-	phy-mode = "rgmii-id";
-
-	mdio {
-		compatible = "snps,dwmac-mdio";
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		dp83867: ethernet-phy@0 {
-			compatible = "ethernet-phy-ieee802.3-c22";
-			reg = <0>;
-		};
 	};
 };
 
