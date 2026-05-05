@@ -251,17 +251,12 @@ struct adi_spi_regs {
 	u32 mmtop;
 };
 
-struct adi_spi_platdata {
-	u32 max_hz;
-	u32 bus_num;
-	struct adi_spi_regs __iomem *regs;
-};
-
 struct adi_spi_priv {
 	u32 control;
 	u32 clock;
 	u32 bus_num;
 	u32 max_cs;
+	u32 max_hz;
 	struct adi_spi_regs __iomem *regs;
 };
 
@@ -284,35 +279,23 @@ static int adi_spi_cs_info(struct udevice *bus, uint cs,
 	return 0;
 }
 
-static int adi_spi_of_to_plat(struct udevice *bus)
-{
-	struct adi_spi_platdata *plat = dev_get_plat(bus);
-	fdt_addr_t addr;
-
-	plat->max_hz = dev_read_u32_default(bus, "spi-max-frequency", 500000);
-	plat->bus_num = dev_read_u32_default(bus, "bus-num", 0);
-	addr = dev_read_addr(bus);
-
-	if (addr == FDT_ADDR_T_NONE)
-		return -EINVAL;
-
-	plat->regs = map_sysmem(addr, sizeof(*plat->regs));
-
-	return 0;
-}
-
 static int adi_spi_probe(struct udevice *bus)
 {
-	struct adi_spi_platdata *plat = dev_get_plat(bus);
 	struct adi_spi_priv *priv = dev_get_priv(bus);
+	fdt_addr_t addr;
 
-	priv->bus_num = plat->bus_num;
-	priv->regs = plat->regs;
+	priv->max_hz = dev_read_u32_default(bus, "spi-max-frequency", 500000);
+	priv->bus_num = dev_read_u32_default(bus, "bus-num", 0);
 	priv->max_cs = dev_read_u32_default(bus, "num-cs", MAX_CTRL_CS);
 
-	iowrite32(0x0, &plat->regs->control);
-	iowrite32(0x0, &plat->regs->rx_control);
-	iowrite32(0x0, &plat->regs->tx_control);
+	addr = dev_read_addr(bus);
+	if (addr == FDT_ADDR_T_NONE)
+		return -EINVAL;
+	priv->regs = map_sysmem(addr, sizeof(*priv->regs));
+
+	iowrite32(0x0, &priv->regs->control);
+	iowrite32(0x0, &priv->regs->rx_control);
+	iowrite32(0x0, &priv->regs->tx_control);
 
 	return 0;
 }
@@ -521,7 +504,6 @@ static int adi_spi_xfer(struct udevice *dev, unsigned int bitlen,
 
 static int adi_spi_set_speed(struct udevice *bus, uint speed)
 {
-	struct adi_spi_platdata *plat = dev_get_plat(bus);
 	struct adi_spi_priv *priv = dev_get_priv(bus);
 	int ret;
 	u32 clock, spi_base_clk;
@@ -534,8 +516,8 @@ static int adi_spi_set_speed(struct udevice *bus, uint speed)
 	}
 	spi_base_clk = clk_get_rate(&spi_clk);
 
-	if (speed > plat->max_hz)
-		speed = plat->max_hz;
+	if (speed > priv->max_hz)
+		speed = priv->max_hz;
 
 	if (speed > spi_base_clk)
 		return -ENODEV;
@@ -666,10 +648,8 @@ U_BOOT_DRIVER(adi_spi3) = {
 	.id = UCLASS_SPI,
 	.of_match = adi_spi_ids,
 	.ops = &adi_spi_ops,
-	.of_to_plat = adi_spi_of_to_plat,
 	.probe = adi_spi_probe,
 	.remove = adi_spi_remove,
-	.plat_auto = sizeof(struct adi_spi_platdata),
 	.priv_auto = sizeof(struct adi_spi_priv),
 	.per_child_auto = sizeof(struct spi_slave),
 };
