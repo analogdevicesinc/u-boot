@@ -83,7 +83,7 @@
 			clock-names = "i2c";
 			status = "disabled";
 			bootph-pre-ram;
-		}
+		};
 	};
 };
 
