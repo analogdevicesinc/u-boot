@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * (C) Copyright 2024 - Analog Devices, Inc.
+ * (C) Copyright 2026 - Analog Devices, Inc.
  */
 
 /dts-v1/;
@@ -55,13 +55,14 @@
 			gpio-hog;
 			gpios = <4 GPIO_ACTIVE_LOW>;
 			output-high;
+			line-name = "adau1979-b-reset-som-a";
 		};
 
 		pushbutton-b-en {
 			gpio-hog;
 			gpios = <5 GPIO_ACTIVE_LOW>;
 			output-high;
-			line-name = "ushbutton-b-en";
+			line-name = "pushbutton-b-en";
 		};
 
 		spdif1-opt-en {
@@ -147,17 +148,15 @@
 			output-low;
 			line-name = "a2b2-io2";
 		};
-
-
 	};
 };
 
 &eth0 {
 	compatible = "adi,sc59x-dwmac-eqos";
-	mac-address = [ 11 22 33 44 55 66 ];
 	phy-handle = <&adin1300>;
 	phy-mode = "rgmii-id";
 	clocks = <&clk ADSP_SC846_CLK_CGU0_SCLK0>;
+	status = "okay";
 
 	mdio {
 		compatible = "snps,dwmac-mdio";
