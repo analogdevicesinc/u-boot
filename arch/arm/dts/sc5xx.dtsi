@@ -141,7 +141,7 @@
 			#size-cells = <0>;
 			compatible = "adi,twi";
 			reg = <0x31001400 0x100>;
-			clock-names = "i2c";
+			clock-names = "sclk0";
 			status = "disabled";
 			bootph-pre-ram;
 		};
@@ -151,7 +151,7 @@
 			#size-cells = <0>;
 			compatible = "adi,twi";
 			reg = <0x31001500 0x100>;
-			clock-names = "i2c";
+			clock-names = "sclk0";
 			status = "disabled";
 			bootph-pre-ram;
 		};
@@ -161,7 +161,7 @@
 			#size-cells = <0>;
 			compatible = "adi,twi";
 			reg = <0x31001600 0x100>;
-			clock-names = "i2c";
+			clock-names = "sclk0";
 			status = "disabled";
 			bootph-pre-ram;
 		};
