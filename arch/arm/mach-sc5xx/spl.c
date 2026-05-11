@@ -73,8 +73,8 @@ int32_t __weak adi_rom_boot_hook(struct ADI_ROM_BOOT_CONFIG *config, int32_t cau
 int board_return_to_bootrom(struct spl_image_info *spl_image,
 			    struct spl_boot_device *bootdev)
 {
-#if !(IS_ENABLED(CONFIG_ADI_SPL_FORCE_BMODE))
-	// see above
+
+#if CONFIG_ADI_SPL_FORCE_BMODE
 	if (bmode != 0 && bmode != 3)
 		bmode = CONFIG_ADI_SPL_FORCE_BMODE;
 #endif
