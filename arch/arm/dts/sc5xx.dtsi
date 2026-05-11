@@ -114,12 +114,18 @@
 			bootph-pre-ram;
 		};
 
+		sec: sec@31089000 {
+			compatible = "adi,system-event-controller", "syscon";
+			reg = <0x31089000 0x1000>;
+			adi,rcu = <&rcu>;
+			status = "okay";
+		};
+
 		wdog: watchdog@31008000 {
 			compatible = "adi,watchdog";
-			reg = <0x3108c000 0x1000>,
-					<0x31089000 0x1000>,
-					<0x31008000 0x1000>;
-			reg-names = "rcu", "sec", "wdt";
+			reg = <0x31008000 0x10>;
+			adi,rcu = <&rcu>;
+			adi,sec = <&sec>;
 			clock-names = "sclk0";
 			status = "okay";
 			bootph-pre-ram;

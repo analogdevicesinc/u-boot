@@ -14,6 +14,15 @@
 	};
 
 	scb {
+		rcu: rcu@3108C000 {
+			compatible = "adi,reset-controller", "syscon";
+			reg = <0x3108C000 0x1000>;
+			adi,sharc-min = <1>;
+			adi,sharc-max = <2>;
+			adi,enable-reboot;
+			status = "disabled";
+		};
+
 		mmc: mmc0@31010000 {
 			compatible = "snps,dw-mshc";
 			reg = <0x31010000 0x400>;
