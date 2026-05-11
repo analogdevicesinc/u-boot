@@ -115,7 +115,7 @@
 		};
 
 		wdog: watchdog@31008000 {
-			compatible = "adi,wdt";
+			compatible = "adi,watchdog";
 			reg = <0x3108c000 0x1000>,
 					<0x31089000 0x1000>,
 					<0x31008000 0x1000>;

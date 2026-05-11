@@ -126,7 +126,7 @@ static const struct wdt_ops adi_wdt_ops = {
 };
 
 static const struct udevice_id adi_wdt_ids[] = {
-	{ .compatible = "adi,wdt" },
+	{ .compatible = "adi,watchdog" },
 	{}
 };
 
