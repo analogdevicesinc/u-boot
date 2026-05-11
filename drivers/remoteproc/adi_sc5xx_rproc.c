@@ -260,7 +260,7 @@ static int sc5xx_probe(struct udevice *dev)
 }
 
 static const struct udevice_id sc5xx_ids[] = {
-	{ .compatible = "adi,sc5xx-rproc" },
+	{ .compatible = "adi,remoteproc" },
 	{ }
 };
 

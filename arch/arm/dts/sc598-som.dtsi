@@ -19,7 +19,7 @@
 
 	scb {
 		sharc0: sharc@0x28240000 {
-			compatible = "adi,sc5xx-rproc";
+			compatible = "adi,remoteproc";
 			reg = <0x28240000 0x100>;
 			core-id = <1>;
 			adi,rcu = <&rcu>;
@@ -27,7 +27,7 @@
 		};
 
 		sharc1: sharc@0x28a40000 {
-			compatible = "adi,sc5xx-rproc";
+			compatible = "adi,remoteproc";
 			reg = <0x28a40000 0x100>;
 			core-id = <2>;
 			adi,rcu = <&rcu>;
