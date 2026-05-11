@@ -55,7 +55,7 @@
 			status = "disabled";
 		};
 
-		sharc1: sharc@0x28240000 {
+		sharc0: sharc@0x28240000 {
 			compatible = "adi,sc5xx-rproc";
 			reg = <0x28240000 0x100>;
 			coreid = <1>;
@@ -63,7 +63,7 @@
 			status = "disabled";
 		};
 
-		sharc2: sharc@0x28a40000 {
+		sharc1: sharc@0x28a40000 {
 			compatible = "adi,sc5xx-rproc";
 			reg = <0x28a40000 0x100>;
 			coreid = <2>;
