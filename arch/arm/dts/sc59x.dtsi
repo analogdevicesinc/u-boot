@@ -9,7 +9,7 @@
 		spi0 = "/ospi";
 	};
 
-	soc {
+	scb {
 		rcu: rcu@0x3108C000 {
 			compatible = "adi,reset-controller";
 			reg = <0x3108C000 0x1000>;

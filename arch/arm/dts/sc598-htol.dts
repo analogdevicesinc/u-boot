@@ -11,7 +11,7 @@
 	model = "ADI SC598-HTOL";
 	compatible = "adi,sc598-htol", "adi,sc59x-64";
 
-	soc {
+	scb {
 		uart1: serial@0x31003400 {
 			compatible = "adi,uart4";
 			reg = <0x31003400 0x1000>;

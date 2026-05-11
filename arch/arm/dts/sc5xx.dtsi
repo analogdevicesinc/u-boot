@@ -48,11 +48,10 @@
 		};
 	};
 
-	soc {
+	scb {
 		#address-cells = <1>;
 		#size-cells = <1>;
 		compatible = "simple-bus";
-		device_type = "soc";
 		ranges;
 		bootph-pre-ram;
 
