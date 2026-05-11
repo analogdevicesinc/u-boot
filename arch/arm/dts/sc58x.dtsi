@@ -15,7 +15,7 @@
 		      <0x310B4000 0x100>;
 	};
 
-	soc {
+	scb {
 		rcu: rcu@0x3108B000 {
 			compatible = "adi,reset-controller";
 			reg = <0x3108B000 0x1000>;

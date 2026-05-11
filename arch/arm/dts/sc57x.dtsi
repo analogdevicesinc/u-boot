@@ -13,7 +13,7 @@
 		      <0x310B4000 0x100>;
 	};
 
-	soc {
+	scb {
 		mmc: mmc0@31010000 {
 			compatible = "snps,dw-mshc";
 			reg = <0x31010000 0x400>;
