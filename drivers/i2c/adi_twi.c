@@ -368,7 +368,7 @@ static const struct dm_i2c_ops adi_i2c_ops = {
 };
 
 static const struct udevice_id adi_i2c_ids[] = {
-	{ .compatible = "adi-i2c", },
+	{ .compatible = "adi,twi", },
 	{ /* sentinel */ }
 };
 

@@ -139,7 +139,7 @@
 		i2c0: i2c0@31001400 {
 			#address-cells = <1>;
 			#size-cells = <0>;
-			compatible = "adi-i2c";
+			compatible = "adi,twi";
 			reg = <0x31001400 0x100>;
 			clock-names = "i2c";
 			status = "disabled";
@@ -149,7 +149,7 @@
 		i2c1: i2c1@31001500 {
 			#address-cells = <1>;
 			#size-cells = <0>;
-			compatible = "adi-i2c";
+			compatible = "adi,twi";
 			reg = <0x31001500 0x100>;
 			clock-names = "i2c";
 			status = "disabled";
@@ -159,7 +159,7 @@
 		i2c2: i2c2@31001600 {
 			#address-cells = <1>;
 			#size-cells = <0>;
-			compatible = "adi-i2c";
+			compatible = "adi,twi";
 			reg = <0x31001600 0x100>;
 			clock-names = "i2c";
 			status = "disabled";
