@@ -10,8 +10,8 @@
 
 #include <asm/io.h>
 #include <asm/armv8/mmu.h>
-#include <asm/arch-adi/sc5xx/sc5xx.h>
-#include <asm/arch-adi/sc5xx/spl.h>
+#include <asm/arch/sc5xx.h>
+#include <asm/arch/spl.h>
 
 #define REG_PADS0_PCFG0 0x31004604
 #define REG_RCU0_BCODE 0x3108C028

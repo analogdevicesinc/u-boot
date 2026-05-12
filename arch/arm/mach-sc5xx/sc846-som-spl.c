@@ -3,7 +3,7 @@
  * (C) Copyright 2026 - Analog Devices, Inc.
  */
 
-#include <asm/arch-adi/sc5xx/spl.h>
+#include <asm/arch/spl.h>
 
 // Boot arguments for SC846 SoC
 const struct adi_boot_args adi_rom_boot_args[] = {

@@ -7,7 +7,7 @@
 
 #include <linux/types.h>
 #include <asm/io.h>
-#include <asm/arch-adi/sc5xx/sc5xx.h>
+#include <asm/arch/sc5xx.h>
 
 void pre_reset_init_lpddr4(void);
 int post_reset_init_lpddr4(void);
