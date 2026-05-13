@@ -34,28 +34,13 @@
 			status = "okay";
 		};
 
-		clocks {
-			compatible = "simple-bus";
-			#address-cells = <1>;
-			#size-cells = <0>;
-			bootph-pre-ram;
-
-			emmcclk: emmcclk@0 {
-				compatible = "fixed-clock";
-				reg = <0>;
-				#clock-cells = <0>;
-				clock-frequency = <50000000>; /* 50 MHz */
-				bootph-pre-ram;
-			};
-		};
-
 		mmc0: mmc@310C7000 {
 			compatible = "adi,dwc-sdhci";
 			reg = <0x310C7000 0x1000>;
 			interrupts = <GIC_SPI 237 IRQ_TYPE_LEVEL_HIGH>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&mmc_defaults>;
-			clocks = <&emmcclk>;
+			clocks = <&clk ADSP_SC598_CLK_EMMC>;
 			clock-names = "core";
 			max-frequency = <50000000>;
 			bus-width = <8>;
