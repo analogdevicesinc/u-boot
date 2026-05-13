@@ -43,7 +43,7 @@
 	};
 };
 
-&timer0 {
+&gptimers {
 	clocks = <&clk ADSP_SC57X_CLK_CGU0_SCLK0>;
 };
 

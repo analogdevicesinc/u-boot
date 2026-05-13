@@ -69,9 +69,8 @@
 	};
 };
 
-&timer0 {
-	reg = <0x31001004 0x100>,
-			<0x31001060 0x100>;
+&gptimers {
+	reg = <0x31001000 0x200>;
 	clocks = <&clk ADSP_SC58X_CLK_CGU0_SCLK0>;
 };
 
