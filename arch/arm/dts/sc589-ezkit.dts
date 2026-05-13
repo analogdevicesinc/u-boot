@@ -209,5 +209,9 @@
 };
 
 &mmc {
+	pinctrl-names = "default";
+	pinctrl-0 = <&mmc_default>;
+	bus-width = <4>;
+	max-frequency = <52000000>;
 	status = "okay";
 };
