@@ -184,7 +184,7 @@ static int musb_usb_remove(struct udevice *dev)
 }
 
 static const struct udevice_id sc5xx_musb_ids[] = {
-	{ .compatible = "adi,sc5xx-musb" },
+	{ .compatible = "adi,musb" },
 	{ }
 };
 

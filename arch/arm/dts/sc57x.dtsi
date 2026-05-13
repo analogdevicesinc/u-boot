@@ -32,7 +32,7 @@
 		};
 
 		usb0: musb@310c1000 {
-			compatible = "adi,sc5xx-musb";
+			compatible = "adi,musb";
 			reg = <0x310c1000 0x390>;
 			interrupts = <GIC_SPI 124 IRQ_TYPE_LEVEL_HIGH>,
 						 <GIC_SPI 125 IRQ_TYPE_LEVEL_HIGH>;
