@@ -17,12 +17,8 @@
 		mmc: mmc0@31010000 {
 			compatible = "snps,dw-mshc";
 			reg = <0x31010000 0x400>;
-			pinctrl-names = "default";
-			pinctrl-0 = <&mmc_default>;
-			bus-width = <4>;
 			fifo-depth = <128>;
 			clock-names = "biu", "ciu";
-			max-frequency = <52000000>;
 			status = "disabled";
 		};
 
