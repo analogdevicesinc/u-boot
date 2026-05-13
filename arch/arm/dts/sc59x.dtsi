@@ -69,9 +69,7 @@
 		usb0_phy: usbphy {
 			compatible = "usb-nop-xceiv";
 			#phy-cells = <0>;
-			reset = <&gpio0 ADI_ADSP_PIN('G', 11) GPIO_ACTIVE_HIGH>;
-			pinctrl-names = "default";
-			pinctrl-0 = <&usb0_default>;
+			reset-gpios = <&gpio0 ADI_ADSP_PIN('G', 11) GPIO_ACTIVE_LOW>;
 			status = "disabled";
 		};
 
