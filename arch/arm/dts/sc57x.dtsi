@@ -94,8 +94,19 @@
 	adi,npins = <92>;
 };
 
-&gpio0 {
-	adi,ngpios = <92>;
+/ {
+	scb {
+		gpf: gpio@31004280 {
+			compatible = "adi,adsp-port-gpio";
+			reg = <0x31004280 0x80>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			adi,bank-name = "F";
+			adi,ngpios = <12>;
+			status = "okay";
+			bootph-pre-ram;
+		};
+	};
 };
 
 &clk {
