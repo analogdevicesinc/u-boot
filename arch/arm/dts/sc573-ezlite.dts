@@ -226,14 +226,14 @@
 };
 
 &eth0 {
-	snps,reset-gpio = <&gpio0 ADI_ADSP_PIN('A', 5) GPIO_ACTIVE_LOW>;
+	snps,reset-gpio = <&gpa 5 GPIO_ACTIVE_LOW>;
 };
 
-&gpio0 {
+&gpa {
 	emac0_phy_pwdn {
 		gpio-hog;
 		output-high;
-		gpios = <ADI_ADSP_PIN('A', 4) GPIO_ACTIVE_HIGH>;
+		gpios = <4 GPIO_ACTIVE_HIGH>;
 	};
 };
 

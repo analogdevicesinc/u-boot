@@ -78,11 +78,57 @@
 			bootph-pre-ram;
 		};
 
-		gpio0: gpio@0x31004000 {
-			compatible = "adi,adsp-gpio";
-			reg = <0x31004000 0x500>;
+		gpa: gpio@31004000 {
+			compatible = "adi,adsp-port-gpio";
+			reg = <0x31004000 0x80>;
 			gpio-controller;
 			#gpio-cells = <2>;
+			adi,bank-name = "A";
+			adi,ngpios = <16>;
+			status = "okay";
+			bootph-pre-ram;
+		};
+
+		gpb: gpio@31004080 {
+			compatible = "adi,adsp-port-gpio";
+			reg = <0x31004080 0x80>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			adi,bank-name = "B";
+			adi,ngpios = <16>;
+			status = "okay";
+			bootph-pre-ram;
+		};
+
+		gpc: gpio@31004100 {
+			compatible = "adi,adsp-port-gpio";
+			reg = <0x31004100 0x80>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			adi,bank-name = "C";
+			adi,ngpios = <16>;
+			status = "okay";
+			bootph-pre-ram;
+		};
+
+		gpd: gpio@31004180 {
+			compatible = "adi,adsp-port-gpio";
+			reg = <0x31004180 0x80>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			adi,bank-name = "D";
+			adi,ngpios = <16>;
+			status = "okay";
+			bootph-pre-ram;
+		};
+
+		gpe: gpio@31004200 {
+			compatible = "adi,adsp-port-gpio";
+			reg = <0x31004200 0x80>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			adi,bank-name = "E";
+			adi,ngpios = <16>;
 			status = "okay";
 			bootph-pre-ram;
 		};

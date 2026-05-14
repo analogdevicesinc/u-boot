@@ -21,7 +21,7 @@
 			clock-names = "sclk0";
 			linux,rs485-enabled-at-boot-time;
 			rs485-rts-active-low;
-			rts-gpios = <&gpio0 ADI_ADSP_PIN('D', 1) GPIO_ACTIVE_HIGH>;
+			rts-gpios = <&gpd 1 GPIO_ACTIVE_HIGH>;
 			status = "okay";
 		};
 	};
@@ -34,10 +34,10 @@
 	};
 };
 
-&gpio0 {
+&gpb {
 	uart0-en {
 		gpio-hog;
-		gpios = <ADI_ADSP_PIN('B', 13) GPIO_ACTIVE_LOW>;
+		gpios = <13 GPIO_ACTIVE_LOW>;
 		output-high;
 		line-name = "uart0-en";
 		bootph-pre-ram;
@@ -45,22 +45,24 @@
 
 	uart0-flow-en {
 		gpio-hog;
-		gpios = <ADI_ADSP_PIN('B', 14) GPIO_ACTIVE_LOW>;
+		gpios = <14 GPIO_ACTIVE_LOW>;
 		output-low;
 		line-name = "uart0-flow-en";
 		bootph-pre-ram;
 	};
+};
 
+&gpe {
 	led1 {
 		gpio-hog;
-		gpios = <ADI_ADSP_PIN('E', 15) GPIO_ACTIVE_LOW>;
+		gpios = <15 GPIO_ACTIVE_LOW>;
 		output-high;
 		line-name = "led1";
 	};
 
 	led2 {
 		gpio-hog;
-		gpios = <ADI_ADSP_PIN('E', 10) GPIO_ACTIVE_LOW>;
+		gpios = <10 GPIO_ACTIVE_LOW>;
 		output-high;
 		line-name = "led2";
 	};
