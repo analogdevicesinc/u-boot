@@ -151,10 +151,10 @@
 
 	clocks = <&clk ADSP_SC598_CLK_OSPI_REFCLK>;
 
-	flash0: mx66lm1g45@0 {
+	flash0: mx66lm1g45g@0 {
 		#address-cells = <1>;
 		#size-cells = <1>;
-		compatible = "jedec,spi-nor", "mx66lm1g45";
+		compatible = "mxicy,mx66lm1g45g", "jedec,spi-nor";
 		reg = <0>;
 
 		/*

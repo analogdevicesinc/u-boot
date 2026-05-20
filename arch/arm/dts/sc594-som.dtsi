@@ -174,7 +174,7 @@
 	flash0: is25lx256@0 {
 		#address-cells = <1>;
 		#size-cells = <1>;
-		compatible = "jedec,spi-nor", "is25lx256";
+		compatible = "issi,is25lx256", "jedec,spi-nor";
 		reg = <0>;
 
 		spi-max-frequency = <100000000>;
@@ -199,7 +199,7 @@
 	flash1: is25lp512@1 {
 		#address-cells = <1>;
 		#size-cells = <1>;
-		compatible = "jedec,spi-nor", "is25lp512";
+		compatible = "issi,is25lp512", "jedec,spi-nor";
 		reg = <1>;
 		spi-tx-bus-width = <4>;
 		spi-rx-bus-width = <4>;

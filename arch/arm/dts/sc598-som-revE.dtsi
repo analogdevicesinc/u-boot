@@ -89,7 +89,7 @@
 	som_flash: is25lp01g@1 {
 		#address-cells = <1>;
 		#size-cells = <1>;
-		compatible = "jedec,spi-nor", "is25lp01g";
+		compatible = "issi,is25lp01g", "jedec,spi-nor";
 		reg = <1>;
 		spi-tx-bus-width = <4>;
 		spi-rx-bus-width = <4>;
