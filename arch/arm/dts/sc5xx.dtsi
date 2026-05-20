@@ -26,13 +26,6 @@
 	};
 
 	clocks {
-		dummy: dummy {
-			compatible = "fixed-clock";
-			#clock-cells = <0>;
-			clock-frequency = <0>;
-			bootph-pre-ram;
-		};
-
 		sys_clkin0: sys_clkin0 {
 			compatible = "fixed-clock";
 			#clock-cells = <0>;
@@ -85,8 +78,8 @@
 				<0x3108f000 0x1000>;
 			reg-names = "cgu0", "cgu1", "cdu";
 			#clock-cells = <1>;
-			clocks = <&dummy>, <&sys_clkin0>, <&sys_clkin1>;
-			clock-names = "dummy", "sys_clkin0", "sys_clkin1";
+			clocks = <&sys_clkin0>, <&sys_clkin1>;
+			clock-names = "sys_clkin0", "sys_clkin1";
 			status = "okay";
 			bootph-pre-ram;
 		};
