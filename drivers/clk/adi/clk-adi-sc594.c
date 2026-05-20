@@ -47,7 +47,7 @@ static int sc594_clock_probe(struct udevice *dev)
 	struct resource res;
 
 	struct clk *clks[ADSP_SC594_CLK_END];
-	struct clk dummy, clkin0, clkin1;
+	struct clk clkin0, clkin1;
 
 	ret = dev_read_resource_byname(dev, "cgu0", &res);
 	if (ret)
@@ -65,11 +65,10 @@ static int sc594_clock_probe(struct udevice *dev)
 	cdu = devm_ioremap(dev, res.start, resource_size(&res));
 
 	// Input clock configuration
-	clk_get_by_name(dev, "dummy", &dummy);
 	clk_get_by_name(dev, "sys_clkin0", &clkin0);
 	clk_get_by_name(dev, "sys_clkin1", &clkin1);
 
-	clks[ADSP_SC594_CLK_DUMMY] = &dummy;
+	clks[ADSP_SC594_CLK_DUMMY] = clk_register_fixed_rate(NULL, "dummy", 0);
 	clks[ADSP_SC594_CLK_SYS_CLKIN0] = &clkin0;
 	clks[ADSP_SC594_CLK_SYS_CLKIN1] = &clkin1;
 	clks[ADSP_SC594_CLK_CGU1_IN] = clk_register_mux(NULL, "cgu1_in_sel", cgu1_in_sels,
