@@ -126,7 +126,7 @@
 		};
 
 		eth0: eth0 {
-			compatible = "snps,arc-dwmac-3.70a";
+			compatible = "adi,dwmac";
 			phy-mode = "rgmii";
 			pinctrl-names = "default";
 			pinctrl-0 = <&eth0_default>;
