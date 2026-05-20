@@ -112,10 +112,10 @@ static int adsp_gpio_probe(struct udevice *udev)
 	uc_priv->bank_name = dev_read_string(udev, "adi,bank-name");
 	if (!uc_priv->bank_name)
 		uc_priv->bank_name = udev->name;
-	uc_priv->gpio_count = dev_read_u32_default(udev, "adi,ngpios", 0);
+	uc_priv->gpio_count = dev_read_u32_default(udev, "ngpios", 0);
 
 	if (!uc_priv->gpio_count) {
-		dev_err(udev, "missing adi,ngpios property\n");
+		dev_err(udev, "missing ngpios property\n");
 		return -ENOENT;
 	}
 

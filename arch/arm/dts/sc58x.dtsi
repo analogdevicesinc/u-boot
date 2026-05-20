@@ -131,7 +131,7 @@
 			gpio-controller;
 			#gpio-cells = <2>;
 			adi,bank-name = "F";
-			adi,ngpios = <16>;
+			ngpios = <16>;
 			status = "okay";
 			bootph-pre-ram;
 		};
@@ -142,7 +142,7 @@
 			gpio-controller;
 			#gpio-cells = <2>;
 			adi,bank-name = "G";
-			adi,ngpios = <6>;
+			ngpios = <6>;
 			status = "okay";
 			bootph-pre-ram;
 		};
