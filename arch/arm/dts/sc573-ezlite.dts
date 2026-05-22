@@ -21,14 +21,12 @@
 		reg = <0x21>;
 		gpio-controller;
 		#gpio-cells = <2>;
-		bootph-pre-ram;
 
 		eeprom {
 			gpio-hog;
 			gpios = <0 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "eeprom-en";
-			bootph-pre-ram;
 		};
 
 		uart0-flow-en {
@@ -36,7 +34,6 @@
 			gpios = <1 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "uart0-flow-en";
-			bootph-pre-ram;
 		};
 
 		mlb {
@@ -44,7 +41,6 @@
 			gpios = <5 GPIO_ACTIVE_HIGH>;
 			output-high;
 			line-name = "~mlb-en";
-			bootph-pre-ram;
 		};
 
 		can0 {
@@ -52,7 +48,6 @@
 			gpios = <6 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "can0-en";
-			bootph-pre-ram;
 		};
 
 		can1 {
@@ -60,7 +55,6 @@
 			gpios = <7 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "can1-en";
-			bootph-pre-ram;
 		};
 
 		adau1962 {
@@ -68,7 +62,6 @@
 			gpios = <8 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "adau1962-en";
-			bootph-pre-ram;
 		};
 
 		adau1979 {
@@ -76,7 +69,6 @@
 			gpios = <9 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "adau1979-en";
-			bootph-pre-ram;
 		};
 
 		sd-wp-en {
@@ -84,7 +76,6 @@
 			gpios = <11 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "sd-wp-en";
-			bootph-pre-ram;
 		};
 
 		spi2flash-cs {
@@ -92,7 +83,6 @@
 			gpios = <12 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "spi2flash-cs";
-			bootph-pre-ram;
 		};
 
 		spi2d2-d3 {
@@ -100,7 +90,6 @@
 			gpios = <13 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "spi2d2-d3-en";
-			bootph-pre-ram;
 		};
 
 		spdif-opt {
@@ -108,7 +97,6 @@
 			gpios = <14 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "spdif-optical-en";
-			bootph-pre-ram;
 		};
 
 		spdif-dig {
@@ -116,7 +104,6 @@
 			gpios = <15 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "spdif-digital-en";
-			bootph-pre-ram;
 		};
 	};
 
@@ -125,14 +112,12 @@
 		reg = <0x22>;
 		gpio-controller;
 		#gpio-cells = <2>;
-		bootph-pre-ram;
 
 		pushbutton3 {
 			gpio-hog;
 			gpios = <0 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "pushbutton3-en";
-			bootph-pre-ram;
 		};
 
 		pushbutton2 {
@@ -140,7 +125,6 @@
 			gpios = <1 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "pushbutton2-en";
-			bootph-pre-ram;
 		};
 
 		pushbutton1 {
@@ -148,7 +132,6 @@
 			gpios = <2 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "pushbutton1-en";
-			bootph-pre-ram;
 		};
 
 		leds {
@@ -156,7 +139,6 @@
 			gpios = <3 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "leds-en";
-			bootph-pre-ram;
 		};
 
 		flg0 {
@@ -164,7 +146,6 @@
 			gpios = <4 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "flg0_loop";
-			bootph-pre-ram;
 		};
 
 		flg1 {
@@ -172,7 +153,6 @@
 			gpios = <5 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "flg1_loop";
-			bootph-pre-ram;
 		};
 
 		flg2 {
@@ -180,7 +160,6 @@
 			gpios = <6 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "flg2_loop";
-			bootph-pre-ram;
 		};
 
 		flg3 {
@@ -188,7 +167,6 @@
 			gpios = <7 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "flg3_loop";
-			bootph-pre-ram;
 		};
 
 		adau1977 {
@@ -196,7 +174,6 @@
 			gpios = <8 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "adau1977_en";
-			bootph-pre-ram;
 		};
 
 		adau1977_fault_rst {
@@ -204,7 +181,6 @@
 			gpios = <9 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "adau1977_fault_rst_en";
-			bootph-pre-ram;
 		};
 
 		thumbwheel {
@@ -212,7 +188,6 @@
 			gpios = <10 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "thumbwheel_oe";
-			bootph-pre-ram;
 		};
 
 		engine_rpm {
@@ -220,7 +195,6 @@
 			gpios = <11 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "engine_rpm_oe";
-			bootph-pre-ram;
 		};
 	};
 };
@@ -254,6 +228,5 @@
 		spi-tx-bus-width = <4>;
 		spi-rx-bus-width = <4>;
 		spi-max-frequency = <10000000>;
-		bootph-pre-ram;
 	};
 };

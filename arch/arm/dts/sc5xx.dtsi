@@ -158,7 +158,6 @@
 			spi-max-frequency = <10000000>;
 			clock-names = "spi";
 			status = "okay";
-			bootph-pre-ram;
 		};
 
 		sec: sec@31089000 {
