@@ -77,7 +77,6 @@
 
 &pinctrl0 {
 	mmc_default: mmc_pins {
-		bootph-pre-ram;
 		adi,pins = <ADI_ADSP_PIN('F', 2) ADI_ADSP_PINFUNC_ALT0>,
 					<ADI_ADSP_PIN('F', 3) ADI_ADSP_PINFUNC_ALT0>,
 					<ADI_ADSP_PIN('F', 4) ADI_ADSP_PINFUNC_ALT0>,
@@ -148,7 +147,6 @@
 		spi-tx-bus-width = <4>;
 		spi-rx-bus-width = <4>;
 		spi-max-frequency = <10000000>;
-		bootph-pre-ram;
 	};
 };
 

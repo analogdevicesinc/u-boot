@@ -48,7 +48,6 @@
 		gpios = <ADI_ADSP_PIN('B', 14) GPIO_ACTIVE_LOW>;
 		output-low;
 		line-name = "uart0-flow-en";
-		bootph-pre-ram;
 	};
 
 	led1 {
@@ -93,6 +92,5 @@
 		spi-tx-bus-width = <4>;
 		spi-rx-bus-width = <4>;
 		spi-max-frequency = <10000000>;
-		bootph-pre-ram;
 	};
 };

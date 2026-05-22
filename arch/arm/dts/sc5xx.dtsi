@@ -104,7 +104,6 @@
 			spi-max-frequency = <10000000>;
 			clock-names = "spi";
 			status = "okay";
-			bootph-pre-ram;
 		};
 
 		wdog: watchdog@31008000 {

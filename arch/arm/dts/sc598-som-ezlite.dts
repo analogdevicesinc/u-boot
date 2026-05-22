@@ -18,14 +18,12 @@
 		reg = <0x30>;
 		gpio-controller;
 		#gpio-cells = <2>;
-		bootph-pre-ram;
 
 		usb-spi0 {
 			gpio-hog;
 			gpios = <8 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "usb_spi0_en";
-			bootph-pre-ram;
 		};
 
 		usb-spi1 {
@@ -33,7 +31,6 @@
 			gpios = <9 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "usb_spi1_en";
-			bootph-pre-ram;
 		};
 
 		usb-qspi-en {
@@ -41,7 +38,6 @@
 			gpios = <10 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "usb_qspi_en";
-			bootph-pre-ram;
 		};
 
 		usb-qspi-reset {
@@ -49,7 +45,6 @@
 			gpios = <11 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "usb_qspi_reset";
-			bootph-pre-ram;
 		};
 
 		eth0-reset {
@@ -57,7 +52,6 @@
 			gpios = <12 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "eth0-reset";
-			bootph-pre-ram;
 		};
 
 		adau1372-pwrdwn {
@@ -65,7 +59,6 @@
 			gpios = <13 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "adau1372_pwrdwn";
-			bootph-pre-ram;
 		};
 
 		led1 {
@@ -73,7 +66,6 @@
 			gpios = <15 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "led1-en";
-			bootph-pre-ram;
 		};
 
 		led2 {
@@ -81,7 +73,6 @@
 			gpios = <16 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "led2-en";
-			bootph-pre-ram;
 		};
 
 		led3 {
@@ -89,7 +80,6 @@
 			gpios = <17 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "led3-en";
-			bootph-pre-ram;
 		};
 	};
 };

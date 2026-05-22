@@ -30,7 +30,6 @@
 			gpios = <1 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "uart0-flow-en";
-			bootph-pre-ram;
 		};
 
 		som-flash-d2d3 {
@@ -66,7 +65,6 @@
 			gpios = <15 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "led-ds3";
-			bootph-pre-ram;
 		};
 
 		led-ds2 {
@@ -94,6 +92,5 @@
 		spi-tx-bus-width = <4>;
 		spi-rx-bus-width = <4>;
 		spi-max-frequency = <10000000>;
-		bootph-pre-ram;
 	};
 };

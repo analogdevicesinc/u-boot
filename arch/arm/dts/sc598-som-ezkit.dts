@@ -18,14 +18,12 @@
 		reg = <0x22>;
 		gpio-controller;
 		#gpio-cells = <2>;
-		bootph-pre-ram;
 
 		eeprom {
 			gpio-hog;
 			gpios = <0 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "eeprom-en";
-			bootph-pre-ram;
 		};
 
 		pushbutton {
@@ -33,7 +31,6 @@
 			gpios = <1 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "pushbutton-en";
-			bootph-pre-ram;
 		};
 
 		microsd {
@@ -41,7 +38,6 @@
 			gpios = <2 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "microsd-spi";
-			bootph-pre-ram;
 		};
 
 		ftdi {
@@ -49,7 +45,6 @@
 			gpios = <3 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "ftdi-usb-en";
-			bootph-pre-ram;
 		};
 
 		can {
@@ -57,7 +52,6 @@
 			gpios = <4 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "can-en";
-			bootph-pre-ram;
 		};
 
 		adau1962 {
@@ -65,7 +59,6 @@
 			gpios = <6 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "adau1962-en";
-			bootph-pre-ram;
 		};
 
 		adau1979 {
@@ -73,7 +66,6 @@
 			gpios = <7 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "adau1979-en";
-			bootph-pre-ram;
 		};
 
 		octal {
@@ -81,7 +73,6 @@
 			gpios = <8 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "octal-spi-cs-en";
-			bootph-pre-ram;
 		};
 
 		spdif-dig {
@@ -89,7 +80,6 @@
 			gpios = <9 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "spdif-digital-en";
-			bootph-pre-ram;
 		};
 
 		spdif-opt {
@@ -97,7 +87,6 @@
 			gpios = <10 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "spdif-optical-en";
-			bootph-pre-ram;
 		};
 
 		audio-jack {
@@ -105,7 +94,6 @@
 			gpios = <11 GPIO_ACTIVE_HIGH>;
 			output-high;
 			line-name = "audio-jack-sel";
-			bootph-pre-ram;
 		};
 
 		mlb {
@@ -113,7 +101,6 @@
 			gpios = <12 GPIO_ACTIVE_HIGH>;
 			output-high;
 			line-name = "~mlb-en";
-			bootph-pre-ram;
 		};
 
 		eth1 {
@@ -121,7 +108,6 @@
 			gpios = <13 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "eth1-en";
-			bootph-pre-ram;
 		};
 
 		eth1-reset {
@@ -133,7 +119,6 @@
 			 */
 			output-high;
 			line-name = "eth1-reset";
-			bootph-pre-ram;
 		};
 
 		gige-reset {
@@ -141,7 +126,6 @@
 			gpios = <15 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "gige-reset";
-			bootph-pre-ram;
 		};
 	};
 };
@@ -171,7 +155,6 @@
 		tsd2d-ns = <50>;
 		tchsh-ns = <4>;
 		tslch-ns = <4>;
-		bootph-pre-ram;
 
 		cdns,dqs;
 		cdns,phy;

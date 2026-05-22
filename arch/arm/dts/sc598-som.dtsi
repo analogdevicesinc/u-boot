@@ -44,7 +44,6 @@
 			clock-names = "core";
 			max-frequency = <50000000>;
 			bus-width = <8>;
-			bootph-pre-ram;
 		};
 	};
 };
@@ -57,7 +56,6 @@
 	};
 
 	mmc_defaults: mmc_pins {
-		bootph-pre-ram;
 		adi,pins = <ADI_ADSP_PIN('D', 15) ADI_ADSP_PINFUNC_ALT1>,
 					<ADI_ADSP_PIN('B', 15) ADI_ADSP_PINFUNC_ALT2>,
 					<ADI_ADSP_PIN('C', 4) ADI_ADSP_PINFUNC_ALT2>,
@@ -75,7 +73,6 @@
 	};
 
 	ospi_default: ospi_pins {
-		bootph-pre-ram;
 		adi,pins = <ADI_ADSP_PIN('A', 0) ADI_ADSP_PINFUNC_ALT1>,
 					<ADI_ADSP_PIN('A', 1) ADI_ADSP_PINFUNC_ALT1>,
 					<ADI_ADSP_PIN('A', 2) ADI_ADSP_PINFUNC_ALT1>,
