@@ -98,7 +98,6 @@
 	status = "okay";
 	bootph-pre-ram;
 };
-
 &pinctrl0 {
 	adi,npins = <135>;
 
@@ -139,8 +138,8 @@
 		bootph-pre-ram;
 		adi,pins = <ADI_ADSP_PIN('D', 0) ADI_ADSP_PINFUNC_ALT0>,			/* MISO */
 					<ADI_ADSP_PIN('D', 1) ADI_ADSP_PINFUNC_ALT0>,		/* MOSI */
-					<ADI_ADSP_PIN('D', 10) ADI_ADSP_PINFUNC_ALT2>,		/* Data 2 */
-					<ADI_ADSP_PIN('D', 11) ADI_ADSP_PINFUNC_ALT2>,		/* Data 3 */
+					<ADI_ADSP_PIN('B', 10) ADI_ADSP_PINFUNC_ALT2>,		/* Data 2 */
+					<ADI_ADSP_PIN('B', 11) ADI_ADSP_PINFUNC_ALT2>,		/* Data 3 */
 					<ADI_ADSP_PIN('C', 15) ADI_ADSP_PINFUNC_ALT0>,		/* SCLK */
 					<ADI_ADSP_PIN('D', 2) ADI_ADSP_PINFUNC_ALT0>;		/* Sub(Slave) Select */
 	};
