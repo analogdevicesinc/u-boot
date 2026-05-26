@@ -339,6 +339,10 @@ config ADI_CARRIER_SOMCRR2_EZKIT
 	  which is compatible with the SC846 SOMs.
 
 endchoice
+config SET_SHARC_IDLE
+	bool "Force the SHARC cores' idle register to be set during boot"
+	default n
+
 config ADI_SPL_FORCE_BMODE
 	int "Force the SPL to use this BMODE device during next boot stage"
 	default 0
