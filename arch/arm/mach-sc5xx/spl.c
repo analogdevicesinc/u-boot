@@ -9,6 +9,7 @@
 #include <spl.h>
 #include <asm/arch/sc5xx.h>
 #include <asm/arch/spl.h>
+#include <asm/arch/sc5xx_sharc_idle.h>
 #include "init/clkinit.h"
 #ifdef CONFIG_SC846
 #include "init/EHP2_LP4_1D_2000/EHP2_LPDDR4_1D_2000_Core1.h"
@@ -115,6 +116,11 @@ void board_init_f(ulong dummy)
 		panic("DDR initialization failed, cannot boot\n");
 	}
 	printf("clks_init: LPDDR4 initialization complete\n");
+#endif
+#ifdef CONFIG_SET_SHARC_IDLE
+	ret = set_sharc_cores_idle();
+	if (ret)
+		printf("Warn: failed to set SHARC cores idle (%d)\n", ret);
 #endif
 }
 
