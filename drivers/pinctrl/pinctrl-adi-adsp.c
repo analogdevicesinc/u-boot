@@ -11,6 +11,7 @@
  */
 
 #include <dm.h>
+#include <dm/ofnode.h>
 #include <dm/pinctrl.h>
 #include <dm/device_compat.h>
 #include <linux/bitops.h>
@@ -85,36 +86,43 @@ static int adsp_pinctrl_pinmux_set(struct udevice *udev, unsigned int pin, unsig
 	return 0;
 }
 
+/*
+ * Parse Linux-format pinctrl groups: child nodes with a "pinmux" property
+ * containing ADI_ADSP_PINMUX(port, pin, func) values.
+ * Encoding: pin_index = value >> 8, linux_func = value & 0xFF.
+ * Hardware MUX register value = linux_func - 1 (Linux PINFUNC_ALT0 = 1).
+ */
 static int adsp_pinctrl_set_state(struct udevice *udev, struct udevice *config)
 {
-	const struct fdt_property *pinlist;
-	int length = 0;
-	int ret, i;
-	u32 pin, function;
+	ofnode child;
+	int ret;
 
-	pinlist = dev_read_prop(config, "adi,pins", &length);
-	if (!pinlist) {
-		dev_err(udev, "missing adi,pins property in pinctrl config node\n");
-		return -EINVAL;
-	}
+	ofnode_for_each_subnode(child, dev_ofnode(config)) {
+		const void *prop;
+		int len, count, i;
 
-	if (length % (sizeof(uint32_t) * 2)) {
-		dev_err(udev, "adi,pins property must be a multiple of two uint32_ts\n");
-		return -EINVAL;
-	}
+		prop = ofnode_get_property(child, "pinmux", &len);
+		if (!prop)
+			continue;
 
-	for (i = 0; i < length / sizeof(uint32_t); i += 2) {
-		ret = dev_read_u32_index(config, "adi,pins", i, &pin);
-		if (ret)
-			return ret;
+		count = len / sizeof(u32);
+		for (i = 0; i < count; i++) {
+			u32 val, pin, func;
 
-		ret = dev_read_u32_index(config, "adi,pins", i + 1, &function);
-		if (ret)
-			return ret;
+			ret = ofnode_read_u32_index(child, "pinmux", i, &val);
+			if (ret)
+				return ret;
 
-		ret = adsp_pinctrl_pinmux_set(udev, pin, function);
-		if (ret)
-			return ret;
+			pin  = val >> 8;
+			func = val & 0xFF;
+
+			if (!func) /* GPIO mode — not configured as peripheral */
+				continue;
+
+			ret = adsp_pinctrl_pinmux_set(udev, pin, func - 1);
+			if (ret)
+				return ret;
+		}
 	}
 
 	return 0;
