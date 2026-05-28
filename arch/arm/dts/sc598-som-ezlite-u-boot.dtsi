@@ -1,0 +1,36 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/*
+ * U-Boot overlay for sc598-som-ezlite (sc59x-64 / sc598 SoC).
+ */
+
+#include "sc5xx-u-boot.dtsi"
+
+&clk { reg-names = "cgu0", "cgu1", "cdu", "pll3"; };
+
+&emac0 { compatible = "adi,sc59x-dwmac-eqos"; };
+&emac1 { compatible = "adi,sc59x-dwmac-eqos"; };
+
+/* sc59x-64: 9 GPIO banks A-I at 0x31004000; U-Boot pinctrl driver needs this base */
+&pinctrl0 { reg = <0x31004000 0x480>; };
+
+/* sc59x-64 adds banks G-I */
+&gpg { adi,bank-name = "G"; bootph-pre-ram; };
+&gph { adi,bank-name = "H"; bootph-pre-ram; };
+&gpi { adi,bank-name = "I"; bootph-pre-ram; };
+
+/* sc59x-64 additional I2C buses */
+&i2c3 { bootph-pre-ram; };
+&i2c4 { bootph-pre-ram; };
+&i2c5 { bootph-pre-ram; };
+
+/* i2c2 pins must be muxed in SPL before ADP5587 is probed */
+&i2c2_pins {
+	bootph-pre-ram;
+	pins { bootph-pre-ram; };
+};
+
+/* ADP5587: gpio-hogs enable UART0 transceiver and disable flow control */
+&som_gpio_expander {
+	bootph-pre-ram;
+	uart0 { bootph-pre-ram; };
+};

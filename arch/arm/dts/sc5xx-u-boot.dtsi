@@ -1,0 +1,56 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/*
+ * Common U-Boot additions for ADI sc5xx SoCs using CONFIG_OF_UPSTREAM.
+ * Included by every per-board *-u-boot.dtsi.
+ */
+
+/ {
+	chosen {
+		stdout-path = "serial0:115200n8";
+		bootph-pre-ram;
+	};
+
+	scb { bootph-pre-ram; };
+};
+
+&sys_clkin0 { bootph-pre-ram; };
+&sys_clkin1 { bootph-pre-ram; };
+
+&clk { bootph-pre-ram; };
+
+&gptimers { bootph-pre-ram; };
+&gptimer0 { bootph-pre-ram; };
+
+&pinctrl0 { bootph-pre-ram; };
+
+&uart0 { bootph-pre-ram; };
+
+&watchdog {
+	adi,rcu = <&rcu>;
+	adi,sec = <&sec>;
+	bootph-pre-ram;
+};
+
+&rcu {
+	compatible = "adi,reset-controller", "syscon";
+};
+
+&sec {
+	compatible = "adi,system-event-controller", "syscon";
+};
+
+&i2c0 { bootph-pre-ram; };
+&i2c1 { bootph-pre-ram; };
+&i2c2 { bootph-pre-ram; };
+
+&gpa { adi,bank-name = "A"; bootph-pre-ram; };
+&gpb { adi,bank-name = "B"; bootph-pre-ram; };
+&gpc { adi,bank-name = "C"; bootph-pre-ram; };
+&gpd { adi,bank-name = "D"; bootph-pre-ram; };
+&gpe { adi,bank-name = "E"; bootph-pre-ram; };
+&gpf { adi,bank-name = "F"; bootph-pre-ram; };
+
+&uart0_default {
+	bootph-pre-ram;
+	pins { bootph-pre-ram; };
+};
