@@ -1,0 +1,21 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/*
+ * U-Boot overlay for sc594-som-ezkit (sc59x SoC).
+ */
+
+#include "sc5xx-u-boot.dtsi"
+
+&clk { reg-names = "cgu0", "cgu1", "cdu"; };
+
+/* sc59x: 9 GPIO banks A-I at 0x31004000; U-Boot pinctrl driver needs this base */
+&pinctrl0 { reg = <0x31004000 0x480>; };
+
+/* sc59x adds banks G-I */
+&gpg { adi,bank-name = "G"; bootph-pre-ram; };
+&gph { adi,bank-name = "H"; bootph-pre-ram; };
+&gpi { adi,bank-name = "I"; bootph-pre-ram; };
+
+/* sc59x additional I2C buses */
+&i2c3 { bootph-pre-ram; };
+&i2c4 { bootph-pre-ram; };
+&i2c5 { bootph-pre-ram; };

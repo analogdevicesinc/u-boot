@@ -1,0 +1,11 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/*
+ * U-Boot overlay for sc573-ezlite (sc57x SoC).
+ */
+
+#include "sc5xx-u-boot.dtsi"
+
+&clk { reg-names = "cgu0", "cgu1", "cdu"; };
+
+/* sc57x: 6 GPIO banks A-F at 0x31004000; U-Boot pinctrl driver needs this base */
+&pinctrl0 { reg = <0x31004000 0x300>; };

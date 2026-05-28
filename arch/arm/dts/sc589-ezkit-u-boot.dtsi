@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/*
+ * U-Boot overlay for sc589-ezkit (sc58x SoC).
+ */
+
+#include "sc5xx-u-boot.dtsi"
+
+&clk { reg-names = "cgu0", "cgu1", "cdu"; };
+
+/* sc58x: 7 GPIO banks A-G at 0x31004000; U-Boot pinctrl driver needs this base */
+&pinctrl0 { reg = <0x31004000 0x380>; };
+
+/* sc58x adds bank G */
+&gpg { adi,bank-name = "G"; bootph-pre-ram; };
+
+/* mmc0_4bgrp pinmux group defined in sc589-ezkit.dts */
+&mmc0_4bgrp {
+	bootph-pre-ram;
+	pins { bootph-pre-ram; };
+};
