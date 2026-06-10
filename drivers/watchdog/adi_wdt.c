@@ -81,9 +81,8 @@ static int adi_wdt_start(struct udevice *dev, u64 timeout_ms, ulong flags)
 	/* enable watchdog0 */
 	iowrite32(WDDIS, priv->wdt_base + WDOG_CTL);
 
-	iowrite32(timeout_ms / 1000 *
-	       (clk_get_rate(&priv->clock) / (IS_ENABLED(CONFIG_SC58X) ? 2 : 1)),
-	       priv->wdt_base + WDOG_CNT);
+	iowrite32((u64)timeout_ms * clk_get_rate(&priv->clock) / 1000,
+		  priv->wdt_base + WDOG_CNT);
 
 	iowrite32(0, priv->wdt_base + WDOG_STAT);
 	iowrite32(WDEN, priv->wdt_base + WDOG_CTL);
