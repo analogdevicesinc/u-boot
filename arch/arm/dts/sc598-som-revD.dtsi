@@ -23,7 +23,6 @@
 			gpios = <0 GPIO_ACTIVE_HIGH>;
 			output-low;
 			line-name = "led1-en";
-			bootph-pre-ram;
 		};
 
 		led2 {
@@ -31,7 +30,6 @@
 			gpios = <1 GPIO_ACTIVE_HIGH>;
 			output-low;
 			line-name = "led2-en";
-			bootph-pre-ram;
 		};
 
 		led3 {
@@ -39,7 +37,6 @@
 			gpios = <2 GPIO_ACTIVE_HIGH>;
 			output-low;
 			line-name = "led3-en";
-			bootph-pre-ram;
 		};
 
 		spi2d2-d3 {

@@ -66,7 +66,6 @@
 			gpios = <15 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "led-ds3";
-			bootph-pre-ram;
 		};
 
 		led-ds2 {

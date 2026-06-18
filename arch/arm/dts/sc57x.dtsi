@@ -81,6 +81,7 @@
 	};
 
 	spi2_default: spi2_pins {
+		bootph-pre-ram;
 		adi,pins = <ADI_ADSP_PIN('B', 14) ADI_ADSP_PINFUNC_ALT0>,
 					<ADI_ADSP_PIN('B', 10) ADI_ADSP_PINFUNC_ALT0>,
 					<ADI_ADSP_PIN('B', 11) ADI_ADSP_PINFUNC_ALT0>,

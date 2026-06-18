@@ -94,7 +94,6 @@
 			reg = <0x31001000 0x100>;
 			clock-names = "i2c";
 			status = "disabled";
-			bootph-pre-ram;
 		};
 
 		i2c4: i2c4@31001100 {
@@ -104,7 +103,6 @@
 			reg = <0x31001100 0x100>;
 			clock-names = "i2c";
 			status = "disabled";
-			bootph-pre-ram;
 		};
 
 		i2c5: i2c5@31001200 {
@@ -114,7 +112,6 @@
 			reg = <0x31001200 0x100>;
 			clock-names = "i2c";
 			status = "disabled";
-			bootph-pre-ram;
 		};
 	};
 };
@@ -193,14 +190,12 @@
 		gpio-hog;
 		input;
 		gpios = <ADI_ADSP_PIN('D', 0) GPIO_ACTIVE_HIGH>;
-		bootph-pre-ram;
 	};
 
 	pushbutton1 {
 		gpio-hog;
 		input;
 		gpios = <ADI_ADSP_PIN('H', 0) GPIO_ACTIVE_HIGH>;
-		bootph-pre-ram;
 	};
 };
 

@@ -20,7 +20,7 @@
 	};
 
 	aliases {
-		spi2 = "/spi2";
+		spi2 = &spi2;
 		serial0 = &uart0;
 		bootph-pre-ram;
 	};
@@ -143,7 +143,6 @@
 			reg = <0x31001400 0x100>;
 			clock-names = "i2c";
 			status = "disabled";
-			bootph-pre-ram;
 		};
 
 		i2c1: i2c1@31001500 {
@@ -153,7 +152,6 @@
 			reg = <0x31001500 0x100>;
 			clock-names = "i2c";
 			status = "disabled";
-			bootph-pre-ram;
 		};
 
 		i2c2: i2c2@31001600 {
