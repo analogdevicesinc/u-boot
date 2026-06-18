@@ -84,12 +84,20 @@ static int spl_spi_load_image(struct spl_image_info *spl_image,
 		int err = spl_load(spl_image, bootdev, &load, 0,
 				   CONFIG_SYS_SPI_KERNEL_OFFS);
 
-		if (!err)
-			/* Read device tree. */
-			return spi_flash_read(
-				flash, CONFIG_SYS_SPI_ARGS_OFFS,
-				CONFIG_SYS_SPI_ARGS_SIZE,
-				(void *)CONFIG_SPL_PAYLOAD_ARGS_ADDR);
+		if (!err) {
+			/* Only load separate DTB if NOT using FIT */
+			/* (FIT loader sets spl_image->fdt_addr) */
+			if ((!CONFIG_IS_ENABLED(LOAD_FIT) &&
+			     !CONFIG_IS_ENABLED(LOAD_FIT_FULL)) ||
+			    !spl_image->fdt_addr) {
+				/* Read device tree. */
+				return spi_flash_read(
+					flash, CONFIG_SYS_SPI_ARGS_OFFS,
+					CONFIG_SYS_SPI_ARGS_SIZE,
+					(void *)CONFIG_SPL_PAYLOAD_ARGS_ADDR);
+			}
+		}
+		return err;
 	}
 #endif
 

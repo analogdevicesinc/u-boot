@@ -130,6 +130,18 @@ int spl_load_image_ext_os(struct spl_image_info *spl_image,
 defaults:
 #endif
 
+	if (CONFIG_IS_ENABLED(LOAD_FIT) || CONFIG_IS_ENABLED(LOAD_FIT_FULL)) {
+		/*
+		 * When the kernel is packaged as a FIT image the device tree is
+		 * bundled inside it and is unpacked to its load address by the
+		 * FIT loader. There is therefore no separate args/DTB file to
+		 * load from the filesystem.
+		 */
+		return spl_load_image_ext(spl_image, bootdev, block_dev,
+					  partition,
+					  CONFIG_SPL_FS_LOAD_KERNEL_NAME);
+	}
+
 	err = ext4fs_open(CONFIG_SPL_FS_LOAD_ARGS_NAME, &filelen);
 	if (err < 0)
 		puts("spl: ext4fs_open failed\n");
