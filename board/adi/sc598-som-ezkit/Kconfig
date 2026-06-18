@@ -97,4 +97,15 @@ config CGU1_DIV_S0SELEX
 config CGU1_DIV_S1SELEX
 	default 90
 
+# Falcon Mode
+
+config SYS_SPI_KERNEL_OFFS
+	default 0x110000
+
+config SYS_SPI_ARGS_OFFS
+	default 0x100000
+
+config SYS_SPI_ARGS_SIZE
+	default 0x10000
+
 endif

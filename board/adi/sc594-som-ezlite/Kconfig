@@ -130,4 +130,15 @@ config CDU0_CLKO10
 config CDU0_CLKO12
 	default 1
 
+# Falcon Mode
+
+config SYS_SPI_KERNEL_OFFS
+	default 0x110000
+
+config SYS_SPI_ARGS_OFFS
+	default 0x100000
+
+config SYS_SPI_ARGS_SIZE
+	default 0x10000
+
 endif

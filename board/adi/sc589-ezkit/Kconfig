@@ -113,4 +113,13 @@ config CDU0_CLKO8
 config CDU0_CLKO9
 	default 1
 
+config SYS_SPI_KERNEL_OFFS
+	default 0xe0000
+
+config SYS_SPI_ARGS_OFFS
+	default 0xd0000
+
+config SYS_SPI_ARGS_SIZE
+	default 0x10000
+
 endif
