@@ -48,9 +48,9 @@ jobs:
           sudo apt-get install -y ./adsp-ldr_1.0.2_amd64.deb
 
           if [[ "${{ inputs.arch }}" == "arm" ]]; then
-            ln -s /usr/bin/ldr /usr/bin/arm-none-eabi-ldr
+            sudo ln -s /usr/bin/ldr /usr/bin/arm-none-eabi-ldr
           elif [[ "${{ inputs.arch }}" == "arm64" ]]; then
-            ln -s /usr/bin/ldr /usr/bin/aarch64-linux-gnu-ldr
+            sudo ln -s /usr/bin/ldr /usr/bin/aarch64-linux-gnu-ldr
           fi
 
       - name: Build U-Boot
