@@ -8,47 +8,12 @@ on:
         type: string
 
 jobs:
-  setup:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  build:
+    uses: analogdevicesinc/u-boot/.github/workflows/build.yml@ci
+    secrets: inherit
+    permissions:
+      contents: read
+    with:
+      arch: arm
+      defconfig: ${{ inputs.defconfig }}
 
-      - name: Install ARM toolchain
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgnutls28-dev
-          sudo apt-get install -y gcc-arm-none-eabi
-
-      - name: Install ADSP LDR
-        run: |
-          sudo apt-get install -y libusb-1.0-0-dev
-          pip install meson
-          curl -LO https://github.com/analogdevicesinc/adsp-ldr/releases/download/v1.0.1/adsp-ldr-v1.0.1.tar.xz
-          tar -xf adsp-ldr-v1.0.1.tar.xz
-          cd adsp-ldr-v1.0.1
-          meson setup builddir
-          cd builddir
-          meson install
-          ln -s /usr/local/bin/ldr /usr/local/bin/arm-none-eabi-ldr
-
-      - name: Build U-Boot
-        run: |
-          echo ${PATH}
-          export CROSS_COMPILE="arm-none-eabi-"
-          make ${{ inputs.defconfig }}
-          make -j$(nproc)
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: u-boot-${{ inputs.defconfig }}
-          path: |
-            u-boot
-            u-boot.elf
-            u-boot.bin
-            u-boot.ldr
-            spl/u-boot-spl
-            spl/u-boot-spl.bin
-            spl/u-boot-spl.ldr
-          retention-days: 7
