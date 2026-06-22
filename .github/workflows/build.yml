@@ -1,0 +1,74 @@
+name: Build U-Boot
+
+on:
+  workflow_call:
+    inputs:
+      arch:
+        required: true
+        type: string
+      defconfig:
+        required: true
+        type: string
+
+jobs:
+  setup:
+    runs-on: ${{ vars.RUNNER != '' && fromJSON(vars.RUNNER) || 'ubuntu-latest' }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgnutls28-dev \
+            device-tree-compiler uuid-dev
+          if [[ "${{ inputs.arch }}" == "arm" ]]; then
+            sudo apt-get install -y gcc-arm-none-eabi
+          elif [[ "${{ inputs.arch }}" == "arm64" ]]; then
+            sudo apt-get install -y gcc-aarch64-linux-gnu
+          fi
+
+      - name: Install ADSP LDR
+        run: |
+          sudo apt-get install -y libusb-1.0-0-dev
+          pip install meson
+          curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -O \
+            https://github.com/analogdevicesinc/adsp-ldr/releases/download/v1.0.1/adsp-ldr-v1.0.1.tar.xz
+          tar -xf adsp-ldr-v1.0.1.tar.xz
+          cd adsp-ldr-v1.0.1
+          meson setup builddir
+          cd builddir
+          meson install
+          if [[ "${{ inputs.arch }}" == "arm" ]]; then
+            ln -s /usr/local/bin/ldr /usr/local/bin/arm-none-eabi-ldr
+          elif [[ "${{ inputs.arch }}" == "arm64" ]]; then
+            ln -s /usr/local/bin/ldr /usr/local/bin/aarch64-linux-gnu-ldr
+          fi
+
+      - name: Build U-Boot
+        run: |
+          echo ${PATH}
+          if [[ "${{ inputs.arch }}" == "arm" ]]; then
+            export CROSS_COMPILE="arm-none-eabi-"
+          elif [[ "${{ inputs.arch }}" == "arm64" ]]; then
+            export CROSS_COMPILE="aarch64-linux-gnu-"
+          fi
+          make "${{ inputs.defconfig }}"
+          make -j$(nproc)
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: u-boot-${{ inputs.defconfig }}
+          path: |
+            u-boot
+            u-boot.elf
+            u-boot.bin
+            u-boot.ldr
+            spl/u-boot-spl
+            spl/u-boot-spl.bin
+            spl/u-boot-spl.ldr
+          retention-days: 7
