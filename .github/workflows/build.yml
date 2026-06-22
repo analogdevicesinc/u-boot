@@ -24,7 +24,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             libgnutls28-dev \
-            device-tree-compiler uuid-dev
+            device-tree-compiler uuid-dev \
+            libusb-1.0-0
           if [[ "${{ inputs.arch }}" == "arm" ]]; then
             sudo apt-get install -y gcc-arm-none-eabi
           elif [[ "${{ inputs.arch }}" == "arm64" ]]; then
@@ -33,19 +34,13 @@ jobs:
 
       - name: Install ADSP LDR
         run: |
-          sudo apt-get install -y libusb-1.0-0-dev
-          pip install meson
-          curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -O \
-            https://github.com/analogdevicesinc/adsp-ldr/releases/download/v1.0.1/adsp-ldr-v1.0.1.tar.xz
-          tar -xf adsp-ldr-v1.0.1.tar.xz
-          cd adsp-ldr-v1.0.1
-          meson setup builddir
-          cd builddir
-          meson install
+          curl -LO https://packages.analog.com/public/deb/ubuntu/pool/any-version/main/a/ad/adsp-ldr_1.0.2/adsp-ldr_1.0.2_amd64.deb
+          sudo apt-get install -y ./adsp-ldr_1.0.2_amd64.deb
+
           if [[ "${{ inputs.arch }}" == "arm" ]]; then
-            ln -s /usr/local/bin/ldr /usr/local/bin/arm-none-eabi-ldr
+            ln -s /usr/bin/ldr /usr/bin/arm-none-eabi-ldr
           elif [[ "${{ inputs.arch }}" == "arm64" ]]; then
-            ln -s /usr/local/bin/ldr /usr/local/bin/aarch64-linux-gnu-ldr
+            ln -s /usr/bin/ldr /usr/bin/aarch64-linux-gnu-ldr
           fi
 
       - name: Build U-Boot
