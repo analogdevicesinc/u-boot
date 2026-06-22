@@ -1,6 +1,16 @@
 name: Build U-Boot
 
 on:
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: "Architecture (arm, arm64)"
+        required: true
+        type: string
+      defconfig:
+        description: "Defconfig (sc584-ezkit_defconfig, ...)"
+        required: true
+        type: string
   workflow_call:
     inputs:
       arch:
