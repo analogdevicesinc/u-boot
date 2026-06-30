@@ -177,3 +177,24 @@
 		cdns,phy;
 	};
 };
+
+&gpio0 {
+	boottrace-spl {
+		gpio-hog;
+		output-low;
+		gpios = <ADI_ADSP_PIN('A', 10) GPIO_ACTIVE_HIGH>;
+		bootph-pre-ram;
+	};
+
+	boottrace-proper {
+		gpio-hog;
+		output-low;
+		gpios = <ADI_ADSP_PIN('A', 11) GPIO_ACTIVE_HIGH>;
+	};
+
+	boottrace-kernel-load {
+		gpio-hog;
+		output-low;
+		gpios = <ADI_ADSP_PIN('A', 12) GPIO_ACTIVE_HIGH>;
+	};
+};
