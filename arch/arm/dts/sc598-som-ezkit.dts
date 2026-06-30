@@ -194,7 +194,7 @@
 
 	boottrace-kernel-load {
 		gpio-hog;
-		output-low;
+		output-high;
 		gpios = <ADI_ADSP_PIN('A', 12) GPIO_ACTIVE_HIGH>;
 	};
 };

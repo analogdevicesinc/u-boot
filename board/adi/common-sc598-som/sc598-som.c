@@ -5,6 +5,7 @@
 
 #include <config.h>
 #include <phy.h>
+#include <asm/gpio.h>
 #include <asm/u-boot.h>
 #include <asm/arch/sc5xx.h>
 #include <asm/arch/soc.h>
@@ -31,4 +32,12 @@ int board_init(void)
 	sc5xx_enable_rgmii();
 
 	return 0;
+}
+
+void board_quiesce_devices(void)
+{
+	struct gpio_desc *desc;
+
+	if (!gpio_hog_lookup_name("boottrace-kernel-load", &desc))
+		dm_gpio_set_value(desc, 0);
 }
