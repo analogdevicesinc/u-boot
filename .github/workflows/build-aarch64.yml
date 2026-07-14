@@ -12,8 +12,9 @@ jobs:
     uses: analogdevicesinc/u-boot/.github/workflows/build.yml@ci
     secrets: inherit
     permissions:
+      actions: read
       contents: read
+      id-token: write
     with:
       arch: arm64
       defconfig: ${{ inputs.defconfig }}
-
