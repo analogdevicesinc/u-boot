@@ -14,6 +14,10 @@ permissions:
 jobs:
   build_arm:
     uses: analogdevicesinc/u-boot/.github/workflows/build-arm.yml@ci
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
     with:
       defconfig: ${{ matrix.defconfig }}
     strategy:
@@ -28,6 +32,10 @@ jobs:
 
   build_aarch64:
     uses: analogdevicesinc/u-boot/.github/workflows/build-aarch64.yml@ci
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
     with:
       defconfig: ${{ matrix.defconfig }}
     strategy:
