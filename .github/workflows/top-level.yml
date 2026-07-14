@@ -13,8 +13,9 @@ permissions:
 
 jobs:
   build_arm:
-    uses: analogdevicesinc/u-boot/.github/workflows/build-arm.yml@ci
+    uses: analogdevicesinc/u-boot/.github/workflows/build.yml@ci
     with:
+      arch: arm
       defconfig: ${{ matrix.defconfig }}
     strategy:
       matrix:
@@ -27,8 +28,9 @@ jobs:
           - 'sc594-som-ezlite-spl_defconfig'
 
   build_aarch64:
-    uses: analogdevicesinc/u-boot/.github/workflows/build-aarch64.yml@ci
+    uses: analogdevicesinc/u-boot/.github/workflows/build.yml@ci
     with:
+      arch: arm64
       defconfig: ${{ matrix.defconfig }}
     strategy:
       matrix:
