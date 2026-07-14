@@ -38,5 +38,5 @@ jobs:
           - 'sc598-som-ezlite-spl_defconfig'
           - 'xilinx_zynqmp_virt_defconfig'
 
-  check:
+  checks:
     uses: analogdevicesinc/u-boot/.github/workflows/checks.yml@ci
