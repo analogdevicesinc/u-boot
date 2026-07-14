@@ -28,7 +28,7 @@ on:
         default: ${{ github.ref }}
 
 jobs:
-  build:
+  setup:
     runs-on: ${{ vars.RUNNER != '' && fromJSON(vars.RUNNER) || 'ubuntu-latest' }}
     permissions:
       contents: read
@@ -86,18 +86,3 @@ jobs:
             spl/u-boot-spl.bin
             spl/u-boot-spl.ldr
           retention-days: 7
-
-  deploy_cloudsmith:
-    needs: [build]
-    if: ${{ github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push' }}
-    uses: analogdevicesinc/linux/.github/workflows/upload-to-cloudsmith.yml@ci
-    secrets:
-      CLOUDSMITH_SERVICE_SLUG: ${{ secrets.CLOUDSMITH_SERVICE_SLUG }}
-      CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
-    permissions:
-      id-token: write
-      contents: read
-      actions: read
-    with:
-      artifacts: >
-        *
