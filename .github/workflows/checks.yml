@@ -77,12 +77,10 @@ jobs:
     - name: Check defconfigs
       if: ${{ !cancelled() && env.fatal != 'true' }}
       run: |
-        command -v yq || exit 0
         # Collect all defconfigs mentioned in the top-level and look for changes
-        configs="$(yq -r '.jobs[]
-                    | select(.uses == "analogdevicesinc/u-boot/.github/workflows/build.yml@*")
-                    | "\(.with.arch)/\(.with.defconfig)"
-                  ' .github/workflows/top-level.yml)"
+        configs=($(awk '/ARCH:/{arch=$2} /DEFCONFIG:/{print arch "/" $2}' \
+                   .github/workflows/top-level.yml | \
+                 sed 's/"//g'))
         source ./ci/build.sh
         check_assert_defconfigs ${configs[@]}
 
