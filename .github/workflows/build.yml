@@ -20,8 +20,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
+      - uses: analogdevicesinc/doctools/checkout@action
 
       - name: Install dependencies
         run: |
@@ -36,6 +35,12 @@ jobs:
             sudo apt-get install -y gcc-aarch64-linux-gnu
           fi
 
+      - name: Get sbom sources
+        run: |
+          mkdir -p ci
+          curl -sL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o ci/gen_sbom.py \
+            https://raw.githubusercontent.com/analogdevicesinc/linux/ci/ci/gen_sbom.py
+
       - name: Install ADSP LDR
         run: |
           curl -LO https://packages.analog.com/public/deb/ubuntu/pool/any-version/main/a/ad/adsp-ldr_1.0.2/adsp-ldr_1.0.2_amd64.deb
@@ -47,27 +52,63 @@ jobs:
             sudo ln -s /usr/bin/ldr /usr/bin/aarch64-linux-gnu-ldr
           fi
 
+      - name: Prepare env
+        run: |
+          echo "compiler_name=gcc" >> $GITHUB_ENV
+          echo "compiler_version=$(gcc -dumpversion || :)" >> $GITHUB_ENV
+          if [[ "${{ inputs.arch }}" == "arm" ]]; then
+            echo "CROSS_COMPILE=arm-none-eabi-" >> $GITHUB_ENV
+          elif [[ "${{ inputs.arch }}" == "arm64" ]]; then
+            echo "CROSS_COMPILE=aarch64-linux-gnu-" >> $GITHUB_ENV
+          fi
+          echo "ARCH=${{ inputs.arch }}" >> $GITHUB_ENV
+          echo "KBUILD_OUTPUT=$(mktemp -d -t uboot.build.XXX)" >> $GITHUB_ENV
+
       - name: Build U-Boot
         run: |
-          echo ${PATH}
-          if [[ "${{ inputs.arch }}" == "arm" ]]; then
-            export CROSS_COMPILE="arm-none-eabi-"
-          elif [[ "${{ inputs.arch }}" == "arm64" ]]; then
-            export CROSS_COMPILE="aarch64-linux-gnu-"
-          fi
           make "${{ inputs.defconfig }}"
           make -j$(nproc)
+          make savedefconfig
+          python3 scripts/gen_compile_commands.py -d "$KBUILD_OUTPUT"
+
+      - name: Prepare dist
+        run: |
+          uversion=$(cat "$KBUILD_OUTPUT/include/config/uboot.release")
+
+          dist=$(mktemp -d -t u-boot.$uversion.dist.XXX)
+          echo "DIST=$dist" >> $GITHUB_ENV
+
+          cp "$KBUILD_OUTPUT/u-boot" "$dist"
+          cp "$KBUILD_OUTPUT/u-boot.elf" "$dist"
+          cp "$KBUILD_OUTPUT/u-boot.bin" "$dist"
+          [[ -f "$KBUILD_OUTPUT/u-boot.ldr" ]] && cp "$KBUILD_OUTPUT/u-boot.ldr" "$dist"
+          cp "$KBUILD_OUTPUT/spl/u-boot-spl" "$dist"
+          cp "$KBUILD_OUTPUT/spl/u-boot-spl.bin" "$dist"
+          [[ -f "$KBUILD_OUTPUT/spl/u-boot-spl.ldr" ]] && cp "$KBUILD_OUTPUT/spl/u-boot-spl.ldr" "$dist"
+
+          echo "uboot=u-boot.elf" > "$dist/context.txt"
+          echo "uboot_release=$uversion" >> "$dist/context.txt"
+          echo "uboot_defconfig=${{ inputs.defconfig }}" >> "$dist/context.txt"
+          echo "compiler_name=${{ env.compiler_name }}" >> "$dist/context.txt"
+          echo "compiler_version=${{ env.compiler_version }}" >> "$dist/context.txt"
+          echo "compiler_arch=${{ inputs.arch }}" >> "$dist/context.txt"
+          echo "git_ref=${{ github.ref }}" >> "$dist/context.txt"
+          echo "git_sha=${{ github.sha }}" >> "$dist/context.txt"
+          echo "git_sha_at=$(git --no-pager log ${{ github.sha }} -1 --pretty=format:%at)" >> "$dist/context.txt"
+          echo "git_sha_ct=$(git --no-pager log ${{ github.sha }} -1 --pretty=format:%ct)" >> "$dist/context.txt"
+          [[ -n "$MERGE_FROM_TAG" ]] && echo "merge_from_tag=$MERGE_FROM_TAG" >> "$dist/context.txt"
+          [[ -n "$MERGE_FROM_SHA" ]] && echo "merge_from_sha=$MERGE_FROM_SHA" >> "$dist/context.txt"
+          [[ -f compile_commands.json ]] && cp compile_commands.json "$dist" || true
+
+      - name: Generate SBOM
+        run: |
+          [[ -f "$DIST/compile_commands.json" ]] || exit 0
+          export GIT_URL="${{ github.repositoryUrl }}"
+          python3 ci/gen_sbom.py
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.defconfig }}
-          path: |
-            u-boot
-            u-boot.elf
-            u-boot.bin
-            u-boot.ldr
-            spl/u-boot-spl
-            spl/u-boot-spl.bin
-            spl/u-boot-spl.ldr
+          path: ${{ env.DIST }}
           retention-days: 7
