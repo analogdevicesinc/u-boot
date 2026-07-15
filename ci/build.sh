@@ -275,40 +275,64 @@ check_license() {
 	return $fail
 }
 
-check_assert_defconfigs() {
-	export step_name="check_assert_defconfigs"
+check_qconfig_sync() {
+	export step_name="check_qconfig_sync"
 	local fail=0
-	local arch
-	local defconfig
-	local file
-	local message="
-	Verify if the changes are coherent, for example, the changes were not
-	caused by a mistakenly set Kconfig, and if so, run 'make savedefconfig',
-	overwrite the defconfig and commit it.
-	"
+	local list=$(mktemp)
+	local out
+	local changed=0
 
 	echo "$step_name"
-	for arg in "$@"; do
-		arch=$(cut -d "/" -f1 <<< "$arg")
-		[[ "$arch" == "arm64" ]] && arch_=aarch64 || arch_=$arch
-		defconfig=$(cut -d "/" -f2 <<< "$arg")
-		file=arch/$arch/configs/$defconfig
 
-		if [[ -f $file ]]; then
-			echo $file
-			set_arch gcc_$arch_ 1>/dev/null
-			make $defconfig savedefconfig 1>/dev/null
-			rm .config
+	printf '%s\n' "$@" > "$list"
+	git diff --diff-filter=A --name-only "$base_sha..$head_sha" \
+		-- 'arch/*/configs/*_defconfig' | xargs -r -n1 basename >> "$list"
 
-			mv defconfig $file
-			out=$(git diff $_color --exit-code $file) || {
-				_fmt "::error file=$file::$step_name: Defconfig '$file' changed. $message
-				      $out"
-				fail=1
-			}
-			git restore $file
-		fi
-	done
+	if [[ ! -s "$list" ]]; then
+		rm -f "$list"
+		return 0
+	fi
+
+	local arm_gcc aarch64_gcc
+	arm_gcc=$(command -v arm-none-eabi-gcc 2>/dev/null || true)
+	aarch64_gcc=$(command -v aarch64-linux-gnu-gcc 2>/dev/null || true)
+	if [[ -n "$arm_gcc" || -n "$aarch64_gcc" ]]; then
+		cat > ~/.buildman <<-EOF
+		[toolchain-prefix]
+		arm = ${arm_gcc%gcc}
+		aarch64 = ${aarch64_gcc%gcc}
+		EOF
+	fi
+
+	python3 tools/qconfig.py -s -d "$list"
+
+	out=$(git diff $_color HEAD --name-only)
+	if [[ -n "$out" ]]; then
+		git diff $_color HEAD
+		while read -r file; do
+			[[ -z "$file" ]] && continue
+			_fmt "::error file=$(_file "$file")::$step_name: qconfig.py modified this file."
+			changed=1
+		done <<< "$out"
+		fail=1
+	fi
+
+	out=$(git ls-files --others --exclude-standard -- ':!ci/' ':!qconfig.db' ':!qconfig.failed')
+	if [[ -n "$out" ]]; then
+		while read -r file; do
+			[[ -z "$file" ]] && continue
+			echo "$file"
+			_fmt "::error file=$(_file "$file")::$step_name: qconfig.py created this untracked file."
+			changed=1
+		done <<< "$out"
+		[[ "$changed" == "1" ]] && fail=1
+	fi
+
+	[[ "$changed" == "0" ]] && echo "qconfig.py produced no tree changes"
+
+	git restore .
+	git clean -fd -e ci/
+	rm -f "$list"
 
 	return $fail
 }

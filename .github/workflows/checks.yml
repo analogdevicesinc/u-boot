@@ -40,6 +40,16 @@ jobs:
         mkdir -p ci
         get_file ci/build.sh
         get_file ci/runner_env.sh
+        get_file ci/buildman
+        cp ci/buildman ~/.buildman
+
+    - name: Install dependencies
+      if: ${{ runner.environment == 'github-hosted' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          gcc-arm-none-eabi \
+          gcc-aarch64-linux-gnu
 
     - name: Apply cocci
       run: |
@@ -74,18 +84,17 @@ jobs:
         [ $status -eq 124 ] && echo "step_fail_coccicheck_timeout=true" >> "$GITHUB_ENV"
         exit $status
 
-    - name: Check defconfigs
+    - name: Check qconfig
       if: ${{ !cancelled() && env.fatal != 'true' }}
       run: |
-        command -v yq || exit 0
-        # Collect all defconfigs mentioned in the top-level and look for changes
+        command -v yq
         configs="$(yq -r '.jobs[]
                     | select(.uses == "analogdevicesinc/u-boot/.github/workflows/build.yml@*")
                     | (.with.defconfig, (.strategy.matrix.defconfig[]?))
                     | select(. != null and . != "$" + "{{ matrix.defconfig }}")
                   ' .github/workflows/top-level.yml)"
         source ./ci/build.sh
-        check_assert_defconfigs ${configs[@]}
+        check_qconfig_sync ${configs[@]}
 
     - name: Export labels
       if: ${{ !cancelled() }}
