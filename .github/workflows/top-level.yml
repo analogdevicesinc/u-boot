@@ -1,12 +1,7 @@
 name: U-Boot CI
 
 on:
-  workflow_dispatch:
-  pull_request:
   push:
-    branches: [ "adi-u-boot-2025.10.y" ]
-  release:
-    types: [published]
 
 permissions:
   contents: read
@@ -28,7 +23,7 @@ jobs:
           - 'sc594-som-ezlite-spl_defconfig'
 
   build_aarch64:
-    uses: analogdevicesinc/u-boot/.github/workflows/build.yml@ci
+    uses: analogdevicesinc/u-boot/.github/workflows/build.yml@cicd/philip/qconfig
     with:
       arch: arm64
       defconfig: ${{ matrix.defconfig }}
@@ -41,7 +36,7 @@ jobs:
           - 'xilinx_zynqmp_virt_defconfig'
 
   checks:
-    uses: analogdevicesinc/u-boot/.github/workflows/checks.yml@ci
+    uses: analogdevicesinc/u-boot/.github/workflows/checks.yml@cicd/philip/qconfig
 
   deploy_cloudsmith:
     needs: [build_arm, build_aarch64, checks]
