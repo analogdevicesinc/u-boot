@@ -1,19 +1,6 @@
 name: Build U-Boot
 
 on:
-  workflow_dispatch:
-    inputs:
-      arch:
-        description: "Architecture (arm, arm64)"
-        required: true
-        type: string
-      defconfig:
-        description: "Defconfig (sc584-ezkit_defconfig, ...)"
-        required: true
-        type: string
-      ref:
-        required: true
-        default: "refs/heads/adi-u-boot-2025.10.y"
   workflow_call:
     inputs:
       arch:
@@ -22,7 +9,7 @@ on:
       defconfig:
         required: true
         type: string
-      ref:
+      ref: # DEPRECATED
         required: false
         type: string
         default: ${{ github.ref }}
@@ -35,8 +22,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.ref }}
 
       - name: Install dependencies
         run: |
