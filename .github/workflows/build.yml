@@ -23,6 +23,7 @@ jobs:
       - uses: analogdevicesinc/doctools/checkout@action
 
       - name: Install dependencies
+        if: ${{ runner.environment == 'github-hosted' }}
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -42,6 +43,7 @@ jobs:
             https://raw.githubusercontent.com/analogdevicesinc/linux/ci/ci/gen_sbom.py
 
       - name: Install ADSP LDR
+        if: ${{ runner.environment == 'github-hosted' }}
         run: |
           curl -LO https://packages.analog.com/public/deb/ubuntu/pool/any-version/main/a/ad/adsp-ldr_1.0.2/adsp-ldr_1.0.2_amd64.deb
           sudo apt-get install -y ./adsp-ldr_1.0.2_amd64.deb
