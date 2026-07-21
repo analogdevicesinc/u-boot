@@ -10,6 +10,7 @@
 #include <linux/bitops.h>
 #include <linux/bitfield.h>
 
+#define PHY_ID_ADIN1200				0x0283bc20
 #define PHY_ID_ADIN1300				0x0283bc30
 #define ADIN1300_EXT_REG_PTR			0x10
 #define ADIN1300_EXT_REG_DATA			0x11
@@ -34,12 +35,26 @@
 #define ADIN1300_GE_RGMII_TXID_EN		BIT(1)
 #define ADIN1300_GE_RGMII_EN			BIT(0)
 
+#define ADIN1300_GE_RMII_CFG			0xff24
+#define ADIN1300_GE_RMII_FIFO_DEPTH_MSK		GENMASK(6, 4)
+#define ADIN1300_GE_RMII_FIFO_DEPTH_SEL(x)	\
+		FIELD_PREP(ADIN1300_GE_RMII_FIFO_DEPTH_MSK, x)
+#define ADIN1300_GE_RMII_EN			BIT(0)
+
 /* RGMII internal delay settings for rx and tx for ADIN1300 */
 #define ADIN1300_RGMII_1_60_NS			0x0001
 #define ADIN1300_RGMII_1_80_NS			0x0002
 #define	ADIN1300_RGMII_2_00_NS			0x0000
 #define	ADIN1300_RGMII_2_20_NS			0x0006
 #define	ADIN1300_RGMII_2_40_NS			0x0007
+
+/* RMII FIFO depth settings for ADIN1200/ADIN1300 */
+#define ADIN1300_RMII_4_BITS			0x0000
+#define ADIN1300_RMII_8_BITS			0x0001
+#define ADIN1300_RMII_12_BITS			0x0002
+#define ADIN1300_RMII_16_BITS			0x0003
+#define ADIN1300_RMII_20_BITS			0x0004
+#define ADIN1300_RMII_24_BITS			0x0005
 
 /**
  * struct adin_cfg_reg_map - map a config value to aregister value
@@ -60,6 +75,16 @@ static const struct adin_cfg_reg_map adin_rgmii_delays[] = {
 	{ },
 };
 
+static const struct adin_cfg_reg_map adin_rmii_fifo_depths[] = {
+	{ 4, ADIN1300_RMII_4_BITS },
+	{ 8, ADIN1300_RMII_8_BITS },
+	{ 12, ADIN1300_RMII_12_BITS },
+	{ 16, ADIN1300_RMII_16_BITS },
+	{ 20, ADIN1300_RMII_20_BITS },
+	{ 24, ADIN1300_RMII_24_BITS },
+	{ },
+};
+
 static int adin_lookup_reg_value(const struct adin_cfg_reg_map *tbl, int cfg)
 {
 	size_t i;
@@ -75,10 +100,14 @@ static int adin_lookup_reg_value(const struct adin_cfg_reg_map *tbl, int cfg)
 static u32 adin_get_reg_value(struct phy_device *phydev,
 			      const char *prop_name,
 			      const struct adin_cfg_reg_map *tbl,
-			      u32 dflt)
+			      u32 dflt_cfg)
 {
 	u32 val;
-	int rc;
+	int dflt, rc;
+
+	dflt = adin_lookup_reg_value(tbl, dflt_cfg);
+	if (dflt < 0)
+		return dflt;
 
 	ofnode node = phy_get_ofnode(phydev);
 	if (!ofnode_valid(node)) {
@@ -87,8 +116,8 @@ static u32 adin_get_reg_value(struct phy_device *phydev,
 	}
 
 	if (ofnode_read_u32(node, prop_name, &val)) {
-		printf("%s: failed to find %s, using default %d\n",
-		       __func__, prop_name, dflt);
+		printf("%s: failed to find %s, using default %u\n",
+		       __func__, prop_name, dflt_cfg);
 		return dflt;
 	}
 
@@ -97,7 +126,7 @@ static u32 adin_get_reg_value(struct phy_device *phydev,
 	rc = adin_lookup_reg_value(tbl, val);
 	if (rc < 0) {
 		printf("%s: Unsupported value %u for %s using default (%u)\n",
-		      __func__, val, prop_name, dflt);
+		      __func__, val, prop_name, dflt_cfg);
 		return dflt;
 	}
 
@@ -221,7 +250,7 @@ static int adin_config_rgmii_mode(struct phy_device *phydev)
 
 		val = adin_get_reg_value(phydev, "adi,rx-internal-delay-ps",
 					 adin_rgmii_delays,
-					 ADIN1300_RGMII_2_00_NS);
+					 2000);
 		reg_val &= ~ADIN1300_GE_RGMII_RX_MSK;
 		reg_val |= ADIN1300_GE_RGMII_RX_SEL(val);
 	} else {
@@ -235,7 +264,7 @@ static int adin_config_rgmii_mode(struct phy_device *phydev)
 
 		val = adin_get_reg_value(phydev, "adi,tx-internal-delay-ps",
 					 adin_rgmii_delays,
-					 ADIN1300_RGMII_2_00_NS);
+					 2000);
 		reg_val &= ~ADIN1300_GE_RGMII_GTX_MSK;
 		reg_val |= ADIN1300_GE_RGMII_GTX_SEL(val);
 	} else {
@@ -245,11 +274,30 @@ static int adin_config_rgmii_mode(struct phy_device *phydev)
 	return adin_ext_write(phydev, ADIN1300_GE_RGMII_CFG, reg_val);
 }
 
-static int adin1300_config(struct phy_device *phydev)
+static int adin_config_rmii_mode(struct phy_device *phydev)
+{
+	u16 reg_val;
+	u32 val;
+
+	reg_val = adin_ext_read(phydev, ADIN1300_GE_RMII_CFG);
+
+	if (phydev->interface != PHY_INTERFACE_MODE_RMII) {
+		reg_val &= ~ADIN1300_GE_RMII_EN;
+		return adin_ext_write(phydev, ADIN1300_GE_RMII_CFG, reg_val);
+	}
+
+	reg_val |= ADIN1300_GE_RMII_EN;
+	val = adin_get_reg_value(phydev, "adi,fifo-depth-bits",
+				 adin_rmii_fifo_depths, 8);
+	reg_val &= ~ADIN1300_GE_RMII_FIFO_DEPTH_MSK;
+	reg_val |= ADIN1300_GE_RMII_FIFO_DEPTH_SEL(val);
+
+	return adin_ext_write(phydev, ADIN1300_GE_RMII_CFG, reg_val);
+}
+
+static int adin_config(struct phy_device *phydev)
 {
 	int ret;
-
-	printf("ADIN1300 PHY detected at addr %d\n", phydev->addr);
 
 	ret = adin_config_clk_out(phydev);
 	if (ret < 0)
@@ -260,8 +308,38 @@ static int adin1300_config(struct phy_device *phydev)
 	if (ret < 0)
 		return ret;
 
+	ret = adin_config_rmii_mode(phydev);
+	if (ret < 0)
+		return ret;
+
 	return genphy_config(phydev);
 }
+
+static int adin1200_config(struct phy_device *phydev)
+{
+	printf("ADIN1200 PHY detected at addr %d\n", phydev->addr);
+
+	return adin_config(phydev);
+}
+
+static int adin1300_config(struct phy_device *phydev)
+{
+	printf("ADIN1300 PHY detected at addr %d\n", phydev->addr);
+
+	return adin_config(phydev);
+}
+
+U_BOOT_PHY_DRIVER(ADIN1200) = {
+	.name = "ADIN1200",
+	.uid = PHY_ID_ADIN1200,
+	.mask = 0xffffffff,
+	.features = PHY_BASIC_FEATURES,
+	.config = adin1200_config,
+	.startup = genphy_startup,
+	.shutdown = genphy_shutdown,
+	.readext = adin_extread,
+	.writeext = adin_extwrite,
+};
 
 U_BOOT_PHY_DRIVER(ADIN1300) = {
 	.name = "ADIN1300",
