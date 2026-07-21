@@ -4,20 +4,11 @@
  */
 
 #include <config.h>
-#include <phy.h>
 #include <asm/u-boot.h>
 #include <asm/arch/sc5xx.h>
 #include <asm/arch/soc.h>
 
 #include "../carriers/somcrr.h"
-
-int board_phy_config(struct phy_device *phydev)
-{
-	if (IS_ENABLED(CONFIG_ADI_CARRIER_SOMCRR_EZKIT))
-		fixup_dp83867_phy(phydev);
-
-	return 0;
-}
 
 int board_init(void)
 {
