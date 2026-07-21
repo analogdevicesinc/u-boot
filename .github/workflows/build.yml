@@ -81,14 +81,14 @@ jobs:
           echo "DIST=$dist" >> $GITHUB_ENV
 
           cp "$KBUILD_OUTPUT/u-boot" "$dist"
-          cp "$KBUILD_OUTPUT/u-boot.elf" "$dist"
+          [[ -f "$KBUILD_OUTPUT/u-boot.elf" ]] && cp "$KBUILD_OUTPUT/u-boot.elf" "$dist"
           cp "$KBUILD_OUTPUT/u-boot.bin" "$dist"
           [[ -f "$KBUILD_OUTPUT/u-boot.ldr" ]] && cp "$KBUILD_OUTPUT/u-boot.ldr" "$dist"
           cp "$KBUILD_OUTPUT/spl/u-boot-spl" "$dist"
           cp "$KBUILD_OUTPUT/spl/u-boot-spl.bin" "$dist"
           [[ -f "$KBUILD_OUTPUT/spl/u-boot-spl.ldr" ]] && cp "$KBUILD_OUTPUT/spl/u-boot-spl.ldr" "$dist"
 
-          echo "uboot=u-boot.elf" > "$dist/context.txt"
+          echo "uboot=u-boot" > "$dist/context.txt"
           echo "uboot_release=$uversion" >> "$dist/context.txt"
           echo "uboot_defconfig=${{ inputs.defconfig }}" >> "$dist/context.txt"
           echo "compiler_name=${{ env.compiler_name }}" >> "$dist/context.txt"
