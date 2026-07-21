@@ -9,16 +9,8 @@
 
 void adi_somcrr_enable_ethernet(void)
 {
-	struct gpio_desc *gige_reset;
-
-	if (!gpio_hog_lookup_name("eth0-reset", &gige_reset))
-		dm_gpio_set_value(gige_reset, 0);
 }
 
 void adi_somcrr_disable_ethernet(void)
 {
-	struct gpio_desc *gige_reset;
-
-	if (!gpio_hog_lookup_name("eth0-reset", &gige_reset))
-		dm_gpio_set_value(gige_reset, 1);
 }
