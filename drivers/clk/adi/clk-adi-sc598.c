@@ -22,7 +22,6 @@
 
 #include "clk.h"
 
-static const char * const cgu1_in_sels[] = {"sys_clkin0", "sys_clkin1"};
 static const char * const cgu0_s1sels[] = {"cgu0_s1seldiv", "cgu0_s1selexdiv"};
 static const char * const cgu1_s0sels[] = {"cgu1_s0seldiv", "cgu1_s0selexdiv"};
 static const char * const cgu1_s1sels[] = {"cgu1_s1seldiv", "cgu1_s1selexdiv"};
@@ -55,7 +54,7 @@ static int sc598_clock_probe(struct udevice *dev)
 	struct resource res;
 
 	struct clk *clks[ADSP_SC598_CLK_END];
-	struct clk dummy, clkin0, clkin1;
+	struct clk clkin0, clkin1;
 
 	ret = dev_read_resource_byname(dev, "cgu0", &res);
 	if (ret)
@@ -81,11 +80,14 @@ static int sc598_clock_probe(struct udevice *dev)
 	pll3 = pll3 + PLL3_OFFSET;
 
 	// Input clock configuration
-	clk_get_by_name(dev, "dummy", &dummy);
 	clk_get_by_name(dev, "sys_clkin0", &clkin0);
 	clk_get_by_name(dev, "sys_clkin1", &clkin1);
 
-	clks[ADSP_SC598_CLK_DUMMY] = &dummy;
+	const char *clkin0_name = clkin0.dev->name;
+	const char *clkin1_name = clkin1.dev->name;
+	const char * const cgu1_in_sels[] = {clkin0_name, clkin1_name};
+
+	clks[ADSP_SC598_CLK_DUMMY] = clk_register_fixed_rate(NULL, "dummy", 0);
 	clks[ADSP_SC598_CLK_SYS_CLKIN0] = &clkin0;
 	clks[ADSP_SC598_CLK_SYS_CLKIN1] = &clkin1;
 
@@ -98,7 +100,7 @@ static int sc598_clock_probe(struct udevice *dev)
 
 	// CGU configuration and internal clocks
 	clks[ADSP_SC598_CLK_CGU0_PLL_IN] = clk_register_divider(NULL, "cgu0_df",
-								"sys_clkin0",
+								clkin0_name,
 								CLK_SET_RATE_PARENT,
 								cgu0 + CGU_CTL, 0, 1, 0);
 	clks[ADSP_SC598_CLK_CGU1_PLL_IN] = clk_register_divider(NULL, "cgu1_df",

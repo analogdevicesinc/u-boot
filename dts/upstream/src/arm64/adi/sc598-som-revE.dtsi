@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-License-Identifier: GPL-2.0
 /*
- * (C) Copyright 2025 - Analog Devices, Inc.
+ * Copyright (c) 2025 Analog Devices Incorporated
  */
 
 /dts-v1/;
@@ -8,21 +8,17 @@
 #include "sc598-som.dtsi"
 
 &i2c2 {
-	status = "okay";
-
 	som_gpio_expander: adp5587@34 {
 		compatible = "adi,adp5587";
 		reg = <0x34>;
 		gpio-controller;
 		#gpio-cells = <2>;
-		bootph-pre-ram;
 
 		uart0 {
 			gpio-hog;
 			gpios = <0 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "uart0-en";
-			bootph-pre-ram;
 		};
 
 		uart0-flow {
@@ -30,7 +26,6 @@
 			gpios = <1 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "uart0-flow-en";
-			bootph-pre-ram;
 		};
 
 		som-flash-d2d3 {
@@ -66,7 +61,6 @@
 			gpios = <15 GPIO_ACTIVE_LOW>;
 			output-high;
 			line-name = "led-ds3";
-			bootph-pre-ram;
 		};
 
 		led-ds2 {
@@ -87,13 +81,40 @@
 
 &spi2 {
 	som_flash: is25lp01g@1 {
-		#address-cells = <1>;
-		#size-cells = <1>;
-		compatible = "jedec,spi-nor", "is25lp01g";
+		compatible = "issi,is25lp01g", "jedec,spi-nor";
 		reg = <1>;
-		spi-tx-bus-width = <4>;
 		spi-rx-bus-width = <4>;
-		spi-max-frequency = <10000000>;
-		bootph-pre-ram;
+		spi-max-frequency = <25000000>;
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			qspi_0@0 {
+				label = "u-boot-spl";
+				reg = <0x00000000 0x40000>;
+			};
+
+			qspi_1@40000 {
+				label = "u-boot";
+				reg = <0x00040000 0xC0000>;
+			};
+
+			qspi_2@100000 {
+				label = "dtb";
+				reg = <0x00100000 0x10000>;
+			};
+
+			qspi_3@110000 {
+				label = "kernel";
+				reg = <0x00110000 0x2000000>;
+			};
+
+			qspi_4@2110000 {
+				label = "rootfs";
+				reg = <0x02110000 0x5ef0000>;
+			};
+		};
 	};
 };

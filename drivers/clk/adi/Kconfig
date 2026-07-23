@@ -56,6 +56,10 @@ config COMMON_CLK_ADI_SC58X
 	select CLK_CCF
 	select OF_CONTROL
 	select CMD_CLK
+	select SPL_DM if SPL
+	select SPL_CLK if SPL
+	select SPL_CLK_CCF if SPL
+	select SPL_OF_CONTROL if SPL
 	select COMMON_CLK_ADI_SHARED
 	depends on SC58X
 	help
@@ -71,6 +75,10 @@ config COMMON_CLK_ADI_SC57X
 	select CLK_CCF
 	select OF_CONTROL
 	select CMD_CLK
+	select SPL_DM if SPL
+	select SPL_CLK if SPL
+	select SPL_CLK_CCF if SPL
+	select SPL_OF_CONTROL if SPL
 	select COMMON_CLK_ADI_SHARED
 	depends on SC57X
 	help

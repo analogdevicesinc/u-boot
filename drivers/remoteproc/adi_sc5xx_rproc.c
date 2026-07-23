@@ -232,8 +232,8 @@ static int sc5xx_probe(struct udevice *dev)
 	struct sc5xx_rproc_data *priv = dev_get_priv(dev);
 	u32 coreid;
 
-	if (dev_read_u32(dev, "coreid", &coreid)) {
-		dev_err(dev, "Missing property coreid\n");
+	if (dev_read_u32(dev, "core-id", &coreid)) {
+		dev_err(dev, "Missing property core-id\n");
 		return -ENOENT;
 	}
 
@@ -246,7 +246,7 @@ static int sc5xx_probe(struct udevice *dev)
 		priv->svect_offset = ADI_RCU_REG_SVECT2;
 		break;
 	default:
-		dev_err(dev, "Invalid value %d for coreid, must be 1 or 2\n", coreid);
+		dev_err(dev, "Invalid value %d for core-id, must be 1 or 2\n", coreid);
 		return -EINVAL;
 	}
 
@@ -260,7 +260,7 @@ static int sc5xx_probe(struct udevice *dev)
 }
 
 static const struct udevice_id sc5xx_ids[] = {
-	{ .compatible = "adi,sc5xx-rproc" },
+	{ .compatible = "adi,remoteproc" },
 	{ }
 };
 

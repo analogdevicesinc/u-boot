@@ -14,12 +14,11 @@ obj-$(CONFIG_SPI_ASPEED_SMC) += spi-aspeed-smc.o
 obj-$(CONFIG_SPI_MEM) += spi-mem.o
 obj-$(CONFIG_TI_QSPI) += ti_qspi.o
 obj-$(CONFIG_FSL_QSPI) += fsl_qspi.o
+obj-$(CONFIG_ADI_SPI3) += adi_spi3.o
 else
 obj-y += spi.o
 obj-$(CONFIG_SPI_MEM) += spi-mem-nodm.o
 endif
-
-obj-$(CONFIG_ADI_SPI3) += adi_spi3.o
 obj-$(CONFIG_AIROHA_SNFI_SPI) += airoha_snfi_spi.o
 obj-$(CONFIG_ALTERA_SPI) += altera_spi.o
 obj-$(CONFIG_APPLE_SPI) += apple_spi.o
