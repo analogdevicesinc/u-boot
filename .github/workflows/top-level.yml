@@ -1,7 +1,8 @@
 name: U-Boot CI
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [ "adi-xlnx-u-boot-2025.1-y" ]
   pull_request:
 
 jobs:
