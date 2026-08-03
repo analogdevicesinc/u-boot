@@ -124,7 +124,6 @@
 
 &wdog {
 	clocks = <&clk ADSP_SC598_CLK_CGU0_SCLK0>;
-	secid = <3>;
 };
 
 &i2c0 {
