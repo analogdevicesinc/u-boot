@@ -45,8 +45,8 @@ jobs:
       - name: Install ADSP LDR
         if: ${{ runner.environment == 'github-hosted' }}
         run: |
-          curl -LO https://packages.analog.com/public/deb/ubuntu/pool/any-version/main/a/ad/adsp-ldr_1.0.2/adsp-ldr_1.0.2_amd64.deb
-          sudo apt-get install -y ./adsp-ldr_1.0.2_amd64.deb
+          curl -LO https://packages.analog.com/public/deb/ubuntu/pool/any-version/main/a/ad/adsp-ldr_1.0.3/adsp-ldr_1.0.3_amd64.deb
+          sudo apt-get install -y ./adsp-ldr_1.0.3_amd64.deb
 
           if [[ "${{ inputs.arch }}" == "arm" ]]; then
             sudo ln -s /usr/bin/ldr /usr/bin/arm-none-eabi-ldr
