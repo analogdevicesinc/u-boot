@@ -38,6 +38,8 @@ jobs:
           - 'sc598-htol-spl_defconfig'
           - 'sc598-som-ezkit-spl_defconfig'
           - 'sc598-som-ezlite-spl_defconfig'
+          - 'sc846-som_defconfig'
+          - 'sc846-som-ezkit_defconfig'
           - 'xilinx_zynqmp_virt_defconfig'
 
   checks:
