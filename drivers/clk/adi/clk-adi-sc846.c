@@ -1,12 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * (C) Copyright 2022 - Analog Devices, Inc.
+ * Clock support for ADI SC846 processor
  *
- * Written and/or maintained by Timesys Corporation
- *
- * Author: Greg Malysa <greg.malysa@timesys.com>
- *
- * Ported from Linux: Nathan Barrett-Morrison <nathan.morrison@timesys.com>
+ * (C) Copyright 2026 - Analog Devices, Inc.
  */
 
 #include <clk.h>
