@@ -89,12 +89,11 @@ static int sc846_clock_probe(struct udevice *dev)
 	clks[ADSP_SC846_CLK_CGU0_PLLCLK] = clk_register_fixed_factor(NULL, "cgu0_pllclk",
 								     "cgu0_vco",
 								     CLK_SET_RATE_PARENT,
-								     1, 4);
+								     1, 2);
 	clks[ADSP_SC846_CLK_CGU1_PLLCLK] = clk_register_fixed_factor(NULL, "cgu1_pllclk",
 								     "cgu1_vco",
 								     CLK_SET_RATE_PARENT,
-								     1, 4);
-
+								     1, 2);
 	/* CGU0 DIV */
 	/* Dividers from pll output */
 	clks[ADSP_SC846_CLK_CGU0_CDIV] = cgu_divider("cgu0_cdiv", "cgu0_pllclk",
