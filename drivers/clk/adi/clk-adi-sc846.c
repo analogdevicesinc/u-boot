@@ -94,22 +94,28 @@ static int sc846_clock_probe(struct udevice *dev)
 								     "cgu1_vco",
 								     CLK_SET_RATE_PARENT,
 								     1, 2);
+	clks[ADSP_SC846_CLK_CGU0_PLLCLK_HALF] =
+		clk_register_fixed_factor(NULL, "cgu0_pllclk_half", "cgu0_pllclk",
+					  CLK_SET_RATE_PARENT, 1, 2);
+	clks[ADSP_SC846_CLK_CGU1_PLLCLK_HALF] =
+		clk_register_fixed_factor(NULL, "cgu1_pllclk_half", "cgu1_pllclk",
+					  CLK_SET_RATE_PARENT, 1, 2);
 	/* CGU0 DIV */
 	/* Dividers from pll output */
-	clks[ADSP_SC846_CLK_CGU0_CDIV] = cgu_divider("cgu0_cdiv", "cgu0_pllclk",
+	clks[ADSP_SC846_CLK_CGU0_CDIV] = cgu_divider("cgu0_cdiv", "cgu0_pllclk_half",
 						     cgu0 + CGU_DIV, 0, 5, 0);
-	clks[ADSP_SC846_CLK_CGU0_SYSCLK] = cgu_divider("sysclk_0", "cgu0_pllclk",
+	clks[ADSP_SC846_CLK_CGU0_SYSCLK] = cgu_divider("sysclk_0", "cgu0_pllclk_half",
 						       cgu0 + CGU_DIV, 8, 5, 0);
-	clks[ADSP_SC846_CLK_CGU0_DDIV] = cgu_divider("cgu0_ddiv", "cgu0_pllclk",
+	clks[ADSP_SC846_CLK_CGU0_DDIV] = cgu_divider("cgu0_ddiv", "cgu0_pllclk_half",
 						     cgu0 + CGU_DIV, 16, 5, 0);
-	clks[ADSP_SC846_CLK_CGU0_ODIV] = cgu_divider("cgu0_odiv", "cgu0_pllclk",
+	clks[ADSP_SC846_CLK_CGU0_ODIV] = cgu_divider("cgu0_odiv", "cgu0_pllclk_half",
 						     cgu0 + CGU_DIV, 22, 7, 0);
 	clks[ADSP_SC846_CLK_CGU0_S0SELDIV] = cgu_divider("cgu0_s0seldiv", "sysclk_0",
 							 cgu0 + CGU_DIV, 5, 3, 0);
 	clks[ADSP_SC846_CLK_CGU0_S1SELDIV] = cgu_divider("cgu0_s1seldiv", "sysclk_0",
 							 cgu0 + CGU_DIV, 13, 3, 0);
 	clks[ADSP_SC846_CLK_CGU0_S1SELEXDIV] = cgu_divider("cgu0_s1selexdiv",
-							   "cgu0_pllclk",
+							   "cgu0_pllclk_half",
 							   cgu0 + CGU_DIVEX, 16, 8, 0);
 	clks[ADSP_SC846_CLK_CGU0_S1SEL] = clk_register_mux(NULL, "cgu0_sclk1sel",
 							   cgu0_s1sels, 2,
@@ -132,23 +138,23 @@ static int sc846_clock_probe(struct udevice *dev)
 								    1, 5);
 
 	/* CGU1 DIV */
-	clks[ADSP_SC846_CLK_CGU1_CDIV] = cgu_divider("cgu1_cdiv", "cgu1_pllclk",
+	clks[ADSP_SC846_CLK_CGU1_CDIV] = cgu_divider("cgu1_cdiv", "cgu1_pllclk_half",
 						     cgu1 + CGU_DIV, 0, 5, 0);
-	clks[ADSP_SC846_CLK_CGU1_SYSCLK] = cgu_divider("sysclk_1", "cgu1_pllclk",
+	clks[ADSP_SC846_CLK_CGU1_SYSCLK] = cgu_divider("sysclk_1", "cgu1_pllclk_half",
 						       cgu1 + CGU_DIV, 8, 5, 0);
-	clks[ADSP_SC846_CLK_CGU1_DDIV] = cgu_divider("cgu1_ddiv", "cgu1_pllclk",
+	clks[ADSP_SC846_CLK_CGU1_DDIV] = cgu_divider("cgu1_ddiv", "cgu1_pllclk_half",
 						     cgu1 + CGU_DIV, 16, 5, 0);
-	clks[ADSP_SC846_CLK_CGU1_ODIV] = cgu_divider("cgu1_odiv", "cgu1_pllclk",
+	clks[ADSP_SC846_CLK_CGU1_ODIV] = cgu_divider("cgu1_odiv", "cgu1_pllclk_half",
 						     cgu1 + CGU_DIV, 22, 7, 0);
 	clks[ADSP_SC846_CLK_CGU1_S0SELDIV] = cgu_divider("cgu1_s0seldiv", "sysclk_1",
 							 cgu1 + CGU_DIV, 5, 3, 0);
 	clks[ADSP_SC846_CLK_CGU1_S1SELDIV] = cgu_divider("cgu1_s1seldiv", "sysclk_1",
 							 cgu1 + CGU_DIV, 13, 3, 0);
 	clks[ADSP_SC846_CLK_CGU1_S0SELEXDIV] = cgu_divider("cgu1_s0selexdiv",
-							   "cgu1_pllclk",
+							   "cgu1_pllclk_half",
 							   cgu1 + CGU_DIVEX, 0, 8, 0);
 	clks[ADSP_SC846_CLK_CGU1_S1SELEXDIV] = cgu_divider("cgu1_s1selexdiv",
-							   "cgu1_pllclk",
+							   "cgu1_pllclk_half",
 							   cgu1 + CGU_DIVEX, 16, 8, 0);
 	clks[ADSP_SC846_CLK_CGU1_S0SEL] = clk_register_mux(NULL, "cgu1_sclk0sel",
 							   cgu1_s0sels, 2,
