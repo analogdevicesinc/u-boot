@@ -132,10 +132,6 @@ static int sc846_clock_probe(struct udevice *dev)
 								    "cgu0_vco",
 								    CLK_SET_RATE_PARENT,
 								    1, 3);
-	clks[ADSP_SC846_CLK_CGU0_CCLK2_1] = clk_register_fixed_factor(NULL, "cclk2_1",
-								    "cgu0_vco",
-								    CLK_SET_RATE_PARENT,
-								    1, 3);
 	/* DCLK1_x = VCO/5 */
 	clks[ADSP_SC846_CLK_CGU0_DCLK1_0] = clk_register_fixed_factor(NULL, "dclk1_0",
 								    "cgu0_vco",
