@@ -62,8 +62,13 @@ static int sc846_clock_probe(struct udevice *dev)
 	cdu = devm_ioremap(dev, res.start, resource_size(&res));
 
 	/* Input clock configuration */
-	clk_get_by_name(dev, "dummy", &dummy);
-	clk_get_by_name(dev, "sys_clkin0", &clkin0);
+	ret = clk_get_by_name(dev, "dummy", &dummy);
+	if (ret < 0)
+		return ret;
+
+	ret = clk_get_by_name(dev, "sys_clkin0", &clkin0);
+	if (ret < 0)
+		return ret;
 
 	clks[ADSP_SC846_CLK_DUMMY] = &dummy;
 	clks[ADSP_SC846_CLK_SYS_CLKIN0] = &clkin0;
