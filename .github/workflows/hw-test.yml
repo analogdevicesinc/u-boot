@@ -1,0 +1,41 @@
+name: Hardware Test
+
+on:
+  workflow_call:
+
+permissions:
+  actions: read
+  contents: read
+  id-token: write
+
+jobs:
+  hardware-test:
+    runs-on: ${{ vars.RUNNER_HW_TEST != '' && fromJSON(vars.RUNNER_HW_TEST) || 'ubuntu-latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - defconfig: 'sc598-som-ezkit-spl_defconfig'
+            needs: '["sc598", "ezkit"]'
+          - defconfig: 'sc598-som-ezlite-spl_defconfig'
+            needs: '["sc598", "ezlite"]'
+          - defconfig: 'sc846-som-ezkit_defconfig'
+            needs: '["sc846", "ezkit"]'
+    env:
+      LG_COORDINATOR: ${{ secrets.LG_COORDINATOR }}
+
+    steps:
+      - name: Checkout hw-test
+        uses: actions/checkout@v6
+        with:
+          repository: analogdevicesinc/hw-test
+          ref: main
+
+      - name: Run U-Boot hardware test (${{ matrix.defconfig }})
+        uses: ./run-test
+        with:
+          set: >
+            {
+              "name": "adsp/u-boot",
+              "needs": ${{ matrix.needs }}
+            }
