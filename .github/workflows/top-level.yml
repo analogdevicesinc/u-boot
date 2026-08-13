@@ -45,6 +45,26 @@ jobs:
   checks:
     uses: analogdevicesinc/u-boot/.github/workflows/checks.yml@ci
 
+  hardware-test:
+    needs: [build_aarch64]
+    if: ${{ github.event_name != 'release' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - needs: '["sc598", "ezkit"]'
+          - needs: '["sc598", "ezlite"]'
+          - needs: '["sc846", "ezkit"]'
+    uses: analogdevicesinc/u-boot/.github/workflows/hw-test.yml@ci
+    with:
+      test-set: 'adsp/u-boot'
+      needs: ${{ matrix.needs }}
+    secrets: inherit
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+
   deploy_cloudsmith:
     needs: [build_arm, build_aarch64, checks]
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push' }}
