@@ -9,6 +9,10 @@ on:
       defconfig:
         required: true
         type: string
+      device_tree:
+        required: false
+        type: string
+        default: ''
       ref: # DEPRECATED
         required: false
         type: string
@@ -69,7 +73,8 @@ jobs:
       - name: Build U-Boot
         run: |
           make "${{ inputs.defconfig }}"
-          make -j$(nproc)
+          dt="${{ inputs.device_tree }}"
+          make -j$(nproc) ${dt:+DEVICE_TREE=$dt}
           make savedefconfig
           python3 scripts/gen_compile_commands.py -d "$KBUILD_OUTPUT"
 
@@ -91,6 +96,7 @@ jobs:
           echo "uboot=u-boot" > "$dist/context.txt"
           echo "uboot_release=$uversion" >> "$dist/context.txt"
           echo "uboot_defconfig=${{ inputs.defconfig }}" >> "$dist/context.txt"
+          [[ -n "${{ inputs.device_tree }}" ]] && echo "uboot_device_tree=${{ inputs.device_tree }}" >> "$dist/context.txt"
           echo "compiler_name=${{ env.compiler_name }}" >> "$dist/context.txt"
           echo "compiler_version=${{ env.compiler_version }}" >> "$dist/context.txt"
           echo "compiler_arch=${{ inputs.arch }}" >> "$dist/context.txt"
@@ -111,6 +117,6 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ inputs.defconfig }}
+          name: ${{ inputs.device_tree && format('{0}_{1}', inputs.defconfig, inputs.device_tree) || inputs.defconfig }}
           path: ${{ env.DIST }}
           retention-days: 7
