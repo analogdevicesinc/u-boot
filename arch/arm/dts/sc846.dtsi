@@ -24,7 +24,7 @@
 		};
 
 		sharcfx: sharc@0x20400000 {
-			compatible = "adi,sc5xx-rproc";
+			compatible =  "adi,sc846-rproc";
 			reg = <0x20400000 0x100>;
 			coreid = <1>;
 			adi,rcu = <&rcu>;
