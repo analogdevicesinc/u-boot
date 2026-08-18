@@ -11,6 +11,7 @@ jobs:
     with:
       arch: arm
       defconfig: ${{ matrix.defconfig }}
+      device_tree: ${{ matrix.device_tree || '' }}
     strategy:
       matrix:
         defconfig:
@@ -19,18 +20,29 @@ jobs:
           - 'zynq_adrv9361_defconfig'
           - 'zynq_adrv9364_defconfig'
           - 'zynq_coraz7_defconfig'
+        include:
+          - defconfig: 'xilinx_zynq_virt_defconfig'
+            device_tree: 'zynq-zc702'
+          - defconfig: 'xilinx_zynq_virt_defconfig'
+            device_tree: 'zynq-zc706'
+          - defconfig: 'xilinx_zynq_virt_defconfig'
+            device_tree: 'zynq-zed'
 
   build_aarch64:
     uses: analogdevicesinc/u-boot/.github/workflows/build.yml@ci
     with:
       arch: arm64
       defconfig: ${{ matrix.defconfig }}
+      device_tree: ${{ matrix.device_tree || '' }}
     strategy:
       matrix:
         defconfig:
           - 'adi_zynqmp_adrv9009_zu11eg_adrv2crr_fmc_defconfig'
           - 'zynqmp_jupiter_sdr_defconfig'
           - 'zynqmp_kv260_defconfig'
+        include:
+          - defconfig: 'xilinx_zynqmp_virt_defconfig'
+            device_tree: 'zynqmp-zcu102-revA'
 
   checks:
     uses: analogdevicesinc/u-boot/.github/workflows/checks.yml@ci
