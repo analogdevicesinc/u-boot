@@ -62,6 +62,10 @@
 #define RCU0_MSG_C1ACTIVATE		0x00080000		/* Core 1 Activated */
 #define RCU0_MSG_C2ACTIVATE		0x00100000		/* Core 2 Activated */
 
+#define SHARCFX_IRAM_START		0x2F800000
+#define SHARCFX_IRAM_END		0x2F80FFFF
+#define SHARCFX_IRAM_ARM_OFFSET		0x07540000
+
 struct sc5xx_rproc_data {
 	/* Address to load to svect when rebooting core */
 	u32 load_addr;
@@ -118,20 +122,14 @@ static int adi_valid_firmware(struct ldr_hdr *adi_ldr_hdr)
 	return 0;
 }
 
-static int sharc_load(struct udevice *dev, ulong addr, ulong size)
+static int sharc_ldr_load(struct udevice *dev, ulong addr, ulong size)
 {
 	struct sc5xx_rproc_data *priv = dev_get_priv(dev);
 	size_t offset;
 	u8 *buf = (u8 *)addr;
-	struct ldr_hdr *ldr = (struct ldr_hdr *)addr;
 	struct ldr_hdr *block_hdr;
 	struct ldr_hdr *next_hdr;
 
-	if (!adi_valid_firmware(ldr)) {
-		dev_err(dev, "Firmware at 0x%lx does not appear to be an LDR image\n", addr);
-		dev_err(dev, "Note: Signed firmware is not currently supported\n");
-		return -EINVAL;
-	}
 
 	do {
 		block_hdr = (struct ldr_hdr *)buf;
@@ -161,6 +159,36 @@ static int sharc_load(struct udevice *dev, ulong addr, ulong size)
 	} while (1);
 
 	return 0;
+}
+
+static int sharc_elf_load(struct udevice *dev, ulong addr, ulong size)
+{
+	u32 entry_point = rproc_elf_get_boot_addr(dev, addr);
+	struct sc5xx_rproc_data *priv = dev_get_priv(dev);
+
+	priv->load_addr = entry_point;
+
+	return rproc_elf32_load_image(dev, addr, size);
+}
+
+static int sharc_load(struct udevice *dev, ulong addr, ulong size)
+{
+	struct ldr_hdr *ldr = (struct ldr_hdr *)addr;
+
+	if (adi_valid_firmware(ldr)) {
+		return sharc_ldr_load(dev, addr, size);
+	} else {
+		dev_err(dev, "Firmware at 0x%lx does not appear to be an LDR image\n", addr);
+		dev_err(dev, "Note: Signed firmware is not currently supported\n");
+	}
+
+	if (!rproc_elf32_sanity_check(addr, size)) {
+		dev_err(dev, "Found ELF image\n");
+		return sharc_elf_load(dev, addr, size);
+	} else {
+		dev_err(dev, "Firmware at 0x%lx does not appear to be an ELF image\n", addr);
+	}
+	return -EINVAL;
 }
 
 static void sharc_reset(struct sc5xx_rproc_data *priv)
@@ -222,8 +250,28 @@ static int sharc_start(struct udevice *dev)
 	return 0;
 }
 
+void *sc5xx_sharc_pa_to_virt(struct udevice *dev, ulong da, ulong size)
+{
+	struct sc5xx_rproc_data *priv = dev_get_priv(dev);
+	u32 coreid = priv->coreid;
+
+	if (!strncmp(dev->name, "sharcfx", 7)) {
+		return da;
+	}
+
+	//Instruction RAM
+	//SHARC-FX -> ARM
+	//0x2F800000–0x2F80FFFF -> 0x282C0000–0x282CFFFF 64KB
+	if ((da >= SHARCFX_IRAM_START) && (da <= SHARCFX_IRAM_END)) {
+		return da-SHARCFX_IRAM_ARM_OFFSET;
+	}
+
+	return da;
+}
+
 static const struct dm_rproc_ops sc5xx_ops = {
 	.load = sharc_load,
+	.device_to_virt = sc5xx_sharc_pa_to_virt,
 	.start = sharc_start,
 };
 
