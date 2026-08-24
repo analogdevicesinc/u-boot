@@ -22,6 +22,13 @@
 
 #define REG_CSTSGENWR0_CNTCR 0x3110E000  /* or 0x31149000 */
 
+#define SPU0_SECUREP(n)		(REG_SPU0_SECUREP_START + 4 * (n))
+#define SPU_SECUREP_MSEC	(1 << 1)
+
+#define SPU_SECUREP_MSMDMA	128
+#define SPU_SECUREP_MDMA0_SRC	140
+#define SPU_SECUREP_MDMA0_DST	141
+
 static struct mm_region sc846_mem_map[] = {
 	{
 		/* Peripherals */
@@ -91,6 +98,11 @@ void sc5xx_soc_init(void)
 	/* configure smpus permissively */
 	for (i = 0; i < ARRAY_SIZE(smpus); ++i)
 		writel(0x500, smpus[i]);
+
+	writel(SPU_SECUREP_MSEC, SPU0_SECUREP(SPU_SECUREP_MSMDMA));
+	writel(SPU_SECUREP_MSEC, SPU0_SECUREP(SPU_SECUREP_MDMA0_SRC));
+	writel(SPU_SECUREP_MSEC, SPU0_SECUREP(SPU_SECUREP_MDMA0_DST));
+
 
 	asm("mrs x8, scr_el3");
 	asm("orr x8, x8, #(1 << 1)");
