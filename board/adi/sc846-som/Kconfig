@@ -107,8 +107,9 @@ config CGU1_DIV_S0SELEX
 	default 8
 
 # SCLK1 extended divisor
+# SCLK1_1 = CGU1_VCO / (2 * 9) = 1800MHz / 18 = 100MHz
 config CGU1_DIV_S1SELEX
-	default 5
+	default 9
 
 # SHARC-FX
 
@@ -147,9 +148,9 @@ config CDU0_CLKO6
 config CDU0_CLKO7
 	default 1
 
-# xSPI2
+# xSPI1
 # 5 sets the input as SCLK1_1
-# SCLK1_0 = CGU1_VCO / 20 = 180MHz
+# SCLK1_1 = CGU1_VCO / (2 * CGU1_DIV_S1SELEX) = 100MHz
 config CDU0_CLKO8
 	default 5
 
