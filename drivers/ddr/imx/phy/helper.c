@@ -11,7 +11,6 @@
 #include <errno.h>
 #include <asm/io.h>
 #include <asm/arch/ddr.h>
-#include <asm/arch/ddr.h>
 #include <asm/sections.h>
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -22,7 +21,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #define IMEM_OFFSET_ADDR 0x00050000
 #define DMEM_OFFSET_ADDR 0x00054000
-#define DDR_TRAIN_CODE_BASE_ADDR IP2APB_DDRPHY_IPS_BASE_ADDR(0)
+#define DDR_TRAIN_CODE_BASE_ADDR DDR_PHY_BASE
 
 binman_sym_declare(ulong, ddr_1d_imem_fw, image_pos);
 binman_sym_declare(ulong, ddr_1d_imem_fw, size);
