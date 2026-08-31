@@ -117,7 +117,7 @@ config CDU0_CLKO0
 
 # CORE 0
 config CDU0_CLKO1
-	default 7
+	default 3
 
 # CORE 1
 config CDU0_CLKO2
