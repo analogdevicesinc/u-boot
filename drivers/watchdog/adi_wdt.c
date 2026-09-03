@@ -13,10 +13,10 @@
 
 #include <clk.h>
 #include <dm.h>
+#include <regmap.h>
+#include <syscon.h>
 #include <wdt.h>
 #include <linux/delay.h>
-#include <linux/ioport.h>
-#include <linux/io.h>
 
 #define WDOG_CTL  0x0
 #define WDOG_CNT  0x4
@@ -33,9 +33,9 @@
 #define WDDIS     0x0AD0
 
 struct adi_wdt_priv {
-	void __iomem *rcu_base;
-	void __iomem *sec_base;
-	void __iomem *wdt_base;
+	struct regmap *rcu;
+	struct regmap *sec;
+	struct regmap *wdt;
 	u32 secid;
 	struct clk clock;
 };
@@ -44,7 +44,7 @@ static int adi_wdt_reset(struct udevice *dev)
 {
 	struct adi_wdt_priv *priv = dev_get_priv(dev);
 
-	iowrite32(0, priv->wdt_base + WDOG_STAT);
+	regmap_write(priv->wdt, WDOG_STAT, 0);
 
 	return 0;
 }
@@ -52,41 +52,43 @@ static int adi_wdt_reset(struct udevice *dev)
 static int adi_wdt_start(struct udevice *dev, u64 timeout_ms, ulong flags)
 {
 	struct adi_wdt_priv *priv = dev_get_priv(dev);
+	u32 val;
 
 	/* Disable SYSCD_RESETb input and clear the RCU0 reset status */
-	iowrite32(0xf, priv->rcu_base + RCU_STAT);
-	iowrite32(0x0, priv->rcu_base + RCU_CTL);
+	regmap_write(priv->rcu, RCU_STAT, 0xf);
+	regmap_write(priv->rcu, RCU_CTL, 0x0);
 
 	/* reset the SEC controller */
-	iowrite32(0x2, priv->sec_base + SEC_GCTL);
-	iowrite32(0x2, priv->sec_base + SEC_FCTL);
+	regmap_write(priv->sec, SEC_GCTL, 0x2);
+	regmap_write(priv->sec, SEC_FCTL, 0x2);
 
 	udelay(50);
 
 	/* enable SEC fault event */
-	iowrite32(0x1, priv->sec_base + SEC_GCTL);
+	regmap_write(priv->sec, SEC_GCTL, 0x1);
 
 	/* ANOMALY 36100004 Spurious External Fault event occurs when FCTL
 	 * is re-programmed when currently active fault is not cleared
 	 */
-	iowrite32(0xc0, priv->sec_base + SEC_FCTL);
-	iowrite32(0xc1, priv->sec_base + SEC_FCTL);
+	regmap_write(priv->sec, SEC_FCTL, 0xc0);
+	regmap_write(priv->sec, SEC_FCTL, 0xc1);
 
 	/* enable SEC fault source for watchdog0 */
-	setbits_32(priv->sec_base + SEC_SCTL0 + (priv->secid * 8), 0x6);
+	regmap_read(priv->sec, SEC_SCTL0 + (priv->secid * 8), &val);
+	regmap_write(priv->sec, SEC_SCTL0 + (priv->secid * 8), val | 0x6);
 
 	/* Enable SYSCD_RESETb input */
-	iowrite32(0x100, priv->rcu_base + RCU_CTL);
+	regmap_write(priv->rcu, RCU_CTL, 0x100);
 
 	/* enable watchdog0 */
-	iowrite32(WDDIS, priv->wdt_base + WDOG_CTL);
+	regmap_write(priv->wdt, WDOG_CTL, WDDIS);
 
-	iowrite32(timeout_ms / 1000 *
-	       (clk_get_rate(&priv->clock) / (IS_ENABLED(CONFIG_SC58X) ? 2 : 1)),
-	       priv->wdt_base + WDOG_CNT);
+	regmap_write(priv->wdt, WDOG_CNT,
+		     timeout_ms / 1000 *
+		     (clk_get_rate(&priv->clock) / (IS_ENABLED(CONFIG_SC58X) ? 2 : 1)));
 
-	iowrite32(0, priv->wdt_base + WDOG_STAT);
-	iowrite32(WDEN, priv->wdt_base + WDOG_CTL);
+	regmap_write(priv->wdt, WDOG_STAT, 0);
+	regmap_write(priv->wdt, WDOG_CTL, WDEN);
 
 	return 0;
 }
@@ -95,23 +97,19 @@ static int adi_wdt_probe(struct udevice *dev)
 {
 	struct adi_wdt_priv *priv = dev_get_priv(dev);
 	int ret;
-	struct resource res;
 	u32 secid;
 
-	ret = dev_read_resource_byname(dev, "rcu", &res);
-	if (ret)
-		return ret;
-	priv->rcu_base = devm_ioremap(dev, res.start, resource_size(&res));
+	priv->rcu = syscon_regmap_lookup_by_phandle(dev, "adi,rcu");
+	if (IS_ERR(priv->rcu))
+		return PTR_ERR(priv->rcu);
 
-	ret = dev_read_resource_byname(dev, "sec", &res);
-	if (ret)
-		return ret;
-	priv->sec_base = devm_ioremap(dev, res.start, resource_size(&res));
+	priv->sec = syscon_regmap_lookup_by_phandle(dev, "adi,sec");
+	if (IS_ERR(priv->sec))
+		return PTR_ERR(priv->sec);
 
-	ret = dev_read_resource_byname(dev, "wdt", &res);
+	ret = regmap_init_mem(dev_ofnode(dev), &priv->wdt);
 	if (ret)
 		return ret;
-	priv->wdt_base = devm_ioremap(dev, res.start, resource_size(&res));
 
 	ret = dev_read_u32(dev, "secid", &secid);
 	if (ret)
@@ -133,7 +131,7 @@ static const struct wdt_ops adi_wdt_ops = {
 };
 
 static const struct udevice_id adi_wdt_ids[] = {
-	{ .compatible = "adi,wdt" },
+	{ .compatible = "adi,watchdog" },
 	{}
 };
 

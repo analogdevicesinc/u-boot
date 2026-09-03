@@ -101,6 +101,10 @@ config WDT_ADI
 	bool "Analog Devices watchdog timer support"
 	select WDT
 	select SPL_WDT if SPL
+	select REGMAP
+	select SYSCON
+	select SPL_REGMAP if SPL
+	select SPL_SYSCON if SPL
 	depends on ARCH_SC5XX
 	help
 	  Enable this to support Watchdog Timer on ADI SC57X, SC58X, SC59X,
