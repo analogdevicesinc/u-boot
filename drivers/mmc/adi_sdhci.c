@@ -45,6 +45,12 @@
  */
 #define ADMA_TABLE_EXTRA_SZ (ADMA_POTENTIAL_CROSSINGS * ADMA_DESC_LEN)
 
+/* ADSP-SC846 EMMC specific setup */
+#define SC846_MISCREG_EMMC		0x214
+#define SC846_MISCREG_TMR_CKEN		BIT(0)
+#define SC846_MISCREG_TMR_CKDIV_MASK	GENMASK(10, 1)
+#define SC846_MISCREG_TMR_CKDIV_VAL	25
+
 struct adi_sdhc_plat {
 	struct mmc_config cfg;
 	struct mmc mmc;
