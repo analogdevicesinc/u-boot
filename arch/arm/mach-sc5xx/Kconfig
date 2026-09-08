@@ -352,6 +352,16 @@ config ADI_SPL_FORCE_BMODE
 	  5 = QSPI -> OSPI
 	  6 = QSPI -> eMMC
 
+config SC5XX_SPL_OS_BOOT_USB
+	bool "Falcon-boot the OS from USB mass storage"
+	depends on SPL_OS_BOOT
+	help
+	  When SPL OS boot (Falcon mode) is enabled, load the kernel FIT
+	  image from a USB mass-storage device instead of the boot device
+	  selected by the hardware boot-mode straps. USB is not a hardware
+	  boot mode on the SC5xx, so it must be selected at build time.
+	  Requires SPL_USB_HOST, SPL_USB_STORAGE and SPL_FS_FAT to be enabled.
+
 config ADI_USE_DMC0
 	bool "Configure DMC0"
 	default y

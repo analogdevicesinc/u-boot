@@ -63,6 +63,16 @@ void board_boot_order(u32 *spl_boot_list)
 		return;
 	}
 
+	/*
+	 * USB is not a hardware boot mode on the SC5xx, so when the SPL is
+	 * built to Falcon-boot the OS from USB mass storage it is selected at
+	 * build time rather than from the boot-mode straps.
+	 */
+	if (IS_ENABLED(CONFIG_SC5XX_SPL_OS_BOOT_USB) && bmode != 0) {
+		spl_boot_list[0] = BOOT_DEVICE_USB;
+		return;
+	}
+
 	switch (bmode) {
 	case 0:
 		printf("SPL execution has completed.  Please load U-Boot Proper via JTAG");
@@ -150,19 +160,24 @@ void spl_board_prepare_for_linux(void)
 	int nodeoff;
 	int ret;
 
-	switch (bmode) {
-	case 1:
-		mode_bootargs = "rootfstype=ubifs root=ubi0:rootfs ubi.mtd=3 rw";
-		break;
-	case 5:
-		mode_bootargs = "rootfstype=ubifs root=ubi0:rootfs ubi.mtd=3 rw";
-		break;
-	case 6:
-		/* eMMC: matches the board env "mmcargs" */
-		mode_bootargs = "root=/dev/mmcblk0p2 rw rootfstype=ext4 rootwait";
-		break;
-	default:
-		break;
+	if (IS_ENABLED(CONFIG_SC5XX_SPL_OS_BOOT_USB)) {
+		/* USB mass storage: matches the board env "usbargs" */
+		mode_bootargs = "root=/dev/sda2 rw rootfstype=ext4 rootwait";
+	} else {
+		switch (bmode) {
+		case 1:
+			mode_bootargs = "rootfstype=ubifs root=ubi0:rootfs ubi.mtd=3 rw";
+			break;
+		case 5:
+			mode_bootargs = "rootfstype=ubifs root=ubi0:rootfs ubi.mtd=3 rw";
+			break;
+		case 6:
+			/* eMMC: matches the board env "mmcargs" */
+			mode_bootargs = "root=/dev/mmcblk0p2 rw rootfstype=ext4 rootwait";
+			break;
+		default:
+			break;
+		}
 	}
 
 	if (!mode_bootargs)
