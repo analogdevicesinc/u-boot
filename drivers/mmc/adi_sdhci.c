@@ -8,7 +8,6 @@
  * Based on Rockchip's sdhci.c file
  */
 
-#include <clk.h>
 #include <dm.h>
 #include <malloc.h>
 #include <regmap.h>
@@ -116,14 +115,15 @@ static int adi_dwcmshc_sdhci_probe(struct udevice *dev)
 	struct adi_sdhc_plat *plat = dev_get_plat(dev);
 	struct sdhci_host *host = dev_get_priv(dev);
 	struct adi_sdhci_data *data = (struct adi_sdhci_data *)dev_get_driver_data(dev);
-	int max_frequency, ret;
-	struct clk clk;
+	int ret;
 
-	max_frequency = dev_read_u32_default(dev, "max-frequency", 0);
-	ret = clk_get_by_index(dev, 0, &clk);
-
+	/* sdhci_setup_cfg should get max_clk from EMSI_CAP
+	 * ADSP-SC598 has a max_clk of 50MHz
+	 * ADSP-SC846 has a max_clk of 200MHz
+	 */
 	host->quirks = 0;
-	host->max_clk = max_frequency;
+	host->max_clk = 0;
+
 	/*
 	 * The sdhci-driver only supports 4bit and 8bit, as sdhci_setup_cfg
 	 * doesn't allow us to clear MMC_MODE_4BIT.  Consequently, we don't
