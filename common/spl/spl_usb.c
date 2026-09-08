@@ -43,22 +43,42 @@ int spl_usb_load(struct spl_image_info *spl_image,
 	if (!stor_dev)
 		return -ENODEV;
 
+	err = -ENOSYS;
+
+#ifdef CONFIG_SPL_FS_FAT
 	debug("boot mode - FAT\n");
-
 #if CONFIG_IS_ENABLED(OS_BOOT)
-	if (spl_start_uboot() ||
-	    spl_load_image_fat_os(spl_image, bootdev, stor_dev, partition))
+	if (!spl_start_uboot()) {
+		err = spl_load_image_fat_os(spl_image, bootdev, stor_dev,
+					    partition);
+		if (!err)
+			return 0;
+	}
 #endif
-	{
-		err = spl_load_image_fat(spl_image, bootdev, stor_dev, partition, filename);
-	}
+	err = spl_load_image_fat(spl_image, bootdev, stor_dev, partition,
+				 filename);
+	if (!err)
+		return 0;
+#endif
 
-	if (err) {
-		puts("Error loading from USB device\n");
-		return err;
+#ifdef CONFIG_SPL_FS_EXT4
+	debug("boot mode - EXT\n");
+#if CONFIG_IS_ENABLED(OS_BOOT)
+	if (!spl_start_uboot()) {
+		err = spl_load_image_ext_os(spl_image, bootdev, stor_dev,
+					    partition);
+		if (!err)
+			return 0;
 	}
+#endif
+	err = spl_load_image_ext(spl_image, bootdev, stor_dev, partition,
+				 filename);
+	if (!err)
+		return 0;
+#endif
 
-	return 0;
+	puts("Error loading from USB device\n");
+	return err;
 }
 
 static int spl_usb_load_image(struct spl_image_info *spl_image,
