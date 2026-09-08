@@ -27,6 +27,8 @@ jobs:
             device_tree: 'zynq-zc706'
           - defconfig: 'xilinx_zynq_virt_defconfig'
             device_tree: 'zynq-zed'
+          - defconfig: 'xilinx_zynq_virt_defconfig'
+            device_tree: 'zynq-microzed'
 
   build_aarch64:
     uses: analogdevicesinc/u-boot/.github/workflows/build.yml@ci
