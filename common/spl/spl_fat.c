@@ -146,6 +146,18 @@ int spl_load_image_fat_os(struct spl_image_info *spl_image,
 defaults:
 #endif
 
+	if (CONFIG_IS_ENABLED(LOAD_FIT) || CONFIG_IS_ENABLED(LOAD_FIT_FULL)) {
+		/*
+		 * When the kernel is packaged as a FIT image the device tree is
+		 * bundled inside it and is unpacked to its load address by the
+		 * FIT loader. There is therefore no separate args/DTB file to
+		 * load from the filesystem.
+		 */
+		return spl_load_image_fat(spl_image, bootdev, block_dev,
+					  partition,
+					  CONFIG_SPL_FS_LOAD_KERNEL_NAME);
+	}
+
 	err = file_fat_read(CONFIG_SPL_FS_LOAD_ARGS_NAME,
 			    (void *)CONFIG_SPL_PAYLOAD_ARGS_ADDR, 0);
 	if (err <= 0) {
