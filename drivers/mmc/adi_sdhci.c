@@ -11,8 +11,12 @@
 #include <clk.h>
 #include <dm.h>
 #include <malloc.h>
+#include <regmap.h>
 #include <sdhci.h>
+#include <syscon.h>
 #include <asm/cache.h>
+#include <linux/bitfield.h>
+#include <linux/err.h>
 #include <linux/sizes.h>
 
 /* 400KHz is max freq for card ID etc. Use that as min */
@@ -56,6 +60,33 @@ struct adi_sdhc_plat {
 	struct mmc mmc;
 };
 
+struct adi_sdhci_data {
+	int (*soc_init)(struct udevice *dev);
+};
+
+static int sc846_sdhci_soc_init(struct udevice *dev)
+{
+	struct regmap *misc;
+	u32 mask, val;
+	int ret;
+
+	misc = syscon_regmap_lookup_by_phandle(dev, "adi,misc-reg");
+	if (IS_ERR(misc))
+		return PTR_ERR(misc);
+
+	mask = SC846_MISCREG_TMR_CKEN | SC846_MISCREG_TMR_CKDIV_MASK;
+	val = SC846_MISCREG_TMR_CKEN |
+	      FIELD_PREP(SC846_MISCREG_TMR_CKDIV_MASK,
+			 SC846_MISCREG_TMR_CKDIV_VAL);
+
+	/* Enable EMMC timer clock and set timer clock divider */
+	ret = regmap_update_bits(misc, SC846_MISCREG_EMMC, mask, val);
+	if (ret)
+		return ret;
+
+	return 0;
+}
+
 void adi_dwcmshc_adma_write_desc(struct sdhci_host *host, void **desc,
 				 dma_addr_t addr, int len, bool end)
 {
@@ -84,6 +115,7 @@ static int adi_dwcmshc_sdhci_probe(struct udevice *dev)
 	struct mmc_uclass_priv *upriv = dev_get_uclass_priv(dev);
 	struct adi_sdhc_plat *plat = dev_get_plat(dev);
 	struct sdhci_host *host = dev_get_priv(dev);
+	struct adi_sdhci_data *data = (struct adi_sdhci_data *)dev_get_driver_data(dev);
 	int max_frequency, ret;
 	struct clk clk;
 
@@ -114,6 +146,12 @@ static int adi_dwcmshc_sdhci_probe(struct udevice *dev)
 	if (ret)
 		return ret;
 
+	if (data && data->soc_init) {
+		ret = data->soc_init(dev);
+		if (ret)
+			return ret;
+	}
+
 	return sdhci_probe(dev);
 }
 
@@ -135,9 +173,14 @@ static int adi_sdhci_bind(struct udevice *dev)
 	return sdhci_bind(dev, &plat->mmc, &plat->cfg);
 }
 
+static const struct adi_sdhci_data sc846_data = {
+	.soc_init = sc846_sdhci_soc_init,
+};
+
 static const struct udevice_id adi_dwcmshc_sdhci_ids[] = {
 	{ .compatible = "adi,dwc-sdhci" },
-	{ }
+	{ .compatible = "adi,sc846-dwcmshc", .data = (ulong)&sc846_data },
+	{ },
 };
 
 U_BOOT_DRIVER(adi_dwcmshc_sdhci_drv) = {
