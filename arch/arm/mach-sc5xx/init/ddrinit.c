@@ -62,7 +62,7 @@ s32 get_mails(u8 mode)
 void get_streaming_message(void)
 {
 	s32 string_index, arg;
-	int i = 1, j;
+	int i = 1;
 	s32 num_args;
 	u32 msg_id;
 	s32 args[10];
@@ -96,12 +96,14 @@ void get_streaming_message(void)
 	}
 
 	/* Look up the message format string - table IDs include both message index and arg count */
-	for (j = 0; j < ONED_TRAINING_MESSAGE_STRING_COUNT; j++) {
+#if IS_ENABLED(CONFIG_SC5XX_DDR_TRAINING_MESSAGES)
+	for (int j = 0; j < ONED_TRAINING_MESSAGE_STRING_COUNT; j++) {
 		if (ddr_1d_log_messages[j].id == (uint32_t)string_index) {
 			msg_format = ddr_1d_log_messages[j].message;
 			break;
 		}
 	}
+#endif
 
 	/* Print the decoded message */
 	if (msg_format) {

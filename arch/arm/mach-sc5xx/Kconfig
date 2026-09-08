@@ -395,6 +395,16 @@ config SC5XX_DMC_INIT
 	  required if you are using external DDR memory and is limited to
 	  ADSP-SC5XX architecture
 
+config SC5XX_DDR_TRAINING_MESSAGES
+	bool "Decode LPDDR4 PHY training streaming messages"
+	depends on SC846
+	default y
+	help
+	  Include the LPDDR4 PHY training message string tables so the SPL can
+	  print human-readable DDR PHY firmware training messages. These tables
+	  add ~42 KiB to the SPL; disable to save space (the SPL then prints the
+	  numeric message IDs instead).
+
 menu "Clock configuration"
 
 config CGU0_DF_DIV
