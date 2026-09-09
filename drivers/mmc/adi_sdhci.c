@@ -8,11 +8,14 @@
  * Based on Rockchip's sdhci.c file
  */
 
-#include <clk.h>
 #include <dm.h>
 #include <malloc.h>
+#include <regmap.h>
 #include <sdhci.h>
+#include <syscon.h>
 #include <asm/cache.h>
+#include <linux/bitfield.h>
+#include <linux/err.h>
 #include <linux/sizes.h>
 
 /* 400KHz is max freq for card ID etc. Use that as min */
@@ -45,10 +48,43 @@
  */
 #define ADMA_TABLE_EXTRA_SZ (ADMA_POTENTIAL_CROSSINGS * ADMA_DESC_LEN)
 
+/* ADSP-SC846 EMMC specific setup */
+#define SC846_MISCREG_EMMC		0x214
+#define SC846_MISCREG_TMR_CKEN		BIT(0)
+#define SC846_MISCREG_TMR_CKDIV_MASK	GENMASK(10, 1)
+#define SC846_MISCREG_TMR_CKDIV_VAL	25
+
 struct adi_sdhc_plat {
 	struct mmc_config cfg;
 	struct mmc mmc;
 };
+
+struct adi_sdhci_data {
+	int (*soc_init)(struct udevice *dev);
+};
+
+static int sc846_sdhci_soc_init(struct udevice *dev)
+{
+	struct regmap *misc;
+	u32 mask, val;
+	int ret;
+
+	misc = syscon_regmap_lookup_by_phandle(dev, "adi,miscreg-syscon");
+	if (IS_ERR(misc))
+		return PTR_ERR(misc);
+
+	mask = SC846_MISCREG_TMR_CKEN | SC846_MISCREG_TMR_CKDIV_MASK;
+	val = SC846_MISCREG_TMR_CKEN |
+	      FIELD_PREP(SC846_MISCREG_TMR_CKDIV_MASK,
+			 SC846_MISCREG_TMR_CKDIV_VAL);
+
+	/* Enable EMMC timer clock and set timer clock divider */
+	ret = regmap_update_bits(misc, SC846_MISCREG_EMMC, mask, val);
+	if (ret)
+		return ret;
+
+	return 0;
+}
 
 void adi_dwcmshc_adma_write_desc(struct sdhci_host *host, void **desc,
 				 dma_addr_t addr, int len, bool end)
@@ -78,14 +114,16 @@ static int adi_dwcmshc_sdhci_probe(struct udevice *dev)
 	struct mmc_uclass_priv *upriv = dev_get_uclass_priv(dev);
 	struct adi_sdhc_plat *plat = dev_get_plat(dev);
 	struct sdhci_host *host = dev_get_priv(dev);
-	int max_frequency, ret;
-	struct clk clk;
+	struct adi_sdhci_data *data = (struct adi_sdhci_data *)dev_get_driver_data(dev);
+	int ret;
 
-	max_frequency = dev_read_u32_default(dev, "max-frequency", 0);
-	ret = clk_get_by_index(dev, 0, &clk);
-
+	/* sdhci_setup_cfg should get max_clk from EMSI_CAP
+	 * ADSP-SC598 has a max_clk of 50MHz
+	 * ADSP-SC846 has a max_clk of 200MHz
+	 */
 	host->quirks = 0;
-	host->max_clk = max_frequency;
+	host->max_clk = 0;
+
 	/*
 	 * The sdhci-driver only supports 4bit and 8bit, as sdhci_setup_cfg
 	 * doesn't allow us to clear MMC_MODE_4BIT.  Consequently, we don't
@@ -108,6 +146,12 @@ static int adi_dwcmshc_sdhci_probe(struct udevice *dev)
 	if (ret)
 		return ret;
 
+	if (data && data->soc_init) {
+		ret = data->soc_init(dev);
+		if (ret)
+			return ret;
+	}
+
 	return sdhci_probe(dev);
 }
 
@@ -129,9 +173,14 @@ static int adi_sdhci_bind(struct udevice *dev)
 	return sdhci_bind(dev, &plat->mmc, &plat->cfg);
 }
 
+static const struct adi_sdhci_data sc846_data = {
+	.soc_init = sc846_sdhci_soc_init,
+};
+
 static const struct udevice_id adi_dwcmshc_sdhci_ids[] = {
 	{ .compatible = "adi,dwc-sdhci" },
-	{ }
+	{ .compatible = "adi,sc846-dwcmshc", .data = (ulong)&sc846_data },
+	{ },
 };
 
 U_BOOT_DRIVER(adi_dwcmshc_sdhci_drv) = {
