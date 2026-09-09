@@ -85,9 +85,9 @@
 			bootph-pre-ram;
 		};
 
-		misc: syscon@310a9000 {
-			compatible = "syscon";
-			reg = <0x310a9000 0x1000>;
+		miscreg_syscon: syscon@310a9000 {
+			compatible = "adi,adsp-sc846-miscreg-syscon", "syscon";
+			reg = <0x310a9000 0x400>;
 		};
 
 		mmc0: mmc@31152000 {
@@ -96,7 +96,7 @@
 			interrupts = <GIC_SPI 214 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&clk ADSP_SC846_CLK_MSHC>;
 			clock-names = "core";
-			adi,misc-reg = <&misc>;
+			adi,miscreg-syscon = <&miscreg_syscon>;
 			bus-width = <8>;
 			status = "disabled";
 		};

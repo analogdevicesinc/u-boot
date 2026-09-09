@@ -69,7 +69,7 @@ static int sc846_sdhci_soc_init(struct udevice *dev)
 	u32 mask, val;
 	int ret;
 
-	misc = syscon_regmap_lookup_by_phandle(dev, "adi,misc-reg");
+	misc = syscon_regmap_lookup_by_phandle(dev, "adi,miscreg-syscon");
 	if (IS_ERR(misc))
 		return PTR_ERR(misc);
 
