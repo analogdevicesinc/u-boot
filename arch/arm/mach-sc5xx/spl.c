@@ -7,8 +7,10 @@
  */
 
 #include <spl.h>
+#include <env.h>
 #include <asm/arch/sc5xx.h>
 #include <asm/arch/spl.h>
+#include <linux/libfdt.h>
 #include "init/clkinit.h"
 #ifdef CONFIG_SC846
 #include "init/EHP2_LP4_1D_2000/EHP2_LPDDR4_1D_2000_Core1.h"
@@ -28,7 +30,12 @@ u32 bmode;
 
 int spl_start_uboot(void)
 {
-	return adi_start_uboot_proper;
+	sc5xx_get_boot_mode(&bmode);
+
+	if (bmode == 0)
+		return 1;
+
+	return 0;
 }
 
 unsigned int spl_spi_get_default_speed(void)
@@ -49,19 +56,34 @@ unsigned int spl_spi_get_default_cs(void)
 void board_boot_order(u32 *spl_boot_list)
 {
 	const char *bmodestring = sc5xx_get_boot_mode(&bmode);
-
 	printf("ADI Boot Mode: 0x%x (%s)\n", bmode, bmodestring);
 
-	/*
-	 * By default everything goes back to the bootrom, where we'll read table
-	 * parameters and ask for another image to be loaded
-	 */
-	spl_boot_list[0] = BOOT_DEVICE_BOOTROM;
+	if (bmode != 0 && spl_start_uboot()) {
+		spl_boot_list[0] = BOOT_DEVICE_BOOTROM;
+		return;
+	}
 
-	if (bmode == 0) {
+	switch (bmode) {
+	case 0:
 		printf("SPL execution has completed.  Please load U-Boot Proper via JTAG");
 		while (1)
 			;
+	case 1:
+		adi_sf_default_bus = CONFIG_SC_BOOT_SPI_BUS;
+		adi_sf_default_cs = CONFIG_SC_BOOT_SPI_SSEL;
+		spl_boot_list[0] = BOOT_DEVICE_SPI;
+		break;
+	case 5:
+		adi_sf_default_bus = CONFIG_SC_BOOT_OSPI_BUS;
+		adi_sf_default_cs = CONFIG_SC_BOOT_OSPI_SSEL;
+		spl_boot_list[0] = BOOT_DEVICE_SPI;
+		break;
+	case 6:
+		spl_boot_list[0] = BOOT_DEVICE_MMC1;
+		break;
+	default:
+		spl_boot_list[0] = BOOT_DEVICE_BOOTROM;
+		break;
 	}
 }
 
@@ -118,3 +140,64 @@ void board_init_f(ulong dummy)
 #endif
 }
 
+void spl_board_prepare_for_linux(void)
+{
+	void *fdt = (void *)CONFIG_SPL_PAYLOAD_ARGS_ADDR;
+	char bootargs[512];
+	char adi_bootargs[256];
+	char board_bootargs[128];
+	const char *mode_bootargs = NULL;
+	int nodeoff;
+	int ret;
+
+	switch (bmode) {
+	case 1:
+		mode_bootargs = "rootfstype=ubifs root=ubi0:rootfs ubi.mtd=3 rw";
+		break;
+	case 5:
+		mode_bootargs = "rootfstype=ubifs root=ubi0:rootfs ubi.mtd=3 rw";
+		break;
+	case 6:
+		/* eMMC: matches the board env "mmcargs" */
+		mode_bootargs = "root=/dev/mmcblk0p2 rw rootfstype=ext4 rootwait";
+		break;
+	default:
+		break;
+	}
+
+	if (!mode_bootargs)
+		return;
+
+	/* adi_bootargs and board_bootargs come from the environment */
+	if (env_get_default_into("adi_bootargs", adi_bootargs,
+				 sizeof(adi_bootargs)) < 0)
+		adi_bootargs[0] = '\0';
+	if (env_get_default_into("board_bootargs", board_bootargs,
+				 sizeof(board_bootargs)) < 0)
+		board_bootargs[0] = '\0';
+
+	ret = snprintf(bootargs, sizeof(bootargs), "%s %s%s%s",
+		       mode_bootargs, adi_bootargs,
+		       board_bootargs[0] ? " " : "",
+		       board_bootargs);
+	if (ret <= 0 || ret >= sizeof(bootargs))
+		return;
+
+	ret = fdt_check_header(fdt);
+	if (ret)
+		return;
+
+	nodeoff = fdt_path_offset(fdt, "/chosen");
+	if (nodeoff < 0)
+		nodeoff = fdt_add_subnode(fdt, 0, "chosen");
+	if (nodeoff < 0)
+		return;
+
+	fdt_setprop_string(fdt, nodeoff, "bootargs", bootargs);
+	printf("SC5xx SPL bootargs: %s\n", bootargs);
+}
+
+void *board_spl_fit_buffer_addr(ulong fit_size, int sectors, int bl_len)
+{
+	return (void *)CONFIG_SPL_LOAD_FIT_ADDRESS;
+}
