@@ -177,7 +177,7 @@ static int sharc_load(struct udevice *dev, ulong addr, ulong size)
 
 	if (adi_valid_firmware(ldr))
 		return sharc_ldr_load(dev, addr, size);
-	
+
 	dev_err(dev, "Firmware at 0x%lx does not appear to be an LDR image\n", addr);
 	dev_err(dev, "Note: Signed firmware is not currently supported\n");
 
@@ -185,7 +185,7 @@ static int sharc_load(struct udevice *dev, ulong addr, ulong size)
 		return sharc_elf_load(dev, addr, size);
 	
 	dev_err(dev, "Firmware at 0x%lx does not appear to be an ELF image\n", addr);
-	
+
 	return -EINVAL;
 }
 
@@ -260,9 +260,8 @@ void *sc5xx_sharc_pa_to_virt(struct udevice *dev, ulong da, ulong size)
 	//Instruction RAM
 	//SHARC-FX -> ARM
 	//0x2F800000–0x2F80FFFF -> 0x282C0000–0x282CFFFF 64KB
-	if ((da >= SHARCFX_IRAM_START) && (da <= SHARCFX_IRAM_END)) {
+	if ((da >= SHARCFX_IRAM_START) && (da <= SHARCFX_IRAM_END))
 		return da-SHARCFX_IRAM_ARM_OFFSET;
-	}
 
 	return da;
 }
