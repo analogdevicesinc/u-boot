@@ -55,10 +55,10 @@ jobs:
           - needs: '["sc598", "ezkit"]'
           - needs: '["sc598", "ezlite"]'
           - needs: '["sc846", "ezkit"]'
-    uses: analogdevicesinc/u-boot/.github/workflows/hw-test.yml@ci
+    uses: analogdevicesinc/hw-test/.github/workflows/run-test.yml@add-runner-tag-selection
     with:
-      test-set: 'adsp/u-boot'
-      needs: ${{ matrix.needs }}
+      set: >-
+        {"name":"adsp/u-boot","needs":${{ matrix.needs }}}
     secrets: inherit
     permissions:
       actions: read
