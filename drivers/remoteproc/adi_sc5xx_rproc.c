@@ -183,7 +183,7 @@ static int sharc_load(struct udevice *dev, ulong addr, ulong size)
 
 	if (!rproc_elf32_sanity_check(addr, size))
 		return sharc_elf_load(dev, addr, size);
-	
+
 	dev_err(dev, "Firmware at 0x%lx does not appear to be an ELF image\n", addr);
 
 	return -EINVAL;
