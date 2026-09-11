@@ -175,17 +175,14 @@ static int sharc_load(struct udevice *dev, ulong addr, ulong size)
 {
 	struct ldr_hdr *ldr = (struct ldr_hdr *)addr;
 
-	if (adi_valid_firmware(ldr)) {
+	if (adi_valid_firmware(ldr))
 		return sharc_ldr_load(dev, addr, size);
-	}
 	
 	dev_err(dev, "Firmware at 0x%lx does not appear to be an LDR image\n", addr);
 	dev_err(dev, "Note: Signed firmware is not currently supported\n");
 
-	if (!rproc_elf32_sanity_check(addr, size)) {
-		dev_err(dev, "Found ELF image\n");
+	if (!rproc_elf32_sanity_check(addr, size))
 		return sharc_elf_load(dev, addr, size);
-	}
 	
 	dev_err(dev, "Firmware at 0x%lx does not appear to be an ELF image\n", addr);
 	
