@@ -28,9 +28,9 @@ static const char * const can_sels[] = {"oclk_0", "oclk_1", "dummy", "dummy"};
 static const char * const spdif_sels[] = {"sclk1_0", "dummy", "dummy", "dummy"};
 static const char * const spi_sels[] = {"sclk0_0", "oclk_0", "dummy", "dummy"};
 static const char * const gige_sels[] = {"sclk0_0", "sclk0_1", "dummy", "dummy"};
-static const char * const xspi2_sels[] = {"sclk0_0", "oclk_0", "sclk1_1", "dummy"};
+static const char * const xspi1_sels[] = {"sclk0_0", "oclk_0", "sclk1_1", "dummy"};
 static const char * const lp_sels[] = {"dclk_0", "cclk2_0", "dclk_1", "cclk2_1"};
-static const char * const xspi_sels[] = {"sclk0_0", "oclk_0", "sclk1_1", "dummy"};
+static const char * const xspi0_sels[] = {"sclk0_0", "oclk_0", "sclk1_1", "dummy"};
 static const char * const trace_sels[] = {"sclk0_0", "dummy", "dummy", "dummy"};
 static const char * const pwm_sels[] = {"sysclk_0", "clkpwm", "dummy", "dummy"};
 static const char * const mshc_sels[] = {"sclk0_0", "sysclk_1", "dummy", "dummy"};
@@ -208,10 +208,10 @@ static int sc846_clock_probe(struct udevice *dev)
 	clks[ADSP_SC846_CLK_SPDIF_SEL] = cdu_mux("spdif_sel", cdu + CDU_CFG5, spdif_sels);
 	clks[ADSP_SC846_CLK_SPI_SEL] = cdu_mux("spi_sel", cdu + CDU_CFG6, spi_sels);
 	clks[ADSP_SC846_CLK_GIGE_SEL] = cdu_mux("gige_sel", cdu + CDU_CFG7, gige_sels);
-	clks[ADSP_SC846_CLK_XSPI2_SEL] = cdu_mux("xspi2_sel", cdu + CDU_CFG8, xspi2_sels);
+	clks[ADSP_SC846_CLK_XSPI1_SEL] = cdu_mux("xspi1_sel", cdu + CDU_CFG8, xspi1_sels);
 	clks[ADSP_SC846_CLK_LP_SEL] = cdu_mux("lp_sel", cdu + CDU_CFG9, lp_sels);
-	clks[ADSP_SC846_CLK_XSPI_SEL] = cdu_mux("xspi_sel", cdu + CDU_CFG10,
-						       xspi_sels);
+	clks[ADSP_SC846_CLK_XSPI0_SEL] = cdu_mux("xspi0_sel", cdu + CDU_CFG10,
+						       xspi0_sels);
 	clks[ADSP_SC846_CLK_TRACE_SEL] = cdu_mux("trace_sel", cdu + CDU_CFG12,
 						 trace_sels);
 	clks[ADSP_SC846_CLK_PWM_SEL] = cdu_mux("pwm_sel", cdu + CDU_CFG13, pwm_sels);
@@ -232,9 +232,9 @@ static int sc846_clock_probe(struct udevice *dev)
 	clks[ADSP_SC846_CLK_SPDIF] = cdu_gate("spdif", "spdif_sel", cdu + CDU_CFG5, 0);
 	clks[ADSP_SC846_CLK_SPI] = cdu_gate("spi", "spi_sel", cdu + CDU_CFG6, 0);
 	clks[ADSP_SC846_CLK_GIGE] = cdu_gate("gige", "gige_sel", cdu + CDU_CFG7, 0);
-	clks[ADSP_SC846_CLK_XSPI2] = cdu_gate("xspi2", "xspi2_sel", cdu + CDU_CFG8, 0);
+	clks[ADSP_SC846_CLK_XSPI1] = cdu_gate("xspi1", "xspi1_sel", cdu + CDU_CFG8, 0);
 	clks[ADSP_SC846_CLK_LP] = cdu_gate("lp", "lp_sel", cdu + CDU_CFG9, 0);
-	clks[ADSP_SC846_CLK_XSPI] = cdu_gate("xspi", "xspi_sel",
+	clks[ADSP_SC846_CLK_XSPI0] = cdu_gate("xspi0", "xspi0_sel",
 						    cdu + CDU_CFG10, 0);
 	clks[ADSP_SC846_CLK_TRACE] = cdu_gate("trace", "trace_sel", cdu + CDU_CFG12, 0);
 	clks[ADSP_SC846_CLK_PWM] = cdu_gate("pwm", "pwm_sel", cdu + CDU_CFG13, 0);
