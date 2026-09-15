@@ -169,6 +169,9 @@ static int sc846_clock_probe(struct udevice *dev)
 								    "cgu1_vco",
 								    CLK_SET_RATE_PARENT,
 								    1, 3);
+	clks[ADSP_SC846_CLK_CGU1_DCLK1_1] =
+		clk_register_fixed_factor(NULL, "dclk1_1", "cgu1_vco",
+					  CLK_SET_RATE_PARENT, 1, 5);
 
 	/* Gates to enable CGU outputs */
 	clks[ADSP_SC846_CLK_CGU0_CCLK0] = cgu_gate("cclk0_0", "cgu0_cdiv",
