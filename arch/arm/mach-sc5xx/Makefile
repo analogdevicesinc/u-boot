@@ -19,4 +19,3 @@ obj-$(CONFIG_SC846) += sc846-som.o
 obj-$(CONFIG_SC846) += sc846-som-spl.o
 
 obj-$(CONFIG_XPL_BUILD) += spl.o
-obj-$(CONFIG_SYSCON) += rcu.o

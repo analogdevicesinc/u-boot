@@ -39,11 +39,13 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#if !CONFIG_IS_ENABLED(SYSRESET)
 void reset_cpu(void)
 {
 	u32 val = readl(RCU0_CTL);
 	writel(val | 1, RCU0_CTL);
 }
+#endif
 
 void enable_caches(void)
 {
