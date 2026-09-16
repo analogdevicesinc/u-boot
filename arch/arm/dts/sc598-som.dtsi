@@ -172,7 +172,7 @@
 &eth0 {
 	compatible = "adi,sc59x-dwmac-eqos";
 	reg = <0x31040000 0x10000>;
-	phy-handle = <&dp83867>;
+	phy-handle = <&adin1300>;
 	phy-mode = "rgmii-id";
 
 	mdio {
@@ -180,7 +180,7 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 
-		dp83867: ethernet-phy@0 {
+		adin1300: ethernet-phy@0 {
 			compatible = "ethernet-phy-ieee802.3-c22";
 			reg = <0>;
 		};

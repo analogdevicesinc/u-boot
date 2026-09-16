@@ -70,14 +70,6 @@
 			bootph-pre-ram;
 		};
 
-		eth0-reset {
-			gpio-hog;
-			gpios = <12 GPIO_ACTIVE_LOW>;
-			output-high;
-			line-name = "eth0-reset";
-			bootph-pre-ram;
-		};
-
 		adau1372-pwrdwn {
 			gpio-hog;
 			gpios = <13 GPIO_ACTIVE_LOW>;
@@ -110,4 +102,10 @@
 			bootph-pre-ram;
 		};
 	};
+};
+
+&adin1300 {
+	reset-gpios = <&crr_gpio_expander 12 GPIO_ACTIVE_LOW>;
+	reset-assert-us = <10>;
+	reset-deassert-us = <5000>;
 };
