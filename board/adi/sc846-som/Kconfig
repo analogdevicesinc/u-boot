@@ -121,7 +121,7 @@ config CDU0_CLKO1
 
 # CORE 1
 config CDU0_CLKO2
-	default 7
+	default 1
 
 # DDR
 config CDU0_CLKO3
