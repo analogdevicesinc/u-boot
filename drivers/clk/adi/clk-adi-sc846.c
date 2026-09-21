@@ -42,8 +42,8 @@ static int sc846_clock_probe(struct udevice *dev)
 	void __iomem *cdu;
 	int ret;
 	struct resource res;
-
 	struct clk *clks[ADSP_SC846_CLK_END];
+
 	struct clk dummy, clkin0;
 
 	ret = dev_read_resource_byname(dev, "cgu0", &res);
@@ -200,8 +200,6 @@ static int sc846_clock_probe(struct udevice *dev)
 	clks[ADSP_SC846_CLK_SHARC0_SEL] = cdu_mux("sharc_sel", cdu + CDU_CFG0,
 						  sharc0_sels);
 	clks[ADSP_SC846_CLK_ARM0_SEL] = cdu_mux("arm0_sel", cdu + CDU_CFG1, arm_sels);
-	clks[ADSP_SC846_CLK_ARM1_SEL] = cdu_mux("arm1_sel", cdu + CDU_CFG2, arm_sels);
-
 	clks[ADSP_SC846_CLK_CDU_DDR_SEL] = cdu_mux("cdu_ddr_sel", cdu + CDU_CFG3,
 						   cdu_ddr_sels);
 	clks[ADSP_SC846_CLK_CAN_SEL] = cdu_mux("can_sel", cdu + CDU_CFG4, can_sels);
@@ -223,8 +221,6 @@ static int sc846_clock_probe(struct udevice *dev)
 	clks[ADSP_SC846_CLK_SHARC0] = cdu_gate("sharc", "sharc_sel", cdu + CDU_CFG0,
 					       CLK_IS_CRITICAL);
 	clks[ADSP_SC846_CLK_ARM0] = cdu_gate("arm0", "arm0_sel", cdu + CDU_CFG1,
-					    CLK_IS_CRITICAL);
-	clks[ADSP_SC846_CLK_ARM1] = cdu_gate("arm1", "arm1_sel", cdu + CDU_CFG2,
 					    CLK_IS_CRITICAL);
 	clks[ADSP_SC846_CLK_CDU_DDR] = cdu_gate("cdu_ddr", "cdu_ddr_sel", cdu + CDU_CFG3,
 						0);
