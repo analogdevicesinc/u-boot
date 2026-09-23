@@ -68,21 +68,21 @@
 #define SHARCFX_IRAM_END		0x2F80FFFF
 #define SHARCFX_IRAM_ARM_OFFSET		0x07540000
 
-#define SHT_ADI_ATTRIBUTES      (SHT_LOPROC + 2)
-#define ADI_ATTR_SECTION_NAME   ".adi.attributes"
-#define ADI_ATTR_FORMAT_A       'A'
-#define ADI_ATTR_VENDOR         "AnonADI"
+#define SHT_ADI_ATTRIBUTES	(SHT_LOPROC + 2)
+#define ADI_ATTR_SECTION_NAME	".adi.attributes"
+#define ADI_ATTR_FORMAT_A	'A'
+#define ADI_ATTR_VENDOR		"AnonADI"
 #define VENDOR_ATTR_SIZE	8
 
-#define ADI_ATTR_SUB_FILE       1
-#define ADI_ATTR_SUB_SECTION    2
+#define ADI_ATTR_SUB_FILE	1
+#define ADI_ATTR_SUB_SECTION	2
 
-#define ADI_ATTR_TAG_PART       4
-#define ADI_ATTR_TAG_WIDTH_BITS 19
+#define ADI_ATTR_TAG_PART	4
+#define ADI_ATTR_TAG_WIDTH_BITS	19
 
 /* SHARC1/SHARC2 L1 multiprocessor window offsets (DS Table 4) */
-#define SHARC1_MP_OFFSET       0x28000000
-#define SHARC2_MP_OFFSET       0x28800000
+#define SHARC1_MP_OFFSET	0x28000000
+#define SHARC2_MP_OFFSET	0x28800000
 
 enum sc5xx_rproc_variant {
 	SC5XX_RPROC_SHARC,	/* SHARC+ */
@@ -95,24 +95,23 @@ enum sc5xx_firmware_variant {
 	SC5XX_FW_ELF,
 };
 
-
-typedef struct __attribute__(( __packed__ )) adi_section {
+typedef struct __attribute__((__packed__)) adi_section {
 	uint8_t format;
 	uint32_t section_length;
 	char vendor[VENDOR_ATTR_SIZE];
 } adi_section;
 
-typedef struct __attribute__(( __packed__ )) adi_section_property {
+typedef struct __attribute__((__packed__)) adi_section_property {
 	uint8_t type;
 	uint32_t length;
 } adi_section_property;
 
-typedef struct __attribute__(( __packed__ )) adi_tag {
+typedef struct __attribute__((__packed__)) adi_tag {
 	uint8_t id;
 	uint8_t val;
 } adi_tag;
 
-typedef struct __attribute__(( __packed__ )) section_property {
+typedef struct __attribute__((__packed__)) section_property {
 	uint32_t addr;
 	uint32_t bits;
 } section_property;
@@ -203,10 +202,11 @@ static const struct sharcp_space sharcp_spaces[] = {
 	{ 0x20000000, 0x201fffff, 0x20000000, 0, 1, 8  },
 };
 
-uint32_t u32le(uint32_t u32) {
-	return ((u32 >> 24) & 0xff) 
+uint32_t u32le(uint32_t u32)
+{
+	return ((u32 >> 24) & 0xff)
 		|| (((u32 >> 16) & 0xff) << 8)
-		|| (((u32 >> 8) & 0xff) << 16) 
+		|| (((u32 >> 8) & 0xff) << 16)
 		|| ((u32 & 0xff) << 24);
 }
 
@@ -225,13 +225,13 @@ static u8 sharc_section_bits(const struct elf_section_list *sections, u32 addr)
 	return 0;
 }
 
-int sharc_address_idx(uint32_t addr, uint8_t bits) {
+int sharc_address_idx(uint32_t addr, uint8_t bits)
+{
 	int i;
 
-	for (i = 0; i < sizeof(sharcp_spaces)/sizeof(sharcp_spaces[0]); i++) { 
+	for (i = 0; i < sizeof(sharcp_spaces)/sizeof(sharcp_spaces[0]); i++) {
 		const struct sharcp_space *map = &sharcp_spaces[i];
 		if ((addr >= map->start) && (addr <= map->end) && (bits == map->bits)) {
-			printk("Found memmory map\n");
 			return i;
 		}
 	}
@@ -239,15 +239,15 @@ int sharc_address_idx(uint32_t addr, uint8_t bits) {
 	return -1;
 }
 
-uint32_t sharcp_to_arm(uint32_t addr, uint8_t bits, int core) {
+uint32_t sharcp_to_arm(uint32_t addr, uint8_t bits, int core)
+{
 	uint32_t arm_addr = 0x0;
 	int idx = 0;
 	const struct sharcp_space *sp = NULL;
-	printk("addr %08llx bits %08llx\n",addr,bits);
 
-	if ((idx = sharc_address_idx(addr, bits)) == -1 ) {
+	idx = sharc_address_idx(addr, bits);
+	if (idx == -1)
 		return 0x0;
-	}
 
 	sp = &sharcp_spaces[idx];
 
@@ -256,7 +256,6 @@ uint32_t sharcp_to_arm(uint32_t addr, uint8_t bits, int core) {
 		arm_addr += (core == 2) ? SHARC2_MP_OFFSET : SHARC1_MP_OFFSET;
 	}
 
-	printk("arm_addr %08llx\n", arm_addr);
 	return arm_addr;
 }
 
@@ -296,14 +295,17 @@ static int sharc_ldr_load(struct udevice *dev, ulong addr, ulong size)
 							0 : block_hdr->byte_count);
 		next_hdr = (struct ldr_hdr *)(buf + offset);
 
-		if (block_hdr->bcode_flag.bflag_first)
+		if (block_hdr->bcode_flag.bflag_first) {
 			priv->load_addr = (unsigned long)block_hdr->target_addr;
+		}
 
 		if (!is_empty(block_hdr)) {
+
 			if (block_hdr->bcode_flag.bflag_fill) {
 				memset_io((void *)(phys_addr_t)block_hdr->target_addr,
 					  block_hdr->argument,
 					  block_hdr->byte_count);
+
 			} else {
 				memcpy_toio((void *)(phys_addr_t)block_hdr->target_addr,
 					  buf + sizeof(struct ldr_hdr),
@@ -331,9 +333,9 @@ static bool sharc_elf_range_ok(ulong image_size, u32 offset, u32 length)
 	return offset <= image_size && length <= image_size - offset;
 }
 
-static int adi_attr_parse_section(struct elf_section_list *elfsh, const u8 *attr_section, u32 attr_size) 
+static int adi_attr_parse_section(struct elf_section_list *elfsh, const u8 *attr_section, u32 attr_size)
 {
-	int i=0,j=0;
+	int i = 0, j = 0;
 	const adi_section *attribute_section = (const void *)attr_section;
 	const uint8_t *attr_end = attr_section + 1 + attribute_section->section_length;
 	const adi_section_property *property = (const void *)(attr_section + sizeof(*attribute_section));
@@ -343,24 +345,18 @@ static int adi_attr_parse_section(struct elf_section_list *elfsh, const u8 *attr
 		uint32_t tag_length = length - sizeof(adi_section_property);
 		uint32_t tag_num = tag_length/2;
 
-		printk("Attribute %02x ",j);
-		printk("Tag %02x Num %02x\n",property->type, tag_num);
-
-		const uint8_t *tag_offset = (void *)((const uint8_t *)property + sizeof(adi_section_property)); 
+		const uint8_t *tag_offset = (void *)((const uint8_t *)property + sizeof(adi_section_property));
 		const adi_tag *tag = (const void *)(tag_offset);
 		//fist tag is the section number, second is one of section memmory paramters
-		if (tag_num<2) {
+		if (tag_num < 2) {
 			break;
 		}
-		
+
 		if ((tag[0].id >= elfsh->shnum) && (tag[0].val != 0))
 			break;
-		
-		printk("Section %02d\n",tag[0].id);
-		
-		for (i=1; i<tag_num; i++) {
+
+		for (i = 1; i < tag_num; i++) {
 			//index 0 tag is section number and 0
-			printk("id %02d val %02d \n", tag[i].id, tag[i].val);
 			if (tag[i].id == ADI_ATTR_TAG_WIDTH_BITS) {
 				uint32_t sec_id = tag[0].id;
 				elfsh->shproperty[sec_id].bits = tag[i].val;
@@ -372,9 +368,8 @@ static int adi_attr_parse_section(struct elf_section_list *elfsh, const u8 *attr
 	}
 
 	//print all section that have address'es and bitness set
-	for (i=0; i<elfsh->shnum;i++) {
+	for (i = 0; i < elfsh->shnum; i++) {
 		uint32_t arm_addr = sharcp_to_arm(elfsh->shproperty[i].addr, elfsh->shproperty[i].bits, 0);
-		printf("%02d:addr %08llx bits %08lld armaddr %08llx\n", i, elfsh->shproperty[i].addr, elfsh->shproperty[i].bits, arm_addr);
 	}
 
 	return 0;
@@ -421,41 +416,84 @@ static int sharc_elf_section_list_init(struct elf_section_list *elfsh,
 			continue;
 
 		name = section_names + section->sh_name;
-		printk("Section name: %s\n", name);
-		if (strnlen(name, shstr->sh_size - section->sh_name) >= shstr->sh_size - section->sh_name) {
-			printk("continue\n");
+		if (strnlen(name, shstr->sh_size - section->sh_name) >= shstr->sh_size - section->sh_name)
 			continue;
-		}
 
-		if (section->sh_type == SHT_ADI_ATTRIBUTES && strcmp(name, ADI_ATTR_SECTION_NAME)==0) {
+		if (section->sh_type == SHT_ADI_ATTRIBUTES && strcmp(name, ADI_ATTR_SECTION_NAME) == 0)
 			attr = section;
-		}
 	}
 
 	if (!attr) {
 		ret = -ENOENT;
 		goto err_free;
 	}
-	printk("%s:%d\n",__FILE__,__LINE__);
 	if (!sharc_elf_range_ok(size, attr->sh_offset, attr->sh_size)) {
 		ret = -EINVAL;
 		goto err_free;
 	}
-	printk("%s:%d\n",__FILE__,__LINE__);
 	ret = adi_attr_parse_section(elfsh,
 				     (const u8 *)(addr + attr->sh_offset),
 				     attr->sh_size);
-	printk("%s:%d\n",__FILE__,__LINE__);
 	if (ret)
 		goto err_free;
-	printk("%s:%d\n",__FILE__,__LINE__);
 	return 0;
 
 err_free:
-	printk("%s:%d\n",__FILE__,__LINE__);
 	sharc_elf_section_list_free(elfsh);
-	printk("%s:%d\n",__FILE__,__LINE__);
 	return ret;
+}
+
+/*
+ * The .dxe stores every word of a word addressed SHARC space with the opposite
+ * byte order to the one the ARM byte window presents; CCES's elfloader applies
+ * that swap when it builds a .ldr, which is why the LDR path can memcpy its
+ * blocks verbatim. rproc_elf32_load_image() copies the ELF payload as is, so
+ * each word has to be rewritten in the right order afterwards - otherwise the
+ * core resets to a valid SVECT, fetches byte reversed instructions and silently
+ * does nothing. Byte space (scale 1) needs no swap.
+ */
+static void sharc_elf_swap_words(struct udevice *dev, ulong addr, ulong size)
+{
+	const Elf32_Ehdr *ehdr = (const Elf32_Ehdr *)addr;
+	struct sc5xx_rproc_data *priv = dev_get_priv(dev);
+	const Elf32_Phdr *phdr;
+	unsigned int i, j;
+	u32 off;
+
+	phdr = (const Elf32_Phdr *)(addr + ehdr->e_phoff);
+
+	for (i = 0; i < ehdr->e_phnum; i++, phdr++) {
+		const u8 *src;
+		u8 *dst;
+		u8 w;
+		int idx;
+
+		if (phdr->p_type != PT_LOAD || !phdr->p_filesz)
+			continue;
+
+		idx = sharc_address_idx(phdr->p_paddr,
+					sharc_section_bits(&priv->elf_sections,
+							   phdr->p_paddr));
+		if (idx < 0)
+			continue;
+
+		w = sharcp_spaces[idx].scale;
+		if (w < 2)
+			continue;
+
+		dst = (u8 *)(uintptr_t)sharcp_to_arm(phdr->p_paddr,
+						     sharcp_spaces[idx].bits,
+						     priv->coreid);
+		if (!dst)
+			continue;
+
+		printk("swap da %08x arm_addr %p width %u\n", phdr->p_paddr, dst, w);
+
+		src = (const u8 *)(addr + phdr->p_offset);
+		for (off = 0; off + w <= phdr->p_filesz; off += w)
+			for (j = 0; j < w; j++)
+				writeb(src[off + j], dst + off + (w - 1 - j));
+	}
 }
 
 static int sharc_elf_load(struct udevice *dev, ulong addr, ulong size)
@@ -475,23 +513,16 @@ static int sharc_elf_load(struct udevice *dev, ulong addr, ulong size)
 		}
 	}
 
-	printk("sharc_elf_load done 1\n");
 	ret = rproc_elf32_load_image(dev, addr, size);
 
-
-	printk("sharc_elf_load done 3\n");
 	if (priv->variant == SC5XX_RPROC_SHARC) {
+		if (!ret)
+			sharc_elf_swap_words(dev, addr, size);
 		sharc_elf_section_list_free(&priv->elf_sections);
-		printk("sharc_elf_load done 4\n");
 	}
 
-	printk("sharc_elf_load done 2\n");
 
 	return ret;
-
-
-
-	return rproc_elf32_load_image(dev, addr, size);
 }
 
 static int sharc_load(struct udevice *dev, ulong addr, ulong size)
@@ -567,8 +598,6 @@ static int sharc_start(struct udevice *dev)
 	/* Write load address to appropriate SVECT for core */
 	regmap_write(priv->rcu, priv->svect_offset, priv->load_addr);
 
-	printk("load_addr %08llx\n",priv->load_addr);
-
 	sharc_reset(priv);
 
 	/* Clear the IDLE bit when start the SHARC core */
@@ -586,29 +615,25 @@ void *sc5xx_sharc_pa_to_virt(struct udevice *dev, ulong da, ulong size)
 	u32 arm_addr;
 	u8 bits;
 
-	printk("da %08llx\n", da);
-
 	//Instruction RAM
 	//SHARC-FX -> ARM
 	//0x2F800000–0x2F80FFFF -> 0x282C0000–0x282CFFFF 64KB
 	if (priv->variant == SC5XX_RPROC_SHARCFX)
 		if (da >= SHARCFX_IRAM_START && da <= SHARCFX_IRAM_END) {
-			printk("VA to PA\n");
 			return (void *)(uintptr_t)(da - SHARCFX_IRAM_ARM_OFFSET);
 		}
 
-
 	bits = sharc_section_bits(&priv->elf_sections, da);
 	if (!bits) {
-		dev_err(dev, "no ADI section width for SHARC address 0x%lx\n",
-			da);
-		return NULL;
- 	}
+		dev_err(dev, "no ADI section width for SHARC address 0x%lx\n", da);
+		return da;
+	}
 
- 	if ((arm_addr = sharcp_to_arm(da, bits, coreid)) == 0x0) {
+	arm_addr = sharcp_to_arm(da, bits, coreid);
+	if (arm_addr == 0x0) {
 		dev_err(dev, "no SHARC memory map for address 0x%lx width %u\n",
 			da, bits);
-		return NULL;
+		return da;
 	} else {
 		return arm_addr;
 	}
@@ -650,7 +675,6 @@ static int sc5xx_probe(struct udevice *dev)
 		return PTR_ERR(priv->rcu);
 
 	priv->variant = dev_get_driver_data(dev);
-	printk("variant %d\n", priv->variant);
 
 	dev_err(dev, "sc5xx remoteproc core %d available\n", priv->coreid);
 
