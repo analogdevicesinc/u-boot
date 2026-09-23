@@ -17,49 +17,28 @@
 #include <timer.h>
 #include <asm/io.h>
 #include <dm/device_compat.h>
-#include <linux/compiler_types.h>
+#include <dm/ofnode.h>
 
-/*
- * Timer Configuration Register Bits
- */
-#define TIMER_OUT_DIS       0x0800
-#define TIMER_PULSE_HI      0x0080
-#define TIMER_MODE_PWM_CONT 0x000c
+/* Shared group registers (relative to block base) */
+#define GPTIMER_RUN_SET		0x08
+#define GPTIMER_DATA_IMSK	0x1C
 
-#define __BFP(m) u16 m; u16 __pad_##m
+/* Per-timer registers (relative to timer base = block base + adi,offset) */
+#define GPTIMER_CFG_OFF		0x00
+#define GPTIMER_CNT_OFF		0x04
+#define GPTIMER_PER_OFF		0x08
+#define GPTIMER_WID_OFF		0x0C
 
-struct gptimer3 {
-	__BFP(config);
-	u32 counter;
-	u32 period;
-	u32 width;
-	u32 delay;
-};
+/* Timer Configuration Register bits */
+#define TIMER_OUT_DIS		0x0800
+#define TIMER_PULSE_HI		0x0080
+#define TIMER_MODE_PWM_CONT	0x000c
 
-struct gptimer3_group_regs {
-	__BFP(run);
-	__BFP(enable);
-	__BFP(disable);
-	__BFP(stop_cfg);
-	__BFP(stop_cfg_set);
-	__BFP(stop_cfg_clr);
-	__BFP(data_imsk);
-	__BFP(stat_imsk);
-	__BFP(tr_msk);
-	__BFP(tr_ie);
-	__BFP(data_ilat);
-	__BFP(stat_ilat);
-	__BFP(err_status);
-	__BFP(bcast_per);
-	__BFP(bcast_wid);
-	__BFP(bcast_dly);
-};
-
-#define MAX_TIM_LOAD	0xFFFFFFFF
+#define MAX_TIM_LOAD		0xFFFFFFFF
 
 struct adi_gptimer_priv {
-	struct gptimer3_group_regs __iomem *timer_group;
-	struct gptimer3 __iomem *timer_base;
+	void __iomem *group_base;
+	void __iomem *timer_base;
 	u32 prev;
 	u64 upper;
 };
@@ -68,14 +47,14 @@ static u64 adi_gptimer_get_count(struct udevice *udev)
 {
 	struct adi_gptimer_priv *priv = dev_get_priv(udev);
 
-	u32 now = readl(&priv->timer_base->counter);
+	u32 now = readl(priv->timer_base + GPTIMER_CNT_OFF);
 
 	if (now < priv->prev)
 		priv->upper += (1ull << 32);
 
 	priv->prev = now;
 
-	return (priv->upper + (u64)now);
+	return priv->upper + (u64)now;
 }
 
 static const struct timer_ops adi_gptimer_ops = {
@@ -86,59 +65,77 @@ static int adi_gptimer_probe(struct udevice *udev)
 {
 	struct timer_dev_priv *uc_priv = dev_get_uclass_priv(udev);
 	struct adi_gptimer_priv *priv = dev_get_priv(udev);
+	void __iomem *group_base;
+	ofnode child;
 	struct clk clk;
+	u32 id, offset;
 	u16 imask;
 	int ret;
+	bool found = false;
 
-	priv->timer_group = dev_remap_addr_index(udev, 0);
-	priv->timer_base = dev_remap_addr_index(udev, 1);
-	priv->upper = 0;
-	priv->prev = 0;
+	group_base = dev_remap_addr(udev);
+	if (!group_base)
+		return -EINVAL;
 
-	if (!priv->timer_group || !priv->timer_base) {
-		dev_err(udev, "Missing timer_group or timer_base reg entries\n");
+	ofnode_for_each_subnode(child, dev_ofnode(udev)) {
+		if (!ofnode_read_bool(child, "adi,is-clocksource"))
+			continue;
+		if (ofnode_read_u32(child, "reg", &id) ||
+		    ofnode_read_u32(child, "adi,offset", &offset)) {
+			dev_err(udev, "clocksource child missing reg or adi,offset\n");
+			return -EINVAL;
+		}
+		found = true;
+		break;
+	}
+
+	if (!found) {
+		dev_err(udev, "no child with adi,is-clocksource found\n");
 		return -ENODEV;
 	}
 
+	priv->group_base = group_base;
+	priv->timer_base = group_base + offset;
+	priv->upper = 0;
+	priv->prev = 0;
+
 	ret = clk_get_by_index(udev, 0, &clk);
 	if (ret < 0) {
-		dev_err(udev, "Missing clock reference for timer\n");
+		dev_err(udev, "missing clock reference for timer\n");
 		return ret;
 	}
 
 	ret = clk_enable(&clk);
 	if (ret) {
-		dev_err(udev, "Failed to enable clock\n");
+		dev_err(udev, "failed to enable clock\n");
 		return ret;
 	}
 
 	uc_priv->clock_rate = clk_get_rate(&clk);
 
-	/* Enable timer */
 	writew(TIMER_OUT_DIS | TIMER_MODE_PWM_CONT | TIMER_PULSE_HI,
-	       &priv->timer_base->config);
-	writel(MAX_TIM_LOAD, &priv->timer_base->period);
-	writel(MAX_TIM_LOAD - 1, &priv->timer_base->width);
+	       priv->timer_base + GPTIMER_CFG_OFF);
+	writel(MAX_TIM_LOAD, priv->timer_base + GPTIMER_PER_OFF);
+	writel(MAX_TIM_LOAD - 1, priv->timer_base + GPTIMER_WID_OFF);
 
-	/* We only use timer 0 in uboot */
-	imask = readw(&priv->timer_group->data_imsk);
-	imask &= ~(1 << 0);
-	writew(imask, &priv->timer_group->data_imsk);
-	writew((1 << 0), &priv->timer_group->enable);
+	imask = readw(group_base + GPTIMER_DATA_IMSK);
+	imask &= ~(1 << id);
+	writew(imask, group_base + GPTIMER_DATA_IMSK);
+	writew(1 << id, group_base + GPTIMER_RUN_SET);
 
 	return 0;
 }
 
 static const struct udevice_id adi_gptimer_ids[] = {
-	{ .compatible = "adi,sc5xx-gptimer" },
+	{ .compatible = "adi,sc5xx-gptimers" },
 	{ },
 };
 
 U_BOOT_DRIVER(adi_gptimer) = {
-	.name = "adi_gptimer",
-	.id = UCLASS_TIMER,
-	.of_match = adi_gptimer_ids,
-	.priv_auto = sizeof(struct adi_gptimer_priv),
-	.probe = adi_gptimer_probe,
-	.ops = &adi_gptimer_ops,
+	.name		= "adi_gptimer",
+	.id		= UCLASS_TIMER,
+	.of_match	= adi_gptimer_ids,
+	.priv_auto	= sizeof(struct adi_gptimer_priv),
+	.probe		= adi_gptimer_probe,
+	.ops		= &adi_gptimer_ops,
 };
