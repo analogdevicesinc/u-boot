@@ -203,6 +203,17 @@ static int spi_child_pre_probe(struct udevice *dev)
 {
 	struct dm_spi_slave_plat *plat = dev_get_parent_plat(dev);
 	struct spi_slave *slave = dev_get_parent_priv(dev);
+	struct udevice *bus = dev_get_parent(dev);
+	struct dm_spi_ops *ops = spi_get_ops(bus);
+	int ret;
+
+	if (ops->cs_info) {
+		ret = ops->cs_info(bus, plat->cs[0], NULL);
+		if (ret) {
+			dev_err(dev, "Invalid chip select %u\n", plat->cs[0]);
+			return ret;
+		}
+	}
 
 	/*
 	 * This is needed because we pass struct spi_slave around the place
@@ -229,32 +240,7 @@ int spi_chip_select(struct udevice *dev)
 
 int spi_find_chip_select(struct udevice *bus, int cs, struct udevice **devp)
 {
-	struct dm_spi_ops *ops;
-	struct spi_cs_info info;
 	struct udevice *dev;
-	int ret;
-
-	/*
-	 * Ask the driver. For the moment we don't have CS info.
-	 * When we do we could provide the driver with a helper function
-	 * to figure out what chip selects are valid, or just handle the
-	 * request.
-	 */
-	ops = spi_get_ops(bus);
-	if (ops->cs_info) {
-		ret = ops->cs_info(bus, cs, &info);
-	} else {
-		/*
-		 * We could assume there is at least one valid chip select.
-		 * The driver didn't care enough to tell us.
-		 */
-		ret = 0;
-	}
-
-	if (ret) {
-		dev_err(bus, "Invalid cs %d (err=%d)\n", cs, ret);
-		return ret;
-	}
 
 	for (device_find_first_child(bus, &dev); dev;
 	     device_find_next_child(&dev)) {
