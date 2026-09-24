@@ -134,17 +134,6 @@ struct sc5xx_rproc_data {
 	enum sc5xx_rproc_variant variant;
 };
 
-
-
-struct sharcp_space {
-	uint32_t start;
-	uint32_t end;
-	uint32_t byte_base;
-	uint8_t l1;
-	uint8_t scale;
-	uint8_t bits;
-};
-
 struct block_code_flag {
 	u32 bcode:4,		/* 0-3 */
 	    bflag_save:1,	/* 4 */
@@ -170,36 +159,51 @@ struct ldr_hdr {
 	u32 argument;
 };
 
+#define WORD_SCALE_8 1
+#define WORD_SCALE_16 2
+#define WORD_SCALE_32 4
+#define WORD_SCALE_48 6
+#define WORD_SCALE_64 8
+
+struct sharcp_space {
+	uint32_t start;
+	uint32_t end;
+	uint32_t byte_base;
+	uint8_t l1;
+	uint8_t scale;
+	uint8_t bits;
+};
+
 static const struct sharcp_space sharcp_spaces[] = {
 	/* L1 block 0 */
-	{ 0x00048000, 0x0004dfff, 0x00240000, 1, 8, 64 },
-	{ 0x00090000, 0x00097fff, 0x00240000, 1, 6, 48 },
-	{ 0x00090000, 0x0009bfff, 0x00240000, 1, 4, 32 },
-	{ 0x00120000, 0x00137fff, 0x00240000, 1, 2, 16 },
-	{ 0x00240000, 0x0026ffff, 0x00240000, 1, 1, 8  },
+	{ 0x00048000, 0x0004dfff, 0x00240000, 1, WORD_SCALE_64, 64 },
+	{ 0x00090000, 0x00097fff, 0x00240000, 1, WORD_SCALE_48, 48 },
+	{ 0x00090000, 0x0009bfff, 0x00240000, 1, WORD_SCALE_32, 32 },
+	{ 0x00120000, 0x00137fff, 0x00240000, 1, WORD_SCALE_16, 16 },
+	{ 0x00240000, 0x0026ffff, 0x00240000, 1, WORD_SCALE_8,  8  },
 	/* L1 block 1 */
-	{ 0x00058000, 0x0005dfff, 0x002c0000, 1, 8, 64 },
-	{ 0x000b0000, 0x000b7fff, 0x002c0000, 1, 6, 48 },
-	{ 0x000b0000, 0x000bbfff, 0x002c0000, 1, 4, 32 },
-	{ 0x00160000, 0x00177fff, 0x002c0000, 1, 2, 16 },
-	{ 0x002c0000, 0x002effff, 0x002c0000, 1, 1, 8  },
+	{ 0x00058000, 0x0005dfff, 0x002c0000, 1, WORD_SCALE_64, 64 },
+	{ 0x000b0000, 0x000b7fff, 0x002c0000, 1, WORD_SCALE_48, 48 },
+	{ 0x000b0000, 0x000bbfff, 0x002c0000, 1, WORD_SCALE_32, 32 },
+	{ 0x00160000, 0x00177fff, 0x002c0000, 1, WORD_SCALE_16, 16 },
+	{ 0x002c0000, 0x002effff, 0x002c0000, 1, WORD_SCALE_8,  8  },
 	/* L1 block 2 */
-	{ 0x00060000, 0x00063fff, 0x00300000, 1, 8, 64 },
-	{ 0x000c0000, 0x000c5554, 0x00300000, 1, 6, 48 },
-	{ 0x000c0000, 0x000c7fff, 0x00300000, 1, 4, 32 },
-	{ 0x00180000, 0x0018ffff, 0x00300000, 1, 2, 16 },
-	{ 0x00300000, 0x0031ffff, 0x00300000, 1, 1, 8  },
+	{ 0x00060000, 0x00063fff, 0x00300000, 1, WORD_SCALE_64, 64 },
+	{ 0x000c0000, 0x000c5554, 0x00300000, 1, WORD_SCALE_48, 48 },
+	{ 0x000c0000, 0x000c7fff, 0x00300000, 1, WORD_SCALE_32, 32 },
+	{ 0x00180000, 0x0018ffff, 0x00300000, 1, WORD_SCALE_16, 16 },
+	{ 0x00300000, 0x0031ffff, 0x00300000, 1, WORD_SCALE_8,  8  },
 	/* L1 block 3 */
-	{ 0x00070000, 0x00073fff, 0x00380000, 1, 8, 64 },
-	{ 0x000e0000, 0x000e5554, 0x00380000, 1, 6, 48 },
-	{ 0x000e0000, 0x000e7fff, 0x00380000, 1, 4, 32 },
-	{ 0x001c0000, 0x001cffff, 0x00380000, 1, 2, 16 },
-	{ 0x00380000, 0x0039ffff, 0x00380000, 1, 1, 8  },
+	{ 0x00070000, 0x00073fff, 0x00380000, 1, WORD_SCALE_64, 64 },
+	{ 0x000e0000, 0x000e5554, 0x00380000, 1, WORD_SCALE_48, 48 },
+	{ 0x000e0000, 0x000e7fff, 0x00380000, 1, WORD_SCALE_32, 32 },
+	{ 0x001c0000, 0x001cffff, 0x00380000, 1, WORD_SCALE_16, 16 },
+	{ 0x00380000, 0x0039ffff, 0x00380000, 1, WORD_SCALE_8,  8  },
 	/* L2, shared between the cores, no multiprocessor offset */
-	{ 0x00580000, 0x005d5554, 0x20000000, 0, 6, 48 }, // ? verify
-	{ 0x08000000, 0x0807ffff, 0x20000000, 0, 4, 32 },
-	{ 0x00b00000, 0x00bfffff, 0x20000000, 0, 2, 16 },
-	{ 0x20000000, 0x201fffff, 0x20000000, 0, 1, 8  },
+	{ 0x00580000, 0x005d5554, 0x20000000, 0, WORD_SCALE_48, 48 }, // ? verify
+	{ 0x08000000, 0x0807ffff, 0x20000000, 0, WORD_SCALE_32, 32 },
+	{ 0x00b00000, 0x00bfffff, 0x20000000, 0, WORD_SCALE_16, 16 },
+	{ 0x20000000, 0x201fffff, 0x20000000, 0, WORD_SCALE_8,  8  },
 };
 
 uint32_t u32le(uint32_t u32)
@@ -464,8 +468,7 @@ static void sharc_elf_swap_words(struct udevice *dev, ulong addr, ulong size)
 
 	for (i = 0; i < ehdr->e_phnum; i++, phdr++) {
 		const u8 *src;
-		u8 *dst;
-		u8 w;
+		u8 *dst, scale;
 		int idx;
 
 		if (phdr->p_type != PT_LOAD || !phdr->p_filesz)
@@ -477,8 +480,8 @@ static void sharc_elf_swap_words(struct udevice *dev, ulong addr, ulong size)
 		if (idx < 0)
 			continue;
 
-		w = sharcp_spaces[idx].scale;
-		if (w < 2)
+		scale = sharcp_spaces[idx].scale;
+		if (scale < WORD_SCALE_16)
 			continue;
 
 		dst = (u8 *)(uintptr_t)sharcp_to_arm(phdr->p_paddr,
@@ -487,12 +490,12 @@ static void sharc_elf_swap_words(struct udevice *dev, ulong addr, ulong size)
 		if (!dst)
 			continue;
 
-		printk("swap da %08x arm_addr %p width %u\n", phdr->p_paddr, dst, w);
+		printk("swap da %08x arm_addr %p width %u\n", phdr->p_paddr, dst, scale);
 
 		src = (const u8 *)(addr + phdr->p_offset);
-		for (off = 0; off + w <= phdr->p_filesz; off += w)
-			for (j = 0; j < w; j++)
-				writeb(src[off + j], dst + off + (w - 1 - j));
+		for (off = 0; off + scale <= phdr->p_filesz; off += scale)
+			for (j = 0; j < scale; j++)
+				writeb(src[off + j], dst + off + (scale - 1 - j));
 	}
 }
 
