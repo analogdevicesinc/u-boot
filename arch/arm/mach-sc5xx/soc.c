@@ -110,7 +110,7 @@ const char *sc5xx_get_boot_mode(u32 *bmode)
 
 	*bmode = local_mode;
 
-	if (local_mode >= 0 && local_mode <= ARRAY_SIZE(bmodes))
+	if (local_mode < ARRAY_SIZE(bmodes))
 		return bmodes[local_mode];
 	return "unknown";
 }
