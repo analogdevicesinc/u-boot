@@ -219,6 +219,9 @@ WEAK(apply_core_errata)
 
 	/* Check if we are running on a Cortex-A57 core */
 	branch_if_a57_core x0, apply_a57_core_errata
+
+	/* Check if we are running on a Cortex-A55 core */
+	branch_if_a55_core x0, apply_a55_core_errata
 0:
 	mov	lr, x29			/* Restore LR */
 	ret
@@ -293,6 +296,19 @@ apply_a57_core_errata:
 	msr	S3_1_c15_c2_0, x0	/* cpuactlr_el1 */
 	isb
 #endif
+	b 0b
+
+apply_a55_core_errata:
+
+	/*
+	 * disable the Cortex-A55 L3 data prefetcher.
+	 */
+	mrs	x0, S3_0_c15_c1_4	/* cpuectlr_el1 */
+	and	x0, x0, #~(0x7 << 10)
+	orr	x0, x0, #(0x4 << 10)	/* L3PCTL = full disable */
+	msr	S3_0_c15_c1_4, x0
+	dsb	sy
+	isb
 	b 0b
 ENDPROC(apply_core_errata)
 

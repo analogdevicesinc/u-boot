@@ -4,4 +4,5 @@
 #
 
 obj-y	:= sc846-som.o
+obj-y += l3_hang_test.o
 obj-y += ../carriers/

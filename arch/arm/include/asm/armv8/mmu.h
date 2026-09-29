@@ -30,12 +30,15 @@
 #define MT_DEVICE_GRE		2
 #define MT_NORMAL_NC		3
 #define MT_NORMAL		4
+#define MT_NORMAL_OUTER_NC	5
 
+/*Outer Cacheability*/
 #define MEMORY_ATTRIBUTES	((0x00 << (MT_DEVICE_NGNRNE * 8)) |	\
 				(0x04 << (MT_DEVICE_NGNRE * 8))   |	\
 				(0x0c << (MT_DEVICE_GRE * 8))     |	\
 				(0x44 << (MT_NORMAL_NC * 8))      |	\
-				(UL(0xff) << (MT_NORMAL * 8)))
+				(UL(0xff) << (MT_NORMAL * 8))     |	\
+				(UL(0x4f) << (MT_NORMAL_OUTER_NC * 8)))
 
 /*
  * Hardware page table definitions.

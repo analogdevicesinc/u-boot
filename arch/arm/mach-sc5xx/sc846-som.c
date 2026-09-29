@@ -32,11 +32,11 @@ static struct mm_region sc846_mem_map[] = {
 			 PTE_BLOCK_NON_SHARE |
 			 PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	}, {
-		/* DDR */
+		/* DDR: Outer Non-cacheable, Inner Write-Back, Inner Shareable */
 		.virt = 0x80000000UL,
 		.phys = 0x80000000UL,
 		.size = 0x40000000UL,
-		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
+		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL_OUTER_NC) |
 			 PTE_BLOCK_INNER_SHARE
 	}, {
 	/* List terminator */
