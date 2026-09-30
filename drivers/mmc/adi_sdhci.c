@@ -54,6 +54,40 @@
 #define SC846_MISCREG_TMR_CKDIV_MASK	GENMASK(10, 1)
 #define SC846_MISCREG_TMR_CKDIV_VAL	25
 
+#define DWCMSHC_EMMC_CTL		0x52c
+#define DWCMSHC_CARD_IS_EMMC		BIT(0)
+
+/* PAD_CNFG */
+#define DWCMSHC_PHY_BASE		0x300
+#define DWCMSHC_PHY_CNFG		(DWCMSHC_PHY_BASE + 0x00)
+#define DWCMSHC_PHY_CMDPAD_CNFG		(DWCMSHC_PHY_BASE + 0x04)
+#define DWCMSHC_PHY_DATPAD_CNFG		(DWCMSHC_PHY_BASE + 0x06)
+#define DWCMSHC_PHY_CLKPAD_CNFG		(DWCMSHC_PHY_BASE + 0x08)
+#define DWCMSHC_PHY_STBPAD_CNFG		(DWCMSHC_PHY_BASE + 0x0a)
+#define DWCMSHC_PHY_RSTNPAD_CNFG	(DWCMSHC_PHY_BASE + 0x0c)
+
+/* PHY_CNFG */
+#define DWCMSHC_PHY_CNFG_PAD_SN		GENMASK(23, 20)
+#define DWCMSHC_PHY_CNFG_PAD_SP		GENMASK(19, 16)
+#define DWCMSHC_PHY_CNFG_PWRGOOD	BIT(1)
+#define DWCMSHC_PHY_CNFG_RSTN		BIT(0)
+
+/* DATPAD_CNFG */
+#define DWCMSHC_PHY_PAD_TXSLEW_N	GENMASK(12, 9)
+#define DWCMSHC_PHY_PAD_TXSLEW_P	GENMASK(8, 5)
+#define DWCMSHC_PHY_PAD_WEAKPULL	GENMASK(4, 3)
+#define DWCMSHC_PHY_PAD_RXSEL		GENMASK(2, 0)
+
+/* PAD settings for 1.8v */
+#define SC846_PHY_PAD_SN		0x8
+#define SC846_PHY_PAD_SP		0x9
+#define SC846_PHY_TXSLEW_N		0x2
+#define SC846_PHY_TXSLEW_P		0x2
+#define SC846_PHY_WEAKPULL_NONE		0x0
+#define SC846_PHY_WEAKPULL_PULLUP	0x1
+#define SC846_PHY_RXSEL_NONE		0x0
+#define SC846_PHY_RXSEL_1V8		0x1
+
 struct adi_sdhc_plat {
 	struct mmc_config cfg;
 	struct mmc mmc;
@@ -61,7 +95,56 @@ struct adi_sdhc_plat {
 
 struct adi_sdhci_data {
 	int (*soc_init)(struct udevice *dev);
+	int (*post_init)(struct udevice *dev);
 };
+
+static int sc846_sdhci_post_init(struct udevice *dev)
+{
+	struct sdhci_host *host = dev_get_priv(dev);
+	u32 phy_cnfg;
+	u16 reg, pad;
+
+	reg = sdhci_readw(host, DWCMSHC_EMMC_CTL);
+	reg |= DWCMSHC_CARD_IS_EMMC;
+	sdhci_writew(host, reg, DWCMSHC_EMMC_CTL);
+
+	phy_cnfg = FIELD_PREP(DWCMSHC_PHY_CNFG_PAD_SN,
+			      SC846_PHY_PAD_SN) |
+		   FIELD_PREP(DWCMSHC_PHY_CNFG_PAD_SP,
+			      SC846_PHY_PAD_SP);
+
+	/* Configure PHY while held in reset. */
+	sdhci_writel(host, phy_cnfg, DWCMSHC_PHY_CNFG);
+
+	pad = FIELD_PREP(DWCMSHC_PHY_PAD_TXSLEW_N,
+			 SC846_PHY_TXSLEW_N) |
+	      FIELD_PREP(DWCMSHC_PHY_PAD_TXSLEW_P,
+			 SC846_PHY_TXSLEW_P) |
+	      FIELD_PREP(DWCMSHC_PHY_PAD_WEAKPULL,
+			 SC846_PHY_WEAKPULL_PULLUP) |
+	      FIELD_PREP(DWCMSHC_PHY_PAD_RXSEL,
+			 SC846_PHY_RXSEL_1V8);
+
+	sdhci_writew(host, pad, DWCMSHC_PHY_CMDPAD_CNFG);
+	sdhci_writew(host, pad, DWCMSHC_PHY_DATPAD_CNFG);
+	sdhci_writew(host, pad, DWCMSHC_PHY_RSTNPAD_CNFG);
+
+	pad = FIELD_PREP(DWCMSHC_PHY_PAD_TXSLEW_N,
+			 SC846_PHY_TXSLEW_N) |
+	      FIELD_PREP(DWCMSHC_PHY_PAD_TXSLEW_P,
+			 SC846_PHY_TXSLEW_P) |
+	      FIELD_PREP(DWCMSHC_PHY_PAD_WEAKPULL,
+			 SC846_PHY_WEAKPULL_NONE) |
+	      FIELD_PREP(DWCMSHC_PHY_PAD_RXSEL,
+			 SC846_PHY_RXSEL_NONE);
+
+	sdhci_writew(host, pad, DWCMSHC_PHY_CLKPAD_CNFG);
+
+	sdhci_writel(host, phy_cnfg | DWCMSHC_PHY_CNFG_RSTN,
+		     DWCMSHC_PHY_CNFG);
+
+	return 0;
+}
 
 static int sc846_sdhci_soc_init(struct udevice *dev)
 {
@@ -152,7 +235,14 @@ static int adi_dwcmshc_sdhci_probe(struct udevice *dev)
 			return ret;
 	}
 
-	return sdhci_probe(dev);
+	ret = sdhci_probe(dev);
+	if (ret)
+		return ret;
+
+	if (data && data->post_init)
+                return data->post_init(dev);
+
+	return 0;
 }
 
 static int adi_dwcmshc_sdhci_of_to_plat(struct udevice *dev)
@@ -175,6 +265,7 @@ static int adi_sdhci_bind(struct udevice *dev)
 
 static const struct adi_sdhci_data sc846_data = {
 	.soc_init = sc846_sdhci_soc_init,
+	.post_init = sc846_sdhci_post_init,
 };
 
 static const struct udevice_id adi_dwcmshc_sdhci_ids[] = {
