@@ -8,11 +8,14 @@
  * Based on Rockchip's sdhci.c file
  */
 
-#include <clk.h>
 #include <dm.h>
 #include <malloc.h>
+#include <regmap.h>
 #include <sdhci.h>
+#include <syscon.h>
 #include <asm/cache.h>
+#include <linux/bitfield.h>
+#include <linux/err.h>
 #include <linux/sizes.h>
 
 /* 400KHz is max freq for card ID etc. Use that as min */
@@ -45,10 +48,126 @@
  */
 #define ADMA_TABLE_EXTRA_SZ (ADMA_POTENTIAL_CROSSINGS * ADMA_DESC_LEN)
 
+/* ADSP-SC846 EMMC specific setup */
+#define SC846_MISCREG_EMMC		0x214
+#define SC846_MISCREG_TMR_CKEN		BIT(0)
+#define SC846_MISCREG_TMR_CKDIV_MASK	GENMASK(10, 1)
+#define SC846_MISCREG_TMR_CKDIV_VAL	25
+
+#define DWCMSHC_EMMC_CTL		0x52c
+#define DWCMSHC_CARD_IS_EMMC		BIT(0)
+
+/* PAD_CNFG */
+#define DWCMSHC_PHY_BASE		0x300
+#define DWCMSHC_PHY_CNFG		(DWCMSHC_PHY_BASE + 0x00)
+#define DWCMSHC_PHY_CMDPAD_CNFG		(DWCMSHC_PHY_BASE + 0x04)
+#define DWCMSHC_PHY_DATPAD_CNFG		(DWCMSHC_PHY_BASE + 0x06)
+#define DWCMSHC_PHY_CLKPAD_CNFG		(DWCMSHC_PHY_BASE + 0x08)
+#define DWCMSHC_PHY_STBPAD_CNFG		(DWCMSHC_PHY_BASE + 0x0a)
+#define DWCMSHC_PHY_RSTNPAD_CNFG	(DWCMSHC_PHY_BASE + 0x0c)
+
+/* PHY_CNFG */
+#define DWCMSHC_PHY_CNFG_PAD_SN		GENMASK(23, 20)
+#define DWCMSHC_PHY_CNFG_PAD_SP		GENMASK(19, 16)
+#define DWCMSHC_PHY_CNFG_PWRGOOD	BIT(1)
+#define DWCMSHC_PHY_CNFG_RSTN		BIT(0)
+
+/* DATPAD_CNFG */
+#define DWCMSHC_PHY_PAD_TXSLEW_N	GENMASK(12, 9)
+#define DWCMSHC_PHY_PAD_TXSLEW_P	GENMASK(8, 5)
+#define DWCMSHC_PHY_PAD_WEAKPULL	GENMASK(4, 3)
+#define DWCMSHC_PHY_PAD_RXSEL		GENMASK(2, 0)
+
+/* PAD settings for 1.8v */
+#define SC846_PHY_PAD_SN		0x8
+#define SC846_PHY_PAD_SP		0x9
+#define SC846_PHY_TXSLEW_N		0x2
+#define SC846_PHY_TXSLEW_P		0x2
+#define SC846_PHY_WEAKPULL_NONE		0x0
+#define SC846_PHY_WEAKPULL_PULLUP	0x1
+#define SC846_PHY_RXSEL_NONE		0x0
+#define SC846_PHY_RXSEL_1V8		0x1
+
 struct adi_sdhc_plat {
 	struct mmc_config cfg;
 	struct mmc mmc;
 };
+
+struct adi_sdhci_data {
+	int (*soc_init)(struct udevice *dev);
+	int (*post_init)(struct udevice *dev);
+};
+
+static int sc846_sdhci_post_init(struct udevice *dev)
+{
+	struct sdhci_host *host = dev_get_priv(dev);
+	u32 phy_cnfg;
+	u16 reg, pad;
+
+	reg = sdhci_readw(host, DWCMSHC_EMMC_CTL);
+	reg |= DWCMSHC_CARD_IS_EMMC;
+	sdhci_writew(host, reg, DWCMSHC_EMMC_CTL);
+
+	phy_cnfg = FIELD_PREP(DWCMSHC_PHY_CNFG_PAD_SN,
+			      SC846_PHY_PAD_SN) |
+		   FIELD_PREP(DWCMSHC_PHY_CNFG_PAD_SP,
+			      SC846_PHY_PAD_SP);
+
+	/* Configure PHY while held in reset. */
+	sdhci_writel(host, phy_cnfg, DWCMSHC_PHY_CNFG);
+
+	pad = FIELD_PREP(DWCMSHC_PHY_PAD_TXSLEW_N,
+			 SC846_PHY_TXSLEW_N) |
+	      FIELD_PREP(DWCMSHC_PHY_PAD_TXSLEW_P,
+			 SC846_PHY_TXSLEW_P) |
+	      FIELD_PREP(DWCMSHC_PHY_PAD_WEAKPULL,
+			 SC846_PHY_WEAKPULL_PULLUP) |
+	      FIELD_PREP(DWCMSHC_PHY_PAD_RXSEL,
+			 SC846_PHY_RXSEL_1V8);
+
+	sdhci_writew(host, pad, DWCMSHC_PHY_CMDPAD_CNFG);
+	sdhci_writew(host, pad, DWCMSHC_PHY_DATPAD_CNFG);
+	sdhci_writew(host, pad, DWCMSHC_PHY_RSTNPAD_CNFG);
+
+	pad = FIELD_PREP(DWCMSHC_PHY_PAD_TXSLEW_N,
+			 SC846_PHY_TXSLEW_N) |
+	      FIELD_PREP(DWCMSHC_PHY_PAD_TXSLEW_P,
+			 SC846_PHY_TXSLEW_P) |
+	      FIELD_PREP(DWCMSHC_PHY_PAD_WEAKPULL,
+			 SC846_PHY_WEAKPULL_NONE) |
+	      FIELD_PREP(DWCMSHC_PHY_PAD_RXSEL,
+			 SC846_PHY_RXSEL_NONE);
+
+	sdhci_writew(host, pad, DWCMSHC_PHY_CLKPAD_CNFG);
+
+	sdhci_writel(host, phy_cnfg | DWCMSHC_PHY_CNFG_RSTN,
+		     DWCMSHC_PHY_CNFG);
+
+	return 0;
+}
+
+static int sc846_sdhci_soc_init(struct udevice *dev)
+{
+	struct regmap *misc;
+	u32 mask, val;
+	int ret;
+
+	misc = syscon_regmap_lookup_by_phandle(dev, "adi,miscreg-syscon");
+	if (IS_ERR(misc))
+		return PTR_ERR(misc);
+
+	mask = SC846_MISCREG_TMR_CKEN | SC846_MISCREG_TMR_CKDIV_MASK;
+	val = SC846_MISCREG_TMR_CKEN |
+	      FIELD_PREP(SC846_MISCREG_TMR_CKDIV_MASK,
+			 SC846_MISCREG_TMR_CKDIV_VAL);
+
+	/* Enable EMMC timer clock and set timer clock divider */
+	ret = regmap_update_bits(misc, SC846_MISCREG_EMMC, mask, val);
+	if (ret)
+		return ret;
+
+	return 0;
+}
 
 void adi_dwcmshc_adma_write_desc(struct sdhci_host *host, void **desc,
 				 dma_addr_t addr, int len, bool end)
@@ -78,14 +197,16 @@ static int adi_dwcmshc_sdhci_probe(struct udevice *dev)
 	struct mmc_uclass_priv *upriv = dev_get_uclass_priv(dev);
 	struct adi_sdhc_plat *plat = dev_get_plat(dev);
 	struct sdhci_host *host = dev_get_priv(dev);
-	int max_frequency, ret;
-	struct clk clk;
+	struct adi_sdhci_data *data = (struct adi_sdhci_data *)dev_get_driver_data(dev);
+	int ret;
 
-	max_frequency = dev_read_u32_default(dev, "max-frequency", 0);
-	ret = clk_get_by_index(dev, 0, &clk);
-
+	/* sdhci_setup_cfg should get max_clk from EMSI_CAP
+	 * ADSP-SC598 has a max_clk of 50MHz
+	 * ADSP-SC846 has a max_clk of 200MHz
+	 */
 	host->quirks = 0;
-	host->max_clk = max_frequency;
+	host->max_clk = 0;
+
 	/*
 	 * The sdhci-driver only supports 4bit and 8bit, as sdhci_setup_cfg
 	 * doesn't allow us to clear MMC_MODE_4BIT.  Consequently, we don't
@@ -108,7 +229,20 @@ static int adi_dwcmshc_sdhci_probe(struct udevice *dev)
 	if (ret)
 		return ret;
 
-	return sdhci_probe(dev);
+	if (data && data->soc_init) {
+		ret = data->soc_init(dev);
+		if (ret)
+			return ret;
+	}
+
+	ret = sdhci_probe(dev);
+	if (ret)
+		return ret;
+
+	if (data && data->post_init)
+                return data->post_init(dev);
+
+	return 0;
 }
 
 static int adi_dwcmshc_sdhci_of_to_plat(struct udevice *dev)
@@ -129,9 +263,15 @@ static int adi_sdhci_bind(struct udevice *dev)
 	return sdhci_bind(dev, &plat->mmc, &plat->cfg);
 }
 
+static const struct adi_sdhci_data sc846_data = {
+	.soc_init = sc846_sdhci_soc_init,
+	.post_init = sc846_sdhci_post_init,
+};
+
 static const struct udevice_id adi_dwcmshc_sdhci_ids[] = {
 	{ .compatible = "adi,dwc-sdhci" },
-	{ }
+	{ .compatible = "adi,sc846-dwcmshc", .data = (ulong)&sc846_data },
+	{ },
 };
 
 U_BOOT_DRIVER(adi_dwcmshc_sdhci_drv) = {
