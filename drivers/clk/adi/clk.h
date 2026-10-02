@@ -114,6 +114,7 @@ static int cdu_check_clocks(struct clk *clks[], size_t count)
 			clks[i]->id = i;
 		} else {
 			pr_err("ADI Clock framework: Null pointer detected on clock %zu\n", i);
+			return -EINVAL;
 		}
 	}
 

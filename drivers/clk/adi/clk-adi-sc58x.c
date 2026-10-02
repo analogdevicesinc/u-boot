@@ -133,7 +133,7 @@ static int sc58x_clock_probe(struct udevice *dev)
 	clks[ADSP_SC58X_CLK_CGU0_CCLK0] = cgu_gate("cclk0_0", "cgu0_cdiv",
 						   cgu0 + CGU_CCBF_DIS, 0);
 	clks[ADSP_SC58X_CLK_CGU0_CCLK1] = cgu_gate("cclk1_0", "cgu0_cdiv",
-						   cgu1 + CGU_CCBF_DIS, 1);
+						   cgu0 + CGU_CCBF_DIS, 1);
 	clks[ADSP_SC58X_CLK_CGU0_OCLK] = cgu_gate("oclk_0", "cgu0_odiv",
 						  cgu0 + CGU_SCBF_DIS, 3);
 	clks[ADSP_SC58X_CLK_CGU0_DCLK] = cgu_gate("dclk_0", "cgu0_ddiv",
