@@ -116,32 +116,28 @@
 			bootph-pre-ram;
 		};
 
-		eth1 {
-			gpio-hog;
-			gpios = <13 GPIO_ACTIVE_LOW>;
-			output-high;
-			line-name = "eth1-en";
-			bootph-pre-ram;
-		};
+	};
+};
 
-		eth1-reset {
-			gpio-hog;
-			gpios = <14 GPIO_ACTIVE_LOW>;
-			/*
-			 * USB0 lines are shared with Eth1 so  Eth PHY must be held in reset
-			 * when using the USB
-			 */
-			output-high;
-			line-name = "eth1-reset";
-			bootph-pre-ram;
-		};
+&adin1300 {
+	reset-gpios = <&crr_gpio_expander 15 GPIO_ACTIVE_LOW>;
+	reset-assert-us = <10>;
+	reset-deassert-us = <5000>;
+};
 
-		gige-reset {
-			gpio-hog;
-			gpios = <15 GPIO_ACTIVE_LOW>;
-			output-high;
-			line-name = "gige-reset";
-			bootph-pre-ram;
+&eth1 {
+	phy-handle = <&adin1200>;
+	phy-mode = "rmii";
+	status = "okay";
+
+	mdio {
+		compatible = "snps,dwmac-mdio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		adin1200: ethernet-phy@1 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <1>;
 		};
 	};
 };
