@@ -742,8 +742,7 @@ static void spi_nor_set_4byte_opcodes(struct spi_nor *nor,
 #endif /* !CONFIG_IS_ENABLED(SPI_FLASH_BAR) */
 
 /* Enable/disable 4-byte addressing mode. */
-static int set_4byte(struct spi_nor *nor, const struct flash_info *info,
-		     int enable)
+int spi_nor_set_4byte(struct spi_nor *nor, const struct flash_info *info, int enable)
 {
 	int status;
 	bool need_wren = false;
@@ -767,11 +766,17 @@ static int set_4byte(struct spi_nor *nor, const struct flash_info *info,
 			write_disable(nor);
 
 		if (!status && !enable &&
-		    JEDEC_MFR(info) == SNOR_MFR_WINBOND) {
+		    (JEDEC_MFR(info) == SNOR_MFR_WINBOND ||
+		     JEDEC_MFR(info) == SNOR_MFR_ISSI)) {
 			/*
 			 * On Winbond W25Q256FV, leaving 4byte mode causes
 			 * the Extended Address Register to be set to 1, so all
 			 * 3-byte-address reads come from the second 16M.
+			 *
+			 * On IS25LP01G (and similar ISSI parts), EX4B alone does
+			 * not reliably exit 4-byte address mode; the Extended
+			 * Address Register EXTADD bit (bit 7) stays set.
+			 *
 			 * We must clear the register to enable normal behavior.
 			 */
 			write_enable(nor);
@@ -3898,7 +3903,7 @@ static int s25_s28_post_bfpt_fixup(struct spi_nor *nor,
 	 */
 	if (params->size > SZ_128M) {
 		if (bfpt->dwords[BFPT_DWORD(16)] & BFPT_DWORD16_EX4B_PWRCYC) {
-			ret = set_4byte(nor, nor->info, 1);
+			ret = spi_nor_set_4byte(nor, nor->info, 1);
 			if (ret)
 				return ret;
 		}
@@ -4347,7 +4352,7 @@ static int spi_nor_init(struct spi_nor *nor)
 		 */
 		if (nor->flags & SNOR_F_BROKEN_RESET)
 			debug("enabling reset hack; may not recover from unexpected reboots\n");
-		set_4byte(nor, nor->info, 1);
+		spi_nor_set_4byte(nor, nor->info, 1);
 	}
 
 	return 0;
