@@ -57,7 +57,6 @@ config SC846
 	select COMMON_CLK_ADI_SC846
 	select GICV3
 	select GICV3_SUPPORT_GIC600
-	select GIC_600_CLEAR_RDPD
 	select MMC_SDHCI_ADMA_FORCE_32BIT
 	select NOP_PHY if PHY
 endchoice
@@ -326,7 +325,7 @@ endchoice
 
 choice
 	prompt "Analog Devices SC84x SOM Carrier Board Variant"
-	depends on (SC846)
+	depends on TARGET_SC846_SOM_EZKIT
 	default ADI_CARRIER_SOMCRR2_EZKIT
 	help
 	  Select the specific EV-SOMCRR2 carrier board that you are using.
