@@ -53,7 +53,10 @@ config SC59X_64
 
 config SC846
 	bool "SC846 64-bit series"
+	select ARCH_EARLY_INIT_R
 	select ARM64
+	select ARMV8_MULTIENTRY
+	select ARMV8_SPIN_TABLE
 	select COMMON_CLK_ADI_SC846
 	select GICV3
 	select GICV3_SUPPORT_GIC600
