@@ -225,7 +225,23 @@ struct CGU_Settings {
 #define PLL3_RATIO		((CONFIG_CGU1_PLL3_VCO_MSEL) / \
 				 (CONFIG_CGU1_PLL3_DCLK_DIV))
 
-#if (1 == CONFIG_CDU0_CLKO2)
+#if defined(CONFIG_SC846)
+/*
+ * SC846: the A55 cluster is clocked by CDU0 CLKO1 (CLKO2 is reserved).
+ * The macros above use SC59x formulas, which give 2x the SC846 CCLK/DCLK
+ * rates; that cancels in the ratio. CCLK2 (VCO/3) is exact, so scale it.
+ */
+#if (1 == CONFIG_CDU0_CLKO1)		/* IN0: CCLK0_0 */
+	#define ARMCLK_IN	0
+	#define ARMCLK_RATIO	CCLK1_n_RATIO(0)
+#elif (3 == CONFIG_CDU0_CLKO1)		/* IN1: CCLK0_1 */
+	#define ARMCLK_IN	CONFIG_CDU0_CGU1_CLKIN
+	#define ARMCLK_RATIO	CCLK1_n_RATIO(1)
+#elif (5 == CONFIG_CDU0_CLKO1)		/* IN2: CCLK2_0 */
+	#define ARMCLK_IN	0
+	#define ARMCLK_RATIO	(2 * CCLK2_n_RATIO(0))
+#endif
+#elif (1 == CONFIG_CDU0_CLKO2)
 	#define ARMCLK_IN	0
 	#define ARMCLK_RATIO	CCLK1_n_RATIO(0)
 #elif (3 == CONFIG_CDU0_CLKO2) && \
@@ -528,7 +544,9 @@ void cdu_init(void)
 
 	CONFIGURE_CDU0(CONFIG_CDU0_CLKO0, REG_CDU0_CFG0, 0);
 	CONFIGURE_CDU0(CONFIG_CDU0_CLKO1, REG_CDU0_CFG1, 1);
+#ifdef CONFIG_CDU0_CLKO2
 	CONFIGURE_CDU0(CONFIG_CDU0_CLKO2, REG_CDU0_CFG2, 2);
+#endif
 	CONFIGURE_CDU0(CONFIG_CDU0_CLKO3, REG_CDU0_CFG3, 3);
 	CONFIGURE_CDU0(CONFIG_CDU0_CLKO4, REG_CDU0_CFG4, 4);
 	CONFIGURE_CDU0(CONFIG_CDU0_CLKO5, REG_CDU0_CFG5, 5);
