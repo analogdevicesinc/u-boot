@@ -116,6 +116,13 @@
 	};
 };
 
+&mmc0 {
+	non-removable;
+	no-sd;
+	no-sdio;
+	status = "okay";
+};
+
 &spi1 {
 	clocks = <&clk ADSP_SC846_CLK_SPI>;
 
