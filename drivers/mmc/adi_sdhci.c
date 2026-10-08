@@ -124,14 +124,24 @@ static int adi_dwcmshc_sdhci_probe(struct udevice *dev)
 	struct adi_sdhc_plat *plat = dev_get_plat(dev);
 	struct sdhci_host *host = dev_get_priv(dev);
 	struct adi_sdhci_data *data = (struct adi_sdhci_data *)dev_get_driver_data(dev);
-	int max_frequency, ret;
 	struct clk clk;
+	ulong rate;
+	int ret;
 
-	max_frequency = dev_read_u32_default(dev, "max-frequency", 0);
-	ret = clk_get_by_index(dev, 0, &clk);
+	ret = clk_get_by_name(dev, "core", &clk);
+	if (ret)
+		return ret;
+
+	rate = clk_get_rate(&clk);
+	if (IS_ERR_VALUE(rate))
+		return rate;
+
+	if (!rate)
+		return -EINVAL;
 
 	host->quirks = 0;
-	host->max_clk = max_frequency;
+	host->max_clk = rate;
+
 	/*
 	 * The sdhci-driver only supports 4bit and 8bit, as sdhci_setup_cfg
 	 * doesn't allow us to clear MMC_MODE_4BIT.  Consequently, we don't
