@@ -8,7 +8,6 @@
  * Based on Rockchip's sdhci.c file
  */
 
-#include <clk.h>
 #include <dm.h>
 #include <malloc.h>
 #include <regmap.h>
@@ -117,10 +116,8 @@ static int adi_dwcmshc_sdhci_probe(struct udevice *dev)
 	struct sdhci_host *host = dev_get_priv(dev);
 	struct adi_sdhci_data *data = (struct adi_sdhci_data *)dev_get_driver_data(dev);
 	int max_frequency, ret;
-	struct clk clk;
 
 	max_frequency = dev_read_u32_default(dev, "max-frequency", 0);
-	ret = clk_get_by_index(dev, 0, &clk);
 
 	host->quirks = 0;
 	host->max_clk = max_frequency;
