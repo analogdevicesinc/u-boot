@@ -16,6 +16,7 @@
 #include <asm/cache.h>
 #include <linux/bitfield.h>
 #include <linux/err.h>
+#include <linux/iopoll.h>
 #include <linux/sizes.h>
 
 /* 400KHz is max freq for card ID etc. Use that as min */
@@ -54,6 +55,41 @@
 #define SC846_MISCREG_TMR_CKDIV_MASK	GENMASK(10, 1)
 #define SC846_MISCREG_TMR_CKDIV_VAL	25
 
+#define DWCMSHC_EMMC_CTL		0x52c
+#define DWCMSHC_CARD_IS_EMMC		BIT(0)
+
+/* PHY registers */
+#define DWC_MSHC_PTR_PHY_R		0x300
+#define PHY_CNFG_R			(DWC_MSHC_PTR_PHY_R + 0x00)
+#define PHY_CMDPAD_CNFG_R		(DWC_MSHC_PTR_PHY_R + 0x04)
+#define PHY_DATAPAD_CNFG_R		(DWC_MSHC_PTR_PHY_R + 0x06)
+#define PHY_CLKPAD_CNFG_R		(DWC_MSHC_PTR_PHY_R + 0x08)
+#define PHY_STBPAD_CNFG_R		(DWC_MSHC_PTR_PHY_R + 0x0a)
+#define PHY_RSTNPAD_CNFG_R		(DWC_MSHC_PTR_PHY_R + 0x0c)
+
+/* PHY_CNFG */
+#define PHY_CNFG_PAD_SN_MASK		GENMASK(23, 20)
+#define PHY_CNFG_PAD_SP_MASK		GENMASK(19, 16)
+#define PHY_CNFG_PHY_PWRGOOD_MASK	BIT(1)
+#define PHY_CNFG_RSTN_DEASSERT		BIT(0)
+#define PHY_CNFG_PWRGOOD_TIMEOUT_US	1000
+
+/* PAD_CNFG */
+#define PHY_PAD_TXSLEW_CTRL_N_MASK	GENMASK(12, 9)
+#define PHY_PAD_TXSLEW_CTRL_P_MASK	GENMASK(8, 5)
+#define PHY_PAD_WEAKPULL_MASK		GENMASK(4, 3)
+#define PHY_PAD_RXSEL_MASK		GENMASK(2, 0)
+
+/* PAD settings for 1.8v */
+#define SC846_PHY_PAD_SN		0x8
+#define SC846_PHY_PAD_SP		0x9
+#define SC846_PHY_TXSLEW_N		0x2
+#define SC846_PHY_TXSLEW_P		0x2
+#define SC846_PHY_WEAKPULL_NONE		0x0
+#define SC846_PHY_WEAKPULL_PULLUP	0x1
+#define SC846_PHY_RXSEL_NONE		0x0
+#define SC846_PHY_RXSEL_1V8		0x1
+
 struct adi_sdhc_plat {
 	struct mmc_config cfg;
 	struct mmc mmc;
@@ -61,7 +97,62 @@ struct adi_sdhc_plat {
 
 struct adi_sdhci_data {
 	int (*soc_init)(struct udevice *dev);
+	int (*set_ios_post)(struct sdhci_host *host);
 };
+
+static int sc846_sdhci_set_ios_post(struct sdhci_host *host)
+{
+	u32 phy_cnfg, val;
+	u16 reg, pad;
+	int ret;
+
+	reg = sdhci_readw(host, DWCMSHC_EMMC_CTL);
+	reg |= DWCMSHC_CARD_IS_EMMC;
+	sdhci_writew(host, reg, DWCMSHC_EMMC_CTL);
+
+	phy_cnfg = FIELD_PREP(PHY_CNFG_PAD_SN_MASK,
+			      SC846_PHY_PAD_SN) |
+		   FIELD_PREP(PHY_CNFG_PAD_SP_MASK,
+			      SC846_PHY_PAD_SP);
+
+	/* Configure PHY while held in reset. */
+	sdhci_writel(host, phy_cnfg, PHY_CNFG_R);
+
+	pad = FIELD_PREP(PHY_PAD_TXSLEW_CTRL_N_MASK,
+			 SC846_PHY_TXSLEW_N) |
+	      FIELD_PREP(PHY_PAD_TXSLEW_CTRL_P_MASK,
+			 SC846_PHY_TXSLEW_P) |
+	      FIELD_PREP(PHY_PAD_WEAKPULL_MASK,
+			 SC846_PHY_WEAKPULL_PULLUP) |
+	      FIELD_PREP(PHY_PAD_RXSEL_MASK,
+			 SC846_PHY_RXSEL_1V8);
+
+	sdhci_writew(host, pad, PHY_CMDPAD_CNFG_R);
+	sdhci_writew(host, pad, PHY_DATAPAD_CNFG_R);
+	sdhci_writew(host, pad, PHY_RSTNPAD_CNFG_R);
+
+	pad = FIELD_PREP(PHY_PAD_TXSLEW_CTRL_N_MASK,
+			 SC846_PHY_TXSLEW_N) |
+	      FIELD_PREP(PHY_PAD_TXSLEW_CTRL_P_MASK,
+			 SC846_PHY_TXSLEW_P) |
+	      FIELD_PREP(PHY_PAD_WEAKPULL_MASK,
+			 SC846_PHY_WEAKPULL_NONE) |
+	      FIELD_PREP(PHY_PAD_RXSEL_MASK,
+			 SC846_PHY_RXSEL_NONE);
+
+	sdhci_writew(host, pad, PHY_CLKPAD_CNFG_R);
+
+	ret = readl_poll_timeout(host->ioaddr + PHY_CNFG_R, val,
+				 val & PHY_CNFG_PHY_PWRGOOD_MASK,
+				 PHY_CNFG_PWRGOOD_TIMEOUT_US);
+	if (ret)
+		return ret;
+
+	sdhci_writel(host, phy_cnfg | PHY_CNFG_RSTN_DEASSERT,
+		     PHY_CNFG_R);
+
+	return 0;
+}
 
 static int sc846_sdhci_soc_init(struct udevice *dev)
 {
@@ -105,8 +196,22 @@ void adi_dwcmshc_adma_write_desc(struct sdhci_host *host, void **desc,
 	sdhci_adma_write_desc(host, desc, addr, len, end);
 }
 
+static int adi_dwcmshc_set_ios_post(struct sdhci_host *host)
+{
+	struct udevice *dev = host->mmc->dev;
+	const struct adi_sdhci_data *data;
+
+	data = (const struct adi_sdhci_data *)dev_get_driver_data(dev);
+
+	if (data && data->set_ios_post)
+		return data->set_ios_post(host);
+
+	return 0;
+}
+
 struct sdhci_ops adi_dwcmshc_sdhci_ops = {
 	.adma_write_desc = adi_dwcmshc_adma_write_desc,
+	.set_ios_post = adi_dwcmshc_set_ios_post,
 };
 
 static int adi_dwcmshc_sdhci_probe(struct udevice *dev)
@@ -175,6 +280,7 @@ static int adi_sdhci_bind(struct udevice *dev)
 
 static const struct adi_sdhci_data sc846_data = {
 	.soc_init = sc846_sdhci_soc_init,
+	.set_ios_post = sc846_sdhci_set_ios_post,
 };
 
 static const struct udevice_id adi_dwcmshc_sdhci_ids[] = {
