@@ -60,6 +60,7 @@ config SC846
 	select GIC_600_CLEAR_RDPD
 	select MMC_SDHCI_ADMA_FORCE_32BIT
 	select NOP_PHY if PHY
+	imply MP
 endchoice
 
 if SC57X
