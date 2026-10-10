@@ -6,7 +6,7 @@ How to port an I2C driver to driver model
 Over half of the I2C drivers have been converted as at November 2016. These
 ones remain:
 
-   * adi_i2c
+   * adi_twi
    * davinci_i2c
    * fti2c010
    * ihs_i2c

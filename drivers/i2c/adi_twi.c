@@ -297,7 +297,7 @@ static int adi_i2c_of_to_plat(struct udevice *bus)
 	dev->speed = dev_read_u32_default(bus, "clock-frequency",
 					  I2C_SPEED_FAST_RATE);
 
-	ret = clk_get_by_name(bus, "i2c", &clock);
+	ret = clk_get_by_name(bus, "sclk0", &clock);
 	if (ret < 0)
 		printf("%s: Can't get I2C clk: %d\n", __func__, ret);
 	else
@@ -368,7 +368,7 @@ static const struct dm_i2c_ops adi_i2c_ops = {
 };
 
 static const struct udevice_id adi_i2c_ids[] = {
-	{ .compatible = "adi-i2c", },
+	{ .compatible = "adi,twi", },
 	{ /* sentinel */ }
 };
 
