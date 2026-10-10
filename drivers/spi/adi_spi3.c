@@ -289,7 +289,7 @@ static int adi_spi_of_to_plat(struct udevice *bus)
 	struct adi_spi_platdata *plat = dev_get_plat(bus);
 	fdt_addr_t addr;
 
-	plat->max_hz = dev_read_u32_default(bus, "spi-max-frequency", 500000);
+	plat->max_hz = dev_read_u32_default(bus, "spi-max-frequency", U32_MAX);
 	plat->bus_num = dev_read_u32_default(bus, "bus-num", 0);
 	addr = dev_read_addr(bus);
 
