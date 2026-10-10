@@ -1605,6 +1605,7 @@ static int spi_nor_read(struct mtd_info *mtd, loff_t from, size_t len,
 	}
 
 	while (len) {
+		schedule();
 		read_len = len;
 		offset = from;
 
