@@ -9,9 +9,9 @@
 		spi0 = "/ospi";
 	};
 
-	soc {
+	scb {
 		rcu: rcu@0x3108C000 {
-			compatible = "adi,reset-controller";
+			compatible = "adi,reset-controller", "syscon";
 			reg = <0x3108C000 0x1000>;
 			adi,sharc-min = <1>;
 			adi,sharc-max = <2>;
@@ -69,9 +69,7 @@
 		usb0_phy: usbphy {
 			compatible = "usb-nop-xceiv";
 			#phy-cells = <0>;
-			reset = <&gpio0 ADI_ADSP_PIN('G', 11) GPIO_ACTIVE_HIGH>;
-			pinctrl-names = "default";
-			pinctrl-0 = <&usb0_default>;
+			reset-gpios = <&gpg 11 GPIO_ACTIVE_LOW>;
 			status = "disabled";
 		};
 
@@ -90,9 +88,9 @@
 		i2c3: i2c3@31001000 {
 			#address-cells = <1>;
 			#size-cells = <0>;
-			compatible = "adi-i2c";
+			compatible = "adi,twi";
 			reg = <0x31001000 0x100>;
-			clock-names = "i2c";
+			clock-names = "sclk0";
 			status = "disabled";
 			bootph-pre-ram;
 		};
@@ -100,9 +98,9 @@
 		i2c4: i2c4@31001100 {
 			#address-cells = <1>;
 			#size-cells = <0>;
-			compatible = "adi-i2c";
+			compatible = "adi,twi";
 			reg = <0x31001100 0x100>;
-			clock-names = "i2c";
+			clock-names = "sclk0";
 			status = "disabled";
 			bootph-pre-ram;
 		};
@@ -110,9 +108,9 @@
 		i2c5: i2c5@31001200 {
 			#address-cells = <1>;
 			#size-cells = <0>;
-			compatible = "adi-i2c";
+			compatible = "adi,twi";
 			reg = <0x31001200 0x100>;
-			clock-names = "i2c";
+			clock-names = "sclk0";
 			status = "disabled";
 			bootph-pre-ram;
 		};
@@ -186,20 +184,68 @@
 	};
 };
 
-&gpio0 {
-	adi,ngpios = <135>;
+/ {
+	scb {
+		gpf: gpio@31004280 {
+			compatible = "adi,adsp-port-gpio";
+			reg = <0x31004280 0x80>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			adi,bank-name = "F";
+			ngpios = <16>;
+			status = "okay";
+			bootph-pre-ram;
+		};
 
+		gpg: gpio@31004300 {
+			compatible = "adi,adsp-port-gpio";
+			reg = <0x31004300 0x80>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			adi,bank-name = "G";
+			ngpios = <16>;
+			status = "okay";
+			bootph-pre-ram;
+		};
+
+		gph: gpio@31004380 {
+			compatible = "adi,adsp-port-gpio";
+			reg = <0x31004380 0x80>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			adi,bank-name = "H";
+			ngpios = <16>;
+			status = "okay";
+			bootph-pre-ram;
+		};
+
+		gpi: gpio@31004400 {
+			compatible = "adi,adsp-port-gpio";
+			reg = <0x31004400 0x80>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			adi,bank-name = "I";
+			ngpios = <7>;
+			status = "okay";
+			bootph-pre-ram;
+		};
+	};
+};
+
+&gpd {
 	pushbutton0 {
 		gpio-hog;
 		input;
-		gpios = <ADI_ADSP_PIN('D', 0) GPIO_ACTIVE_HIGH>;
+		gpios = <0 GPIO_ACTIVE_HIGH>;
 		bootph-pre-ram;
 	};
+};
 
+&gph {
 	pushbutton1 {
 		gpio-hog;
 		input;
-		gpios = <ADI_ADSP_PIN('H', 0) GPIO_ACTIVE_HIGH>;
+		gpios = <0 GPIO_ACTIVE_HIGH>;
 		bootph-pre-ram;
 	};
 };
