@@ -6,7 +6,6 @@
 #include <errno.h>
 #include <log.h>
 #include <asm/io.h>
-#include <asm/arch/ddr.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/ddr.h>
 #include <asm/arch/sys_proto.h>
@@ -16,7 +15,7 @@ static inline void poll_pmu_message_ready(void)
 	unsigned int reg;
 
 	do {
-		reg = reg32_read(IP2APB_DDRPHY_IPS_BASE_ADDR(0) + ddrphy_addr_remap(0xd0004));
+		reg = reg32_read(DDR_PHY_BASE + ddrphy_addr_remap(0xd0004));
 	} while (reg & 0x1);
 }
 
@@ -24,13 +23,13 @@ static inline void ack_pmu_message_receive(void)
 {
 	unsigned int reg;
 
-	reg32_write(IP2APB_DDRPHY_IPS_BASE_ADDR(0) + ddrphy_addr_remap(0xd0031), 0x0);
+	reg32_write(DDR_PHY_BASE + ddrphy_addr_remap(0xd0031), 0x0);
 
 	do {
-		reg = reg32_read(IP2APB_DDRPHY_IPS_BASE_ADDR(0) + ddrphy_addr_remap(0xd0004));
+		reg = reg32_read(DDR_PHY_BASE + ddrphy_addr_remap(0xd0004));
 	} while (!(reg & 0x1));
 
-	reg32_write(IP2APB_DDRPHY_IPS_BASE_ADDR(0) + ddrphy_addr_remap(0xd0031), 0x1);
+	reg32_write(DDR_PHY_BASE + ddrphy_addr_remap(0xd0031), 0x1);
 }
 
 static inline unsigned int get_mail(void)
@@ -39,7 +38,7 @@ static inline unsigned int get_mail(void)
 
 	poll_pmu_message_ready();
 
-	reg = reg32_read(IP2APB_DDRPHY_IPS_BASE_ADDR(0) + ddrphy_addr_remap(0xd0032));
+	reg = reg32_read(DDR_PHY_BASE + ddrphy_addr_remap(0xd0032));
 
 	ack_pmu_message_receive();
 
@@ -52,9 +51,9 @@ static inline unsigned int get_stream_message(void)
 
 	poll_pmu_message_ready();
 
-	reg = reg32_read(IP2APB_DDRPHY_IPS_BASE_ADDR(0) + ddrphy_addr_remap(0xd0032));
+	reg = reg32_read(DDR_PHY_BASE + ddrphy_addr_remap(0xd0032));
 
-	reg2 = reg32_read(IP2APB_DDRPHY_IPS_BASE_ADDR(0) + ddrphy_addr_remap(0xd0034));
+	reg2 = reg32_read(DDR_PHY_BASE + ddrphy_addr_remap(0xd0034));
 
 	reg2 = (reg2 << 16) | reg;
 

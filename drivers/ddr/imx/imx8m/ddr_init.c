@@ -168,13 +168,13 @@ void get_trained_CDD(u32 fsp)
 	ddr_type = reg32_read(DDRC_MSTR(0)) & 0x3f;
 	if (ddr_type == 0x20) {
 		for (i = 0; i < 6; i++) {
-			tmp = reg32_read(IP2APB_DDRPHY_IPS_BASE_ADDR(0) + (0x54013 + i) * 4);
+			tmp = reg32_read(DDR_PHY_BASE + (0x54013 + i) * 4);
 			cdd_cha[i * 2] = tmp & 0xff;
 			cdd_cha[i * 2 + 1] = (tmp >> 8) & 0xff;
 		}
 
 		for (i = 0; i < 7; i++) {
-			tmp = reg32_read(IP2APB_DDRPHY_IPS_BASE_ADDR(0) + (0x5402c + i) * 4);
+			tmp = reg32_read(DDR_PHY_BASE + (0x5402c + i) * 4);
 			if (i == 0) {
 				cdd_cha[0] = (tmp >> 8) & 0xff;
 			} else if (i == 6) {
@@ -205,7 +205,7 @@ void get_trained_CDD(u32 fsp)
 		unsigned int ddr4_cdd[64];
 
 		for (i = 0; i < 29; i++) {
-			tmp = reg32_read(IP2APB_DDRPHY_IPS_BASE_ADDR(0) + (0x54012 + i) * 4);
+			tmp = reg32_read(DDR_PHY_BASE + (0x54012 + i) * 4);
 			ddr4_cdd[i * 2] = tmp & 0xff;
 			ddr4_cdd[i * 2 + 1] = (tmp >> 8) & 0xff;
 		}
@@ -401,7 +401,7 @@ int ddr_init(struct dram_timing_info *dram_timing)
 	 * calibrating. Wait Calibrating done.
 	 */
 	do {
-		tmp = reg32_read(DDRPHY_CalBusy(0));
+		tmp = reg32_read(DDRPHY_CalBusy);
 	} while ((tmp & 0x1));
 
 	debug("DDRINFO:ddrphy calibration done\n");
