@@ -165,6 +165,7 @@ check_checkpatch() {
 	[[ "$strategy" == "file" ]] && (git switch - 1>/dev/null; git branch -D $tmp_branch_name)
 
 	_set_step_warn $warn
+	[[ "$fail" == "1" ]] && set_step_fail "$step_name"
 	return $fail
 }
 
@@ -272,6 +273,7 @@ check_license() {
 	done
 
 	_set_step_warn $warn
+	[[ "$fail" == "1" ]] && set_step_fail "$step_name"
 	return $fail
 }
 
@@ -334,6 +336,7 @@ check_qconfig_sync() {
 	git clean -fd -e ci/
 	rm -f "$list"
 
+	[[ "$fail" == "1" ]] && set_step_fail "$step_name"
 	return $fail
 }
 
