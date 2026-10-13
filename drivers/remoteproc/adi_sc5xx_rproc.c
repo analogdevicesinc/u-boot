@@ -62,6 +62,12 @@
 #define RCU0_MSG_C1ACTIVATE		0x00080000		/* Core 1 Activated */
 #define RCU0_MSG_C2ACTIVATE		0x00100000		/* Core 2 Activated */
 
+enum sc5xx_firmware_variant {
+	SC5XX_FW_NONE,
+	SC5XX_FW_LDR,
+	SC5XX_FW_ELF,
+};
+
 struct sc5xx_rproc_data {
 	/* Address to load to svect when rebooting core */
 	u32 load_addr;
@@ -118,20 +124,13 @@ static int adi_valid_firmware(struct ldr_hdr *adi_ldr_hdr)
 	return 0;
 }
 
-static int sharc_load(struct udevice *dev, ulong addr, ulong size)
+static int sharc_ldr_load(struct udevice *dev, ulong addr, ulong size)
 {
 	struct sc5xx_rproc_data *priv = dev_get_priv(dev);
 	size_t offset;
 	u8 *buf = (u8 *)addr;
-	struct ldr_hdr *ldr = (struct ldr_hdr *)addr;
 	struct ldr_hdr *block_hdr;
 	struct ldr_hdr *next_hdr;
-
-	if (!adi_valid_firmware(ldr)) {
-		dev_err(dev, "Firmware at 0x%lx does not appear to be an LDR image\n", addr);
-		dev_err(dev, "Note: Signed firmware is not currently supported\n");
-		return -EINVAL;
-	}
 
 	do {
 		block_hdr = (struct ldr_hdr *)buf;
@@ -163,6 +162,42 @@ static int sharc_load(struct udevice *dev, ulong addr, ulong size)
 	return 0;
 }
 
+static int sharc_elf_load(struct udevice *dev, ulong addr, ulong size)
+{
+	u32 entry_point = rproc_elf_get_boot_addr(dev, addr);
+	struct sc5xx_rproc_data *priv = dev_get_priv(dev);
+	int ret;
+
+	priv->load_addr = entry_point;
+
+	ret = rproc_elf32_load_image(dev, addr, size);
+
+	return ret;
+}
+
+static int sharc_load(struct udevice *dev, ulong addr, ulong size)
+{
+	struct ldr_hdr *ldr = (struct ldr_hdr *)addr;
+	int firmware_type = SC5XX_FW_NONE;
+
+	if (adi_valid_firmware(ldr)) {
+		firmware_type = SC5XX_FW_LDR;
+	} else if (!rproc_elf32_sanity_check(addr, size)) {
+		firmware_type = SC5XX_FW_ELF;
+	} else {
+		dev_err(dev, "Firmware at 0x%lx does not appear to be an ELF or LDR image\n", addr);
+		return -EINVAL;
+	}
+
+	switch (firmware_type) {
+	case SC5XX_FW_LDR:
+		return sharc_ldr_load(dev, addr, size);
+	case SC5XX_FW_ELF:
+		return sharc_elf_load(dev, addr, size);
+	}
+
+	return -EINVAL;
+}
 static void sharc_reset(struct sc5xx_rproc_data *priv)
 {
 	u32 coreid = priv->coreid;
