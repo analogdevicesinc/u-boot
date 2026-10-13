@@ -21,6 +21,10 @@
 	status = "okay";
 };
 
+&sharcfx {
+	status = "okay";
+};
+
 &uart0 {
 	clocks = <&clk ADSP_SC846_CLK_CGU0_SCLK0>;
 };
