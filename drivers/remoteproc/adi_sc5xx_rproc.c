@@ -62,6 +62,14 @@
 #define RCU0_MSG_C1ACTIVATE		0x00080000		/* Core 1 Activated */
 #define RCU0_MSG_C2ACTIVATE		0x00100000		/* Core 2 Activated */
 
+#define SHARCFX_IRAM_START		0x2F800000
+#define SHARCFX_IRAM_END		0x2F80FFFF
+#define SHARCFX_IRAM_ARM_OFFSET		0x07540000
+
+enum sc5xx_rproc_variant {
+	SC5XX_RPROC_SHARC,	/* SHARC+ */
+	SC5XX_RPROC_SHARCFX,	/* SHARC-FX */
+};
 enum sc5xx_firmware_variant {
 	SC5XX_FW_NONE,
 	SC5XX_FW_LDR,
@@ -76,6 +84,7 @@ struct sc5xx_rproc_data {
 	struct regmap *rcu;
 	u32 svect_offset;
 	u32 coreid;
+	enum sc5xx_rproc_variant variant;
 };
 
 struct block_code_flag {
@@ -257,8 +266,23 @@ static int sharc_start(struct udevice *dev)
 	return 0;
 }
 
+void *sc5xx_sharc_pa_to_virt(struct udevice *dev, ulong da, ulong size)
+{
+	struct sc5xx_rproc_data *priv = dev_get_priv(dev);
+
+	//Instruction RAM
+	//SHARC-FX -> ARM
+	//0x2F800000–0x2F80FFFF -> 0x282C0000–0x282CFFFF 64KB
+	if (priv->variant == SC5XX_RPROC_SHARCFX)
+		if (da >= SHARCFX_IRAM_START && da <= SHARCFX_IRAM_END) {
+			return (void *)(uintptr_t)(da - SHARCFX_IRAM_ARM_OFFSET);
+		}
+
+	return (void *)(uintptr_t)da;
+}
 static const struct dm_rproc_ops sc5xx_ops = {
 	.load = sharc_load,
+	.device_to_virt = sc5xx_sharc_pa_to_virt,
 	.start = sharc_start,
 };
 
@@ -289,13 +313,15 @@ static int sc5xx_probe(struct udevice *dev)
 	if (IS_ERR(priv->rcu))
 		return PTR_ERR(priv->rcu);
 
+	priv->variant = dev_get_driver_data(dev);
 	dev_err(dev, "sc5xx remoteproc core %d available\n", priv->coreid);
 
 	return 0;
 }
 
 static const struct udevice_id sc5xx_ids[] = {
-	{ .compatible = "adi,sc5xx-rproc" },
+	{ .compatible = "adi,sc846-rproc", .data = SC5XX_RPROC_SHARCFX },
+	{ .compatible = "adi,sc5xx-rproc", .data = SC5XX_RPROC_SHARC },
 	{ }
 };
 
