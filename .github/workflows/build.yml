@@ -9,6 +9,10 @@ on:
       defconfig:
         required: true
         type: string
+      device_tree:
+        required: false
+        type: string
+        default: ''
       ref: # DEPRECATED
         required: false
         type: string
@@ -73,6 +77,20 @@ jobs:
           make savedefconfig
           python3 scripts/gen_compile_commands.py -d "$KBUILD_OUTPUT"
 
+      - name: Generate boot.scr
+        run: |
+          carrier="${{ inputs.device_tree }}"
+          [[ -z "$carrier" ]] && carrier="${{ inputs.defconfig }}"
+
+          curl -sL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o ci/make_boot_scr.sh \
+            https://raw.githubusercontent.com/analogdevicesinc/u-boot/refs/heads/ci/ci/make_boot_scr.sh
+          chmod +x ci/make_boot_scr.sh
+
+          boot_scr_dir=$(mktemp -d -t boot_scr.XXX)
+          echo "BOOT_SCR_DIR=$boot_scr_dir" >> $GITHUB_ENV
+
+          ci/make_boot_scr.sh "$carrier" "$KBUILD_OUTPUT/tools/mkimage" "$boot_scr_dir"
+
       - name: Prepare dist
         run: |
           uversion=$(cat "$KBUILD_OUTPUT/include/config/uboot.release")
@@ -87,6 +105,9 @@ jobs:
           cp "$KBUILD_OUTPUT/spl/u-boot-spl" "$dist"
           cp "$KBUILD_OUTPUT/spl/u-boot-spl.bin" "$dist"
           [[ -f "$KBUILD_OUTPUT/spl/u-boot-spl.ldr" ]] && cp "$KBUILD_OUTPUT/spl/u-boot-spl.ldr" "$dist"
+
+          cp "$BOOT_SCR_DIR"/*.scr "$dist" 2>/dev/null || true
+          [[ -d "$BOOT_SCR_DIR/no_bitfile" ]] && cp -r "$BOOT_SCR_DIR/no_bitfile" "$dist"
 
           echo "uboot=u-boot" > "$dist/context.txt"
           echo "uboot_release=$uversion" >> "$dist/context.txt"
@@ -111,6 +132,6 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ inputs.defconfig }}
+          name: ${{ inputs.device_tree != '' && format('{0}_{1}', inputs.defconfig, inputs.device_tree) || inputs.defconfig }}
           path: ${{ env.DIST }}
           retention-days: 7
