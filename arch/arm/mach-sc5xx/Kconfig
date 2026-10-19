@@ -59,8 +59,15 @@ config SC846
 	select GICV3_SUPPORT_GIC600
 	select GIC_600_CLEAR_RDPD
 	select MMC_SDHCI_ADMA_FORCE_32BIT
+	select FIXED_CGU1_INPUT_CLOCK
 	select NOP_PHY if PHY
 endchoice
+
+config FIXED_CGU1_INPUT_CLOCK
+	bool
+	help
+	  The CDU has no CLKINSEL register, so the CGU1 input clock is
+	  fixed to SYS_CLKIN0 and cannot be selected.
 
 if SC57X
 
@@ -572,7 +579,7 @@ config CGU1_DIV_S1SELEX
 	  SCLK1 = ((CLKIN / (1 + DF)) * VCO_MULT) / DIV_S1SELEX
 
 config CDU0_CGU1_CLKIN
-	int "CDU0 CGU1 CLKINn Select"
+	int "CDU0 CGU1 CLKINn Select" if !FIXED_CGU1_INPUT_CLOCK
 	default 0
 	range 0 1
 	help
