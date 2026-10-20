@@ -524,7 +524,13 @@ void cdu_init(void)
 {
 	while (readl(REG_CDU0_STAT) & 0xffff)
 		;
-	writel((CONFIG_CDU0_CGU1_CLKIN & 0x1), REG_CDU0_CLKINSEL);
+
+	/*
+	 * Some parts (e.g. SC846) have no CLKINSEL register; CGU1 is
+	 * fixed to SYS_CLKIN0 there.
+	 */
+	if (!IS_ENABLED(CONFIG_FIXED_CGU1_INPUT_CLOCK))
+		writel((CONFIG_CDU0_CGU1_CLKIN & 0x1), REG_CDU0_CLKINSEL);
 
 	CONFIGURE_CDU0(CONFIG_CDU0_CLKO0, REG_CDU0_CFG0, 0);
 	CONFIGURE_CDU0(CONFIG_CDU0_CLKO1, REG_CDU0_CFG1, 1);
