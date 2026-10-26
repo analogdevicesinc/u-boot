@@ -342,6 +342,7 @@ choice
 
 config ADI_CARRIER_SOMCRR2_EZKIT
 	bool "Support the EV-SOMCRR2-EZKIT"
+	select ADI_CARRIER_SOMCRR_COMMON
 	help
 	  Say y to include support for the EV-SOMCRR-EZKIT carrier board,
 	  which is compatible with the SC846 SOMs.
