@@ -74,9 +74,9 @@ int board_return_to_bootrom(struct spl_image_info *spl_image,
 			    struct spl_boot_device *bootdev)
 {
 
-#if CONFIG_ADI_SPL_FORCE_BMODE
+#if IS_ENABLED(CONFIG_ENABLE_ADI_SPL_FORCE_BOOTMODE)
 	if (bmode != 0 && bmode != 3)
-		bmode = CONFIG_ADI_SPL_FORCE_BMODE;
+		bmode = CONFIG_ADI_SPL_FORCE_BOOTMODE;
 #endif
 
 	if (bmode >= (ARRAY_SIZE(adi_rom_boot_args)))
