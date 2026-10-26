@@ -3,7 +3,7 @@
 # (C) Copyright 2024 - Analog Devices, Inc.
 #
 
-obj-y += somcrr_common.o
+obj-$(CONFIG_ADI_CARRIER_SOMCRR_COMMON) += somcrr_common.o
 obj-$(CONFIG_ADI_CARRIER_SOMCRR_EZKIT) += somcrr_ezkit.o
 obj-$(CONFIG_ADI_CARRIER_SOMCRR_EZLITE) += somcrr_ezlite.o
 obj-$(CONFIG_ADI_CARRIER_SOMCRR2_EZKIT) += somcrr2_ezkit.o
