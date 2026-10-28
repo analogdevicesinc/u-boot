@@ -4,6 +4,7 @@
  */
 
 #include <config.h>
+#include <env.h>
 #include <phy.h>
 #include <asm/u-boot.h>
 #include <asm/arch/sc5xx.h>
@@ -29,6 +30,20 @@ int board_init(void)
 	}
 
 	sc5xx_enable_rgmii();
+
+	return 0;
+}
+
+int board_late_init(void)
+{
+	u32 bmode;
+
+	sc5xx_get_boot_mode(&bmode);
+
+	if (bmode == 1)
+		return env_set("bootcmd", "run spiboot");
+	if (bmode == 6)
+		return env_set("bootcmd", "run emmcboot");
 
 	return 0;
 }
