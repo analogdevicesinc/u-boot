@@ -3,5 +3,5 @@
 # (C) Copyright 2025 - Analog Devices, Inc.
 #
 
-obj-y	:= sc846-som.o
+obj-y	:= ../common-sc846-som/sc846-som.o
 obj-y += ../carriers/
