@@ -53,13 +53,17 @@ config SC59X_64
 
 config SC846
 	bool "SC846 64-bit series"
+	select ARCH_EARLY_INIT_R
 	select ARM64
+	select ARMV8_MULTIENTRY
+	select ARMV8_SPIN_TABLE
 	select COMMON_CLK_ADI_SC846
 	select GICV3
 	select GICV3_SUPPORT_GIC600
 	select GIC_600_CLEAR_RDPD
 	select MMC_SDHCI_ADMA_FORCE_32BIT
 	select NOP_PHY if PHY
+	imply MP
 endchoice
 
 if SC57X
@@ -595,6 +599,7 @@ config CDU0_CLKO1
 config CDU0_CLKO2
 	int "CDU0_CLKO2"
 	range 1 7
+	depends on !SC846
 	help
 	  Clock source select. Refer to SOC Hardware Reference Manual
 

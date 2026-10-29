@@ -115,13 +115,9 @@ config CGU1_DIV_S1SELEX
 config CDU0_CLKO0
 	default 1
 
-# CORE 0
+# A55 cluster
 config CDU0_CLKO1
 	default 3
-
-# CORE 1
-config CDU0_CLKO2
-	default 1
 
 # DDR
 config CDU0_CLKO3
