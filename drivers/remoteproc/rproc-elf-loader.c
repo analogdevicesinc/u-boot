@@ -186,9 +186,15 @@ int rproc_elf32_load_image(struct udevice *dev, unsigned long addr, ulong size)
 		if (phdr->p_type != PT_LOAD)
 			continue;
 
-		if (ops->device_to_virt)
+		if (ops->device_to_virt) {
 			dst = ops->device_to_virt(dev, (ulong)dst,
 						  phdr->p_memsz);
+			if (!dst) {
+				dev_err(dev, "bad da 0x%x mem 0x%x\n",
+					phdr->p_paddr, phdr->p_memsz);
+				return -EINVAL;
+			}
+		}
 
 		dev_dbg(dev, "Loading phdr %i to 0x%p (%i bytes)\n",
 			i, dst, phdr->p_filesz);
