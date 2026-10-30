@@ -147,11 +147,10 @@ config CDU0_CLKO6
 config CDU0_CLKO7
 	default 1
 
-# xSPI2
-# 5 sets the input as SCLK1_1
-# SCLK1_0 = CGU1_VCO / 20 = 180MHz
+# xSPI1
+# 1 sets the input as SCLK0_0, the same source xSPI0 uses
 config CDU0_CLKO8
-	default 5
+	default 1
 
 # LINKPORT
 # 5 sets the input as SCLK1_0
