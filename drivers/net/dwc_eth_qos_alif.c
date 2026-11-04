@@ -45,7 +45,8 @@ static int eqos_probe_resources_alif(struct udevice *dev)
 		return -EINVAL;
 	}
 
-	return 0;
+	/* The PHY is not reset by the SoC at power on */
+	return phy_gpio_reset(dev);
 }
 
 static int eqos_start_clks_alif(struct udevice *dev)
