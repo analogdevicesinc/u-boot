@@ -291,6 +291,14 @@ config PINCTRL_SANDBOX
 	  Currently, this driver actually does nothing but print debug
 	  messages when pinctrl operations are invoked.
 
+config PINCTRL_ALIF_ENSEMBLE
+	bool "Alif Ensemble pin controller driver"
+	depends on DM && PINCTRL_FULL && ARCH_ALIF
+	help
+	  Support for the pin controller of the Alif Ensemble SoCs. Each pin
+	  has a register with its function and its pad control. The device
+	  tree binding is the one used by Linux.
+
 config PINCTRL_SINGLE
 	bool "Single register pin-control and pin-multiplex driver"
 	depends on DM

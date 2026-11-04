@@ -19,6 +19,8 @@ config TARGET_ALIF_DEVKIT_E8
 	select ARCH_SUPPORT_PSCI
 	imply NS16550
 	imply SYS_NS16550
+	imply PINCTRL
+	imply PINCTRL_ALIF_ENSEMBLE
 	help
 	  The Ensemble E8 has two Cortex-A32 cores and executes in place from
 	  the on-chip MRAM. U-Boot is started by TF-A (BL32/SP_MIN) as BL33.
