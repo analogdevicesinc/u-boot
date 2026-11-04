@@ -4,6 +4,7 @@
  */
 /dts-v1/;
 
+#include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/pinctrl/alif,ensemble-pinfunc.h>
 
 / {
@@ -62,11 +63,30 @@
 		ranges;
 		bootph-all;
 
+		gpio11: gpio@4900b000 {
+			compatible = "snps,dw-apb-gpio";
+			reg = <0x4900b000 0x1000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			porta11: gpio-port@0 {
+				compatible = "snps,dw-apb-gpio-port";
+				reg = <0>;
+				gpio-controller;
+				#gpio-cells = <2>;
+				ngpios = <8>;
+			};
+		};
+
 		pinctrl: pinctrl@1a603000 {
 			compatible = "alif,ensemble-pinctrl";
 			reg = <0x1a603000 0x1000>;
 
-			/* The pad settings are those of the Alif reference BSP */
+			/*
+			 * The pad settings are those of the Alif reference BSP.
+			 * The reset of the PHY is a GPIO here, because the
+			 * ETH_RST function does not reset the PHY at power on.
+			 */
 			pinctrl_eth0: eth0grp {
 				pinmux = <
 					PIN_P11_0__ETH_REFCLK_B		0x21
@@ -75,7 +95,7 @@
 					PIN_P11_3__ETH_RXD0_B		0x21
 					PIN_P11_4__ETH_RXD1_B		0x21
 					PIN_P11_5__ETH_CRS_DV_B		0x21
-					PIN_P11_6__ETH_RST_B		0x20
+					PIN_P11_6__GPIO		0x20
 					PIN_P11_7__ETH_IRQ_B		0x21
 					PIN_P6_0__ETH_TXD0_A		0x20
 					PIN_P10_5__ETH_TXD1_B		0x20
@@ -101,6 +121,9 @@
 				phy0: ethernet-phy@1 {
 					compatible = "ethernet-phy-ieee802.3-c22";
 					reg = <1>;
+					reset-gpios = <&porta11 6 GPIO_ACTIVE_LOW>;
+					reset-assert-us = <20000>;
+					reset-deassert-us = <150000>;
 				};
 			};
 		};
