@@ -1087,6 +1087,17 @@ config ARCH_OWL
 	select ENV_RELOC_GD_ENV_ADDR
 	imply CMD_DM
 
+config ARCH_ALIF
+	bool "Alif Semiconductor Ensemble SoCs"
+	select DM
+	select DM_SERIAL
+	select OF_CONTROL
+	imply CMD_DM
+	help
+	  Support for the Ensemble family of SoCs from Alif Semiconductor.
+	  They have Cortex-A32 application cores, Cortex-M55 real time cores
+	  and execute in place from on-chip MRAM.
+
 config ARCH_QEMU
 	bool "QEMU Virtual Platform"
 	select DM
@@ -2357,6 +2368,7 @@ source "arch/arm/mach-mediatek/Kconfig"
 
 source "arch/arm/mach-mmp/Kconfig"
 
+source "arch/arm/mach-alif/Kconfig"
 source "arch/arm/mach-qemu/Kconfig"
 
 source "arch/arm/mach-rockchip/Kconfig"

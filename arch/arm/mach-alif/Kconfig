@@ -1,0 +1,30 @@
+if ARCH_ALIF
+
+config SYS_SOC
+	default "alif"
+
+choice
+	prompt "Alif Ensemble board select"
+	optional
+	help
+	  Select the Alif Ensemble board to build U-Boot for.
+
+config TARGET_ALIF_DEVKIT_E8
+	bool "Alif Ensemble DevKit-E8"
+	select CPU_V7A
+	select SYS_ARCH_TIMER
+	select SKIP_LOWLEVEL_INIT
+	select SYS_DCACHE_OFF
+	select SYS_ICACHE_OFF
+	select ARCH_SUPPORT_PSCI
+	imply NS16550
+	imply SYS_NS16550
+	help
+	  The Ensemble E8 has two Cortex-A32 cores and executes in place from
+	  the on-chip MRAM. U-Boot is started by TF-A (BL32/SP_MIN) as BL33.
+
+endchoice
+
+source "board/alif/devkit_e8/Kconfig"
+
+endif

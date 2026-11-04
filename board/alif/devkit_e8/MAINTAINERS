@@ -1,0 +1,9 @@
+ALIF DEVKIT-E8 BOARD
+M:	Ozan Durgut <ozan.durgut@analog.com>
+S:	Maintained
+F:	arch/arm/dts/alif-devkit-e8.dts
+F:	arch/arm/mach-alif/
+F:	board/alif/devkit_e8/
+F:	configs/alif_devkit_e8_defconfig
+F:	drivers/net/dwc_eth_qos_alif.c
+F:	include/configs/alif_devkit_e8.h

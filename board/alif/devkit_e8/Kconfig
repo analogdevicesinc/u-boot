@@ -1,0 +1,19 @@
+if TARGET_ALIF_DEVKIT_E8
+
+config SYS_BOARD
+	default "devkit_e8"
+
+config SYS_VENDOR
+	default "alif"
+
+config SYS_CONFIG_NAME
+	default "alif_devkit_e8"
+
+config TEXT_BASE
+	default 0x80020000
+
+config BOARD_SPECIFIC_OPTIONS # dummy
+	def_bool y
+	select HAS_CUSTOM_SYS_INIT_SP_ADDR
+
+endif
