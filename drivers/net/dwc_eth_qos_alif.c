@@ -25,52 +25,13 @@
 #define ALIF_CCPMST_ETH_CLK_SEL		0x80
 #define  ALIF_ETH_CLK_SEL_INTERNAL	BIT(4)
 
-/* Pin mux, one 32 bit register per pin */
-#define ALIF_PINMUX_BASE		0x1a603000
-#define ALIF_PINMUX_PADCTRL_SHIFT	16
-
-/*
- * Pad control bits, as in the CMSIS pinconf.h of Alif. Bit 7 selects an
- * open drain output and must stay clear for the RMII signals.
- */
-#define ALIF_PAD_REN			BIT(0)	/* Read enable */
-#define ALIF_PAD_DSC_PULL_UP		BIT(3)	/* Weak pull up when not driven */
-#define ALIF_PAD_ODS_4MA		BIT(5)
-
-#define ALIF_PAD_OUTPUT		ALIF_PAD_ODS_4MA
-#define ALIF_PAD_INPUT		(ALIF_PAD_REN | ALIF_PAD_ODS_4MA)
-#define ALIF_PAD_MDIO		(ALIF_PAD_REN | ALIF_PAD_DSC_PULL_UP | ALIF_PAD_ODS_4MA)
-#define ALIF_PAD_MDC		(ALIF_PAD_DSC_PULL_UP | ALIF_PAD_ODS_4MA)
-
 /* syst_hclk, the CSR clock of the MAC, is PLL_CLK1 / 4 */
 #define ALIF_ETH_CSR_CLK_RATE		200000000
-
-/*
- * RMII pins of the DevKit-E8. The pin number is port * 8 + pin.
- * This is a stand in for a pin controller driver.
- */
-static const struct {
-	u8 pin;
-	u8 func;
-	u8 pad;
-} alif_eth_pins[] = {
-	{ 88, 6, ALIF_PAD_INPUT },	/* P11_0 REFCLK */
-	{ 89, 5, ALIF_PAD_MDIO },	/* P11_1 MDIO */
-	{ 90, 6, ALIF_PAD_MDC },	/* P11_2 MDC */
-	{ 91, 6, ALIF_PAD_INPUT },	/* P11_3 RXD0 */
-	{ 92, 6, ALIF_PAD_INPUT },	/* P11_4 RXD1 */
-	{ 93, 6, ALIF_PAD_INPUT },	/* P11_5 CRS_DV */
-	{ 94, 6, ALIF_PAD_OUTPUT },	/* P11_6 RST */
-	{ 95, 6, ALIF_PAD_INPUT },	/* P11_7 IRQ */
-	{ 48, 6, ALIF_PAD_OUTPUT },	/* P6_0 TXD0 */
-	{ 85, 6, ALIF_PAD_OUTPUT },	/* P10_5 TXD1 */
-	{ 86, 6, ALIF_PAD_OUTPUT },	/* P10_6 TXEN */
-};
 
 static int eqos_probe_resources_alif(struct udevice *dev)
 {
 	phy_interface_t interface;
-	int i, ret;
+	int ret;
 
 	ret = eqos_get_base_addr_dt(dev);
 	if (ret) {
@@ -83,11 +44,6 @@ static int eqos_probe_resources_alif(struct udevice *dev)
 		pr_err("Only RMII is supported\n");
 		return -EINVAL;
 	}
-
-	for (i = 0; i < ARRAY_SIZE(alif_eth_pins); i++)
-		writel(alif_eth_pins[i].func |
-		       (alif_eth_pins[i].pad << ALIF_PINMUX_PADCTRL_SHIFT),
-		       ALIF_PINMUX_BASE + alif_eth_pins[i].pin * 4);
 
 	return 0;
 }
