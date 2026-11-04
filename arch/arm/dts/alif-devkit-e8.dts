@@ -4,6 +4,8 @@
  */
 /dts-v1/;
 
+#include <dt-bindings/pinctrl/alif,ensemble-pinfunc.h>
+
 / {
 	model = "Alif Ensemble DevKit-E8";
 	compatible = "alif,ensemble-devkit-e8", "alif,ensemble";
@@ -60,9 +62,33 @@
 		ranges;
 		bootph-all;
 
+		pinctrl: pinctrl@1a603000 {
+			compatible = "alif,ensemble-pinctrl";
+			reg = <0x1a603000 0x1000>;
+
+			/* The pad settings are those of the Alif reference BSP */
+			pinctrl_eth0: eth0grp {
+				pinmux = <
+					PIN_P11_0__ETH_REFCLK_B		0x21
+					PIN_P11_1__ETH_MDIO_B		0x29
+					PIN_P11_2__ETH_MDC_B		0x28
+					PIN_P11_3__ETH_RXD0_B		0x21
+					PIN_P11_4__ETH_RXD1_B		0x21
+					PIN_P11_5__ETH_CRS_DV_B		0x21
+					PIN_P11_6__ETH_RST_B		0x20
+					PIN_P11_7__ETH_IRQ_B		0x21
+					PIN_P6_0__ETH_TXD0_A		0x20
+					PIN_P10_5__ETH_TXD1_B		0x20
+					PIN_P10_6__ETH_TXEN_B		0x20
+				>;
+			};
+		};
+
 		eth0: ethernet@48100000 {
 			compatible = "alif,ensemble-eqos";
 			reg = <0x48100000 0x2000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_eth0>;
 			phy-mode = "rmii";
 			phy-handle = <&phy0>;
 			max-speed = <100>;
