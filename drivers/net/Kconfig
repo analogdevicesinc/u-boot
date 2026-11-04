@@ -229,6 +229,13 @@ config DWC_ETH_QOS_ADI
 		The Synopsis Designware Ethernet QoS IP block with the specific
 		configuration used in the ADI ADSP-SC59X 64 bit SoCs
 
+config DWC_ETH_QOS_ALIF
+	bool "Synopsys DWC Ethernet QOS device support for Alif Ensemble"
+	depends on DWC_ETH_QOS && ARCH_ALIF
+	help
+	  The Synopsys Designware Ethernet QOS IP block with the specific
+	  configuration used in the Alif Ensemble SoCs.
+
 config DWC_ETH_QOS_IMX
 	bool "Synopsys DWC Ethernet QOS device support for IMX"
 	depends on DWC_ETH_QOS && MACH_IMX
