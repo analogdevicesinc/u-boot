@@ -13,7 +13,7 @@
 
 int board_init(void)
 {
-	if (IS_ENABLED(CONFIG_ADI_CARRIER_SOMCRR2_EZKIT))
+	if (IS_ENABLED(CONFIG_ADI_CARRIER_SOMCRR_COMMON))
 		adi_somcrr_init_ethernet();
 
 	sc5xx_enable_rgmii();
