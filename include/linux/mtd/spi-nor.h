@@ -668,6 +668,16 @@ static inline int spi_nor_remove(struct spi_nor *nor)
  * Return: 0 for success, -errno for failure.
  */
 int spi_nor_remove(struct spi_nor *nor);
+
+/**
+ * spi_nor_set_4byte() - perform cleanup before booting to the next stage
+ * @nor:	the spi_nor structure
+ * @flash_info:	the flash_info structure
+ * @enable:	enable or disable 4byte mode
+ *
+ * Return: 0 for success, -errno for failure.
+ */
+int spi_nor_set_4byte(struct spi_nor *nor, const struct flash_info *info, int enable);
 #endif
 
 #endif

@@ -224,6 +224,17 @@ static int spi_flash_std_remove(struct udevice *dev)
 	struct spi_flash *flash = dev_get_uclass_priv(dev);
 	int ret;
 
+#if !CONFIG_IS_ENABLED(SPI_FLASH_TINY)
+	if (flash->addr_width == 4 &&
+	    !(flash->info->flags & SPI_NOR_OCTAL_DTR_READ) &&
+	    (JEDEC_MFR(flash->info) != SNOR_MFR_SPANSION) &&
+	    !(flash->flags & SPI_NOR_4B_OPCODES)) {
+		ret = spi_nor_set_4byte(flash, flash->info, 0);
+		if (ret)
+			return ret;
+	}
+#endif
+
 	if (CONFIG_IS_ENABLED(SPI_DIRMAP)) {
 		spi_mem_dirmap_destroy(flash->dirmap.wdesc);
 		spi_mem_dirmap_destroy(flash->dirmap.rdesc);

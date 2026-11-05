@@ -151,6 +151,13 @@ config SYSRESET_OCTEON
 	  This enables the system reset driver support for Marvell Octeon
 	  SoCs.
 
+config SYSRESET_SC5XX
+	bool "Enable support for Analog Devices SC5xx System Reset"
+	depends on ARCH_SC5XX
+	help
+	  Enable system reset support for Analog Devices SC5xx SoCs.
+	  Uses the RCU (Reset Control Unit) SYSRST bit.
+
 config SYSRESET_AT91
 	bool "Enable support for Microchip/Atmel reset driver"
 	depends on ARCH_AT91
