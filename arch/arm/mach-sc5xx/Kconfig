@@ -339,13 +339,23 @@ config ADI_CARRIER_SOMCRR2_EZKIT
 	  which is compatible with the SC846 SOMs.
 
 endchoice
-config ADI_SPL_FORCE_BMODE
+config ENABLE_ADI_SPL_FORCE_BOOTMODE
+	bool "Force the BMODE device used by the SPL during next boot stage"
+	depends on SPL
+	help
+	  Say y to make the SPL load the next boot stage from the BMODE
+	  device set in ADI_SPL_FORCE_BOOTMODE instead of the one selected
+	  by the BMODE pins. JTAG (0) and UART (3) pin settings are never
+	  overridden.
+
+config ADI_SPL_FORCE_BOOTMODE
 	int "Force the SPL to use this BMODE device during next boot stage"
 	default 0
 	range 0 9
-	depends on SPL
+	depends on ENABLE_ADI_SPL_FORCE_BOOTMODE
 	help
 	  Force the SPL to use this BMODE device during next boot stage.
+	  Any value in range is used as-is, including 0 (JTAG/BOOTROM).
 	  For example, if booting via QSPI, we can force the second stage
 	  Of the boot process to use other peripherals via:
 	  1 = QSPI -> QSPI
