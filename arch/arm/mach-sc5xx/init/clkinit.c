@@ -323,6 +323,26 @@ static void program_cgu(const struct CGU_Settings *cgu)
 	while (!((readl(b + CGU_STAT) & CGU_STAT_MASK) == CGU_STAT_ALGN_LOCK))
 		;
 
+	/*
+	 * On SC846, the SCLK extension divider enables in CGU_CTL are not
+	 * cleared by a software system reset (RCU_CTL.SYSRST), unlike the
+	 * rest of the CGU. Writing CGU_DIV with them still set from the
+	 * previous boot sets CGU_STAT.WDIVERR and raises an SError, so clear
+	 * them first. They are set again below if the configuration uses them.
+	 */
+	if (IS_ENABLED(CONFIG_SC846)) {
+		u32 ctl = readl(b + CGU_CTL);
+
+		if (ctl & (BITM_CGU_CTL_S0SELEXEN | BITM_CGU_CTL_S1SELEXEN)) {
+			ctl &= ~(BITM_CGU_CTL_S0SELEXEN | BITM_CGU_CTL_S1SELEXEN |
+				 BITM_CGU_CTL_LOCK);
+			writel(ctl, b + CGU_CTL);
+			while (!((readl(b + CGU_STAT) & CGU_STAT_MASK) ==
+				 CGU_STAT_ALGN_LOCK))
+				;
+		}
+	}
+
 	dmcdelay(1000);
 
 	writel(temp & (~BITM_CGU_DIV_ALGN) & (~BITM_CGU_DIV_UPDT),
