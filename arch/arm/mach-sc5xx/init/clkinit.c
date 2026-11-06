@@ -453,8 +453,8 @@ static void Active_To_Fullon(const struct CGU_Settings *pCGU)
 	while (1) {
 		tmp = readl(pCGU->rbase + CGU_STAT);
 		if ((tmp & BITM_CGU_STAT_PLLEN) &&
-		    ~(tmp & BITM_CGU_STAT_PLLBP) &&
-		    ~(tmp & BITM_CGU_STAT_CLKSALGN))
+		    !(tmp & BITM_CGU_STAT_PLLBP) &&
+		    !(tmp & BITM_CGU_STAT_CLKSALGN))
 			break;
 	}
 }
