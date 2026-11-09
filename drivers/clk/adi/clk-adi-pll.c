@@ -69,7 +69,7 @@ struct clk *sc5xx_cgu_pll(const char *name, const char *parent_name,
 	pll->base = base;
 	pll->shift = shift;
 	pll->mask = GENMASK(width - 1, 0) << shift;
-	pll->max = pll->mask + 1;
+	pll->max = BIT(width) + m_offset;
 	pll->m_offset = m_offset;
 	pll->half_m = half_m;
 
