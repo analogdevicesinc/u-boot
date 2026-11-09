@@ -25,7 +25,7 @@
 
 		eth0-reset {
 			gpio-hog;
-			gpios = <0 GPIO_ACTIVE_HIGH>;
+			gpios = <0 GPIO_ACTIVE_LOW>;
 			output-low;
 			line-name = "eth0-reset";
 		};
@@ -33,28 +33,28 @@
 		spdif1-en {
 			gpio-hog;
 			gpios = <1 GPIO_ACTIVE_LOW>;
-			output-high;
+			output-low;
 			line-name = "spdif1-en";
 		};
 
 		adau1966-reset-som-a {
 			gpio-hog;
 			gpios = <2 GPIO_ACTIVE_LOW>;
-			output-high;
+			output-low;
 			line-name = "adau1966-reset-som-a";
 		};
 
 		adau1979-a-reset-som-a {
 			gpio-hog;
 			gpios = <3 GPIO_ACTIVE_LOW>;
-			output-high;
+			output-low;
 			line-name = "adau1979-a-reset-som-a";
 		};
 
 		adau1979-b-reset-som-a {
 			gpio-hog;
 			gpios = <4 GPIO_ACTIVE_LOW>;
-			output-high;
+			output-low;
 			line-name = "adau1979-b-reset-som-a";
 		};
 
@@ -68,14 +68,14 @@
 		spdif1-opt-en {
 			gpio-hog;
 			gpios = <6 GPIO_ACTIVE_LOW>;
-			output-high;
+			output-low;
 			line-name = "spdif1-opt-en";
 		};
 
 		spdif1-coax-en {
 			gpio-hog;
 			gpios = <7 GPIO_ACTIVE_LOW>;
-			output-high;
+			output-low;
 			line-name = "spdif1-coax-en";
 		};
 
