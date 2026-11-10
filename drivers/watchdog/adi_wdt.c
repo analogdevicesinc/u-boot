@@ -14,6 +14,7 @@
 #include <clk.h>
 #include <dm.h>
 #include <wdt.h>
+#include <dm/device_compat.h>
 #include <linux/delay.h>
 #include <linux/ioport.h>
 #include <linux/io.h>
@@ -96,7 +97,6 @@ static int adi_wdt_probe(struct udevice *dev)
 	struct adi_wdt_priv *priv = dev_get_priv(dev);
 	int ret;
 	struct resource res;
-	u32 secid;
 
 	ret = dev_read_resource_byname(dev, "rcu", &res);
 	if (ret)
@@ -113,10 +113,11 @@ static int adi_wdt_probe(struct udevice *dev)
 		return ret;
 	priv->wdt_base = devm_ioremap(dev, res.start, resource_size(&res));
 
-	ret = dev_read_u32(dev, "secid", &secid);
-	if (ret)
+	ret = dev_read_u32(dev, "adi,secid", &priv->secid);
+	if (ret) {
+		dev_err(dev, "Missing property 'adi,secid'\n");
 		return ret;
-	priv->secid = secid;
+	}
 
 	ret = clk_get_by_name(dev, "sclk0", &priv->clock);
 	if (ret < 0) {
