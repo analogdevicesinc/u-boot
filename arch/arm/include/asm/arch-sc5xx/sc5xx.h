@@ -34,4 +34,9 @@ void sc5xx_soc_init(void);
  */
 void sc59x_remap_ospi(void);
 
+/* SC846: control of the second Cortex-A55 core (logical CPU1) */
+int sc846_wake_secondary_core(unsigned long entry);
+int sc846_reset_secondary_core(void);
+void sc846_secondary_core_status(void);
+
 #endif
