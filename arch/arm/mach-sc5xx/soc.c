@@ -93,7 +93,7 @@ const char *sc5xx_get_boot_mode(u32 *bmode)
 
 	local_mode = (readl(RCU0_STAT) & BITM_RCU_STAT_BMODE) >> BITP_RCU_STAT_BMODE;
 
-#if CONFIG_ADI_SPL_FORCE_BMODE != 0
+#if IS_ENABLED(CONFIG_ENABLE_ADI_SPL_FORCE_BOOTMODE)
 	/*
 	 * In case we want to force boot sequences such as:
 	 * QSPI -> OSPI
@@ -105,7 +105,7 @@ const char *sc5xx_get_boot_mode(u32 *bmode)
 
 	// (Don't allow skipping JTAG/UART BMODE settings)
 	if (local_mode != 0 && local_mode != 3)
-		local_mode = CONFIG_ADI_SPL_FORCE_BMODE;
+		local_mode = CONFIG_ADI_SPL_FORCE_BOOTMODE;
 #endif
 
 	*bmode = local_mode;
