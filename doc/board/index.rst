@@ -8,6 +8,7 @@ Board-specific doc
 
    acer/index
    actions/index
+   adi/index
    advantech/index
    andestech/index
    allwinner/index

@@ -90,6 +90,9 @@ Commands
   data required for the operation. Define CONFIG_CMD_FUSE_WRITEBUFF to
   enable the fuse writebuff command.
 
+  For the buffer format of Analog Devices ADSP processors see
+  :doc:`../../board/adi/adsp-otp`.
+
 Examples
 --------
 
