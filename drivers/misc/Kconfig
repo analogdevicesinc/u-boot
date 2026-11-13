@@ -368,12 +368,13 @@ config ADI_OTP
 
 config ADI_OTP_SC58X
 	bool "ADSP-SC58x OTP"
-	depends on ADI_OTP && SC58X
+	depends on ADI_OTP
 	default y
-	select SC5XX_ROM_CALL
+	select SC5XX_ROM_CALL if SC58X
 	help
 	  The ADSP-SC58x OTP, read, programmed and locked through the boot
-	  ROM API.
+	  ROM API. On sandbox it runs on an emulated boot ROM, for the
+	  driver's unit tests (test/dm/adi_otp.c).
 
 config NPCM_OTP
 	bool "Nnvoton NPCM BMC On-Chip OTP Memory Support"

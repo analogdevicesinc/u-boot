@@ -68,6 +68,7 @@ obj-$(CONFIG_DM_MAILBOX) += mailbox.o
 obj-$(CONFIG_DM_MDIO) += mdio.o
 obj-$(CONFIG_DM_MDIO_MUX) += mdio_mux.o
 obj-$(CONFIG_MEMORY) += memory.o
+obj-$(CONFIG_ADI_OTP_SC58X) += adi_otp.o
 obj-$(CONFIG_MISC) += misc.o
 obj-$(CONFIG_DM_MMC) += mmc.o
 obj-$(CONFIG_CMD_MUX) += mux-cmd.o
