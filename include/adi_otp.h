@@ -29,6 +29,16 @@ struct udevice;
 /* Bits 16-31 belong to the SoC (struct adi_otp_soc.flags) */
 #define ADI_OTP_BUF_FLAGS_SOC		GENMASK(31, 16)
 
+/* ADSP-SC58x: buffer SoC id and flags (FSN_COPY and FSN_IGNORE exclude each other) */
+#define ADI_OTP_SC58X_ID		0x38354353	/* "SC58" */
+#define ADI_OTP_SC58X_FLAG_FSN_COPY	BIT(16)	/* copy the FSN into gp1 */
+#define ADI_OTP_SC58X_FLAG_FSN_IGNORE	BIT(17)	/* lock without the FSN in gp1 */
+#define ADI_OTP_SC58X_FLAG_EMU_KEY_BLANK BIT(18)	/* lock with an all-zero debug key */
+/* Turn off a boot-safety rule: boot mode, clock settings, DMC setup */
+#define ADI_OTP_SC58X_FLAG_BOOT_MODE_UNCHECKED BIT(19)
+#define ADI_OTP_SC58X_FLAG_CGU_UNCHECKED BIT(20)
+#define ADI_OTP_SC58X_FLAG_DMC_UNCHECKED BIT(21)
+
 /**
  * struct adi_otp_buf_hdr - header of a writebuff buffer
  * @magic: ADI_OTP_BUF_MAGIC

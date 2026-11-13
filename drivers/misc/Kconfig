@@ -366,6 +366,15 @@ config ADI_OTP
 	  irreversible; requests that would leave the part unable to boot
 	  are refused.
 
+config ADI_OTP_SC58X
+	bool "ADSP-SC58x OTP"
+	depends on ADI_OTP && SC58X
+	default y
+	select SC5XX_ROM_CALL
+	help
+	  The ADSP-SC58x OTP, read, programmed and locked through the boot
+	  ROM API.
+
 config NPCM_OTP
 	bool "Nnvoton NPCM BMC On-Chip OTP Memory Support"
 	depends on (ARM && ARCH_NPCM)

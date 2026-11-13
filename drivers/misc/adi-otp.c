@@ -834,6 +834,9 @@ static int adi_otp_probe(struct udevice *dev)
 
 /* The SoC families, by compatible */
 static const struct udevice_id adi_otp_ids[] = {
+#if IS_ENABLED(CONFIG_ADI_OTP_SC58X)
+	{ .compatible = "adi,adsp-sc589-otp", .data = (ulong)&adi_sc58x_soc },
+#endif
 	{ }
 };
 

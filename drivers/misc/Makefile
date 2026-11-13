@@ -50,6 +50,7 @@ obj-$(CONFIG_IMX_ELE) += imx_ele/
 obj-$(CONFIG_K3_FUSE) += k3_fuse.o
 ifndef CONFIG_XPL_BUILD
 obj-$(CONFIG_ADI_OTP) += adi-otp.o
+obj-$(CONFIG_ADI_OTP_SC58X) += adi-otp-sc58x.o
 ifdef CONFIG_CMD_FUSE
 obj-$(CONFIG_ADI_OTP) += adi-otp-fuse.o
 endif

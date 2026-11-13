@@ -213,4 +213,8 @@ int adi_otp_verify_field(struct udevice *dev,
 			 const struct adi_otp_request *req,
 			 const struct adi_otp_field *field);
 
+/* SoC families: their data, each starting with its struct adi_otp_soc */
+struct adi_sc58x_soc;
+extern const struct adi_sc58x_soc adi_sc58x_soc;
+
 #endif /* __ADI_OTP_H */
