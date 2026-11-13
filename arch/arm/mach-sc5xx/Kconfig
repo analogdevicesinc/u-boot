@@ -16,6 +16,15 @@ config SYS_VENDOR
 config SYS_SOC
 	default "sc5xx"
 
+config SC5XX_ROM_CALL
+	bool
+	depends on CPU_V7A && !ARM64
+	help
+	  Support for calling 32-bit boot ROM API functions from U-Boot
+	  proper: adi_rom_enter() and adi_rom_exit() make the ROM
+	  executable around the calls. Selected by the drivers that need
+	  it, e.g. the OTP driver.
+
 choice
 	prompt "SC5xx SoC Select"
 	help
