@@ -354,6 +354,18 @@ config SPL_MXC_OCOTP
 	  Programmable memory pages, that are stored on some
 	  Freescale i.MX processors, in SPL.
 
+config ADI_OTP
+	bool "Analog Devices ADSP OTP memory support"
+	depends on MISC && (SC58X || SANDBOX)
+	help
+	  Support for the one-time programmable (OTP) memory of Analog
+	  Devices ADSP processors. With CMD_FUSE it provides "fuse read",
+	  "fuse prog" and, with CMD_FUSE_WRITEBUFF, "fuse writebuff", which
+	  programs a structured buffer and can lock the part for secure
+	  boot (doc/board/adi/adsp-otp.rst). Programming and locking are
+	  irreversible; requests that would leave the part unable to boot
+	  are refused.
+
 config NPCM_OTP
 	bool "Nnvoton NPCM BMC On-Chip OTP Memory Support"
 	depends on (ARM && ARCH_NPCM)

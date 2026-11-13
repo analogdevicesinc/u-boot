@@ -48,6 +48,12 @@ obj-$(CONFIG_IHS_FPGA) += ihs_fpga.o
 obj-$(CONFIG_IMX8) += imx8/
 obj-$(CONFIG_IMX_ELE) += imx_ele/
 obj-$(CONFIG_K3_FUSE) += k3_fuse.o
+ifndef CONFIG_XPL_BUILD
+obj-$(CONFIG_ADI_OTP) += adi-otp.o
+ifdef CONFIG_CMD_FUSE
+obj-$(CONFIG_ADI_OTP) += adi-otp-fuse.o
+endif
+endif
 obj-$(CONFIG_LED_STATUS) += status_led.o
 obj-$(CONFIG_LED_STATUS_GPIO) += gpio_led.o
 obj-$(CONFIG_MPC83XX_SERDES) += mpc83xx_serdes.o
