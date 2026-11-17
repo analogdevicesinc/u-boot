@@ -1161,6 +1161,24 @@
 		compatible = "sandbox,memory";
 	};
 
+	/* ADSP-SC58x OTP, on the emulated boot ROM (asm/test.h) */
+	adi_sc58x_rcu: adi-sc58x-rcu@e000000 {
+		compatible = "adi,reset-controller";
+		reg = <0x0e000000 0x100>;
+	};
+
+	adi-sc58x-clocks@e001000 {
+		compatible = "adi,sc58x-clocks";
+		reg = <0x0e001000 0x100>, <0x0e002000 0x100>;
+		reg-names = "cgu0", "cgu1";
+	};
+
+	adi-sc58x-otp@e003000 {
+		compatible = "adi,adsp-sc589-otp";
+		reg = <0x0e003000 0x100>;
+		adi,rcu = <&adi_sc58x_rcu>;
+	};
+
 	misc-test {
 		#address-cells = <1>;
 		#size-cells = <1>;

@@ -653,6 +653,19 @@ F:	include/dt-bindings/clock/adi-sc5xx-clock.h
 F:	include/dt-bindings/pinctrl/adi-adsp.h
 F:	include/env/adi/
 
+ARM SC5XX OTP
+M:	Sam Winchenbach <sam.winchenbach@analog.com>
+L:	linux@analog.com
+S:	Supported
+F:	arch/arm/mach-sc5xx/rom.c
+F:	doc/board/adi/
+F:	doc/device-tree-bindings/nvmem/adi,adsp-otp.yaml
+F:	drivers/misc/adi-otp*
+F:	include/adi_otp.h
+F:	include/adi_rom.h
+F:	test/dm/adi_otp.c
+F:	tools/adi_otp_buf.py
+
 ARM SNAPDRAGON
 M:	Casey Connolly <casey.connolly@linaro.org>
 M:	Neil Armstrong <neil.armstrong@linaro.org>

@@ -361,4 +361,72 @@ bool sandbox_sf_bootdev_enabled(void);
  */
 void sandbox_sf_set_enable_bootdevs(bool enable);
 
+/*
+ * ADSP-SC58x boot ROM emulation (drivers/misc/adi-otp-sc58x-sandbox.c),
+ * for the ADI OTP driver tests. The registers the driver uses are in
+ * sandbox memory, at the addresses of the nodes in test.dts.
+ */
+#define SANDBOX_ADI_SC58X_RCU		0x0e000000
+#define SANDBOX_ADI_SC58X_CGU0		0x0e001000
+#define SANDBOX_ADI_SC58X_CGU1		0x0e002000
+#define SANDBOX_ADI_SC58X_OTPC		0x0e003000
+
+/*
+ * What sandbox_adi_rom_init() sets up, that the tests depend on: the
+ * SHARC+ cores' RCU_CRCTL bits, and CGU0_CTL.MSEL
+ */
+#define SANDBOX_ADI_SC58X_SHARCS	(BIT(1) | BIT(2))
+#define SANDBOX_ADI_SC58X_MSEL		16
+
+/* A fault for sandbox_adi_rom_inject() */
+enum sandbox_adi_rom_fault {
+	SANDBOX_ADI_ROM_OK,
+	SANDBOX_ADI_ROM_FAIL,		/* the next programming call fails */
+	SANDBOX_ADI_ROM_STAT_ERROR,	/* ... succeeds, but sets OTPC_STAT.ADDRERR */
+	SANDBOX_ADI_ROM_PMC_BUSY,	/* the PMC is not idle */
+};
+
+/**
+ * sandbox_adi_rom_init() - a blank, open part with an FSN, booted in SPI
+ * master mode, with the SHARC+ cores running
+ */
+void sandbox_adi_rom_init(void);
+
+/**
+ * sandbox_adi_rom_reset() - emulate a reset: a programmed lock takes effect
+ * and the SHARC+ cores are released
+ */
+void sandbox_adi_rom_reset(void);
+
+/**
+ * sandbox_adi_rom_inject() - inject faults
+ *
+ * @leaky_offset: OTP byte offset of a half-word that does not take when
+ *	programmed, or -1
+ * @fault: a fault of the next programming call
+ */
+void sandbox_adi_rom_inject(int leaky_offset, enum sandbox_adi_rom_fault fault);
+
+/**
+ * sandbox_adi_rom_otp() - the emulated OTP, byte n at OTP offset n
+ *
+ * Returns: the OTP
+ */
+u8 *sandbox_adi_rom_otp(void);
+
+/**
+ * sandbox_adi_rom_pgm_calls() - number of otp_pgm() and otp_lock() calls
+ *
+ * Returns: the count
+ */
+unsigned int sandbox_adi_rom_pgm_calls(void);
+
+/**
+ * sandbox_adi_rom_unbracketed_calls() - number of ROM calls made outside
+ * adi_rom_enter() and adi_rom_exit()
+ *
+ * Returns: the count
+ */
+unsigned int sandbox_adi_rom_unbracketed_calls(void);
+
 #endif

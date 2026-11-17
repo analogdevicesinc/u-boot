@@ -19,4 +19,7 @@ obj-$(CONFIG_SC846) += sc846-som.o
 obj-$(CONFIG_SC846) += sc846-som-spl.o
 
 obj-$(CONFIG_XPL_BUILD) += spl.o
+ifndef CONFIG_XPL_BUILD
+obj-$(CONFIG_SC5XX_ROM_CALL) += rom.o
+endif
 obj-$(CONFIG_SYSCON) += rcu.o
