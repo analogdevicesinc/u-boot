@@ -75,14 +75,14 @@ config CGU0_DIV_S1SELEX
 
 # CGU1 MSEL
 config CGU1_VCO_MULT
-	default 72
+	default 96
 
 config CGU1_DF_DIV
 	default 0
 
 # Core Clock divider
 config CGU1_CCLK_DIV
-	default 2
+	default 1
 
 # System Clock divider
 config CGU1_SCLK_DIV
