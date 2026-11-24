@@ -14,4 +14,10 @@
 #define GICD_BASE 0x31200000
 #define GICR_BASE 0x31240000
 
+/*
+ * Dummy addr given that ARMV8_MULTIENTRY needs it in SPL, but core 2 is
+ * only woken in proper, into the spin-table code.
+ */
+#define CPU_RELEASE_ADDR	0
+
 #endif
