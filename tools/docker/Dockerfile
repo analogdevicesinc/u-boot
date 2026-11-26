@@ -306,21 +306,16 @@ RUN wget -O - https://coreboot.org/releases/coreboot-25.03.tar.xz | tar -C /tmp 
     sudo cp build/coreboot.rom build/cbfstool /opt/coreboot/ && \
     rm -rf /tmp/coreboot-25.03
 
-# Build ldr tool for Analog Devices boards and create prefixed symlinks to match
-# $(CROSS_COMPILE) as used by different supported platforms
-RUN git clone https://github.com/analogdevicesinc/lnxdsp-arm-poky-linux-gnueabi-ldr.git /opt/lnxdsp-arm-poky-linux-gnueabi-ldr && \
-	cd /opt/lnxdsp-arm-poky-linux-gnueabi-ldr && \
+# Build ldr tool for Analog Devices boards
+RUN git clone --depth=1 -b v1.0.2 https://github.com/analogdevicesinc/adsp-ldr.git /tmp/adi-adsp-ldr && \
+	cd /tmp/adi-adsp-ldr && \
 	python3 -m venv venv && \
 	. venv/bin/activate && \
 	pip install meson && \
 	meson setup build && \
-	cd build && \
-	meson compile && \
-	cd .. && \
-	ln -s build/ldr arm-linux-gnueabi-ldr && \
-	ln -s build/ldr aarch64-linux-ldr && \
-	deactivate
-ENV PATH="${PATH}:/opt/lnxdsp-arm-poky-linux-gnueabi-ldr"
+	meson install -C build && \
+	deactivate && \
+	rm -rf /tmp/adi-adsp-ldr
 
 # Create our user/group
 RUN echo uboot ALL=NOPASSWD: ALL > /etc/sudoers.d/uboot
